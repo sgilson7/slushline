@@ -164,6 +164,79 @@ def every_visible_line_is_a_copy_string(page, name):
     return []
 
 
+def native_script_checksum(ticks):
+    out = subprocess.run(["cargo", "run", "-q", "--release", "-p", "lab", "--", "script-checksum", str(ticks)],
+                         cwd=ROOT, capture_output=True, text=True, check=True)
+    return out.stdout.strip()
+
+
+SCRIPT_TICKS = 900
+NATIVE = {}
+
+
+@check
+def the_browser_computes_the_native_checksum(page, name):
+    if "sum" not in NATIVE:
+        NATIVE["sum"] = native_script_checksum(SCRIPT_TICKS)
+    got = page.evaluate(f"window.slushline.scriptChecksum({SCRIPT_TICKS})")
+    if got != NATIVE["sum"]:
+        return [f"{name}: the fixed script's checksum after {SCRIPT_TICKS} ticks is {got} here and {NATIVE['sum']} natively"]
+    print(f"ok: {name}: the fixed script ends on {got}, as natively")
+    return []
+
+
+@check
+def a_pour_round_trips_through_a_replay_file(page, name):
+    page.click("#menu-missions")
+    page.wait_for_function("window.slushline.tick() > 10")
+    page.keyboard.down("d")
+    page.wait_for_timeout(900)
+    page.keyboard.up("d")
+    page.wait_for_function("window.slushline.tick() > 200")
+    bad = visible_lines_not_in_copy(page)
+    if bad:
+        return [f"{name}: text on the pour screen that is not in the copy file: {bad}"]
+    with page.expect_download() as dl:
+        page.click("#download-replay")
+    path = dl.value.path()
+    want_tick = None
+    data = Path(path).read_bytes()
+    page.reload(wait_until="load")
+    page.wait_for_function("document.body.dataset.ready === '1'")
+    with page.expect_file_chooser() as fc:
+        page.click("#menu-replay")
+    fc.value.set_files(path)
+    page.wait_for_function("window.slushline.replayDone() === true", timeout=60000)
+    got, want = page.evaluate("[window.slushline.checksum(), window.slushline.recordedChecksum()]")
+    if got != want or not got:
+        return [f"{name}: the replay ended on {got}, and recorded {want}"]
+    bad = visible_lines_not_in_copy(page)
+    if bad:
+        return [f"{name}: text on the replay screen that is not in the copy file: {bad}"]
+    print(f"ok: {name}: a pour downloaded as a replay ({len(data)} bytes), loaded after a reload, ends on its recorded checksum {got}")
+    page.click("#replay-stop")
+    return []
+
+
+@check
+def a_file_that_is_not_a_replay_is_refused_with_a_sentence(page, name):
+    junk = ROOT / "testing" / "replays" / "not-a-replay.txt"
+    junk.write_text("this is not a replay")
+    try:
+        with page.expect_file_chooser() as fc:
+            page.click("#menu-replay")
+        fc.value.set_files(str(junk))
+        page.wait_for_selector("#notice:not([hidden])")
+        got = page.inner_text("#notice").strip()
+    finally:
+        junk.unlink()
+    want = COPY["replay"]["error"]["format"].replace("{game}", COPY["game"]["name"])
+    if got != want:
+        return [f"{name}: the refusal reads {got!r}"]
+    print(f"ok: {name}: a file that is not a replay is refused: {got!r}")
+    return []
+
+
 def run(engine_names):
     httpd = None if LIVE else serve()
     failures = []

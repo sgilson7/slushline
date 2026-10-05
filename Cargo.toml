@@ -30,7 +30,10 @@ wasm-bindgen = "=0.2.127"
 # Vagrancy's profiles, comments and all, because the reasoning is the part
 # worth keeping.
 [profile.release]
-opt-level = "z"
+# 3, not Vagrancy's "z": a size build does not inline `Fx + Fx`, and M1.0
+# measured 13 ms a tick at 2,000 units with "z" against the brief's 2 ms
+# budget (SECOND-ORDER-M1). The wasm grows; the frame rate is the game.
+opt-level = 3
 lto = true
 codegen-units = 1
 strip = true

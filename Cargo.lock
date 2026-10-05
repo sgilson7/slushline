@@ -162,6 +162,7 @@ dependencies = [
 name = "sim"
 version = "0.1.0"
 dependencies = [
+ "content",
  "postcard",
  "serde",
 ]

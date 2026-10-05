@@ -1,0 +1,5 @@
+{
+  "_about": "Cup sizes (D9). Inside half-width and height in whole cm; capacity is the units an order's shares divide, and is measured in M1.0 as the units that fill the cup to its rim. Capacities are multiples of 12 so that every share in data/missions.json is whole (every_share_is_a_whole_number_of_units).",
+  "regular": { "inner_half": 21, "inner_height": 40, "capacity": 120 },
+  "small": { "inner_half": 15, "inner_height": 31, "capacity": 60 }
+}

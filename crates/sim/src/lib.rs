@@ -9,6 +9,21 @@
 #![forbid(unsafe_code)]
 #![deny(clippy::float_arithmetic)]
 
+pub mod balance;
+pub mod frame;
+pub mod fx;
+pub mod input;
+pub mod replay;
+pub mod rng;
+pub mod score;
+pub mod setup;
+pub mod slush;
+pub mod world;
+
+pub use input::Input;
+pub use setup::Setup;
+pub use world::World;
+
 /// Bumped whenever what the simulation does changes, together with the
 /// golden replays, in the same commit (CLAUDE.md). A replay from another
 /// version is refused with a sentence.

@@ -9,3 +9,20 @@ body { font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
 #status, #loading-error { margin: 8px 0; }
 #foot { display: flex; justify-content: space-between; gap: 16px; margin-top: 24px; color: var(--muted); font-size: 0.9rem; }
 #foot a { color: var(--focus); }
+
+#screen { margin: 12px 0; }
+.menu { display: grid; gap: 12px; max-width: 640px; }
+.menu .item p { margin: 4px 0 0; color: var(--muted); }
+button {
+  font: inherit; font-weight: 600; color: var(--paper); background: var(--focus);
+  border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer;
+}
+button:focus-visible { outline: 3px solid var(--line); outline-offset: 2px; }
+button.quiet { color: var(--line); background: var(--panel); }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.controls p { margin: 0; }
+#stage { display: block; width: 100%; height: auto; background: var(--paper); border: 1px solid var(--panel); border-radius: 6px; }
+#hud { display: flex; flex-wrap: wrap; gap: 4px 24px; margin: 8px 0; }
+#hud p { margin: 0; }
+#hud ul { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 0; padding: 0; list-style: none; }
+#notice { margin-top: 12px; }

@@ -236,10 +236,7 @@ fn every_universal_names_a_test_that_exists() {
     // Carried as SECOND-ORDER rows until the milestone that writes the test.
     // Each name leaves this list in the commit that writes its test.
     let pending: &[&str] = &[
-        "slush_past_its_share_scores_nothing",            // M2
         "every_order_can_reach_full_marks_from_its_line", // M3
-        "a_damaged_replay_is_refused_rather_than_half_loaded", // M1
-        "a_file_that_is_not_a_replay_is_refused",         // M1
         "two_actions_cannot_share_a_key",                 // M3
         "a_damaged_save_is_refused_rather_than_half_loaded", // M4
         "a_file_that_is_not_a_save_is_refused",           // M4

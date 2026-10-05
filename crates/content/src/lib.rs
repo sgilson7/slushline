@@ -5,3 +5,5 @@
 
 pub mod copy;
 pub mod look;
+pub mod messages;
+pub mod setup;
