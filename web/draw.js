@@ -6,6 +6,8 @@
 // choice of the page, not a rule of the game.
 const VIEW_LEFT = -10;
 const VIEW_WIDTH = 480;
+// The lowest centimeter shown: a little below the belt, which is at 50.
+const VIEW_BOTTOM = 34;
 
 export class Stage {
   constructor(canvas, numbers, palette, flavors) {
@@ -21,7 +23,7 @@ export class Stage {
 
   get scale() { return this.c.width / VIEW_WIDTH; }
   sx(raw) { return (raw / this.one - VIEW_LEFT) * this.scale; }
-  sy(raw) { return this.c.height - (raw / this.one) * this.scale; }
+  sy(raw) { return this.c.height - (raw / this.one - VIEW_BOTTOM) * this.scale; }
   len(raw) { return (raw / this.one) * this.scale; }
 
   fill(f) { return this.pal.flavors[this.flavors[f].id].fill; }
@@ -171,6 +173,13 @@ export class Stage {
       if (c.judged) {
         g.fillStyle = p.lid;
         g.fillRect(cx - half - wall - 2, rimY - 6, half * 2 + wall * 2 + 4, 6);
+        // The score the lid gave it, as core sent it.
+        if (c.score !== null && c.score !== undefined) {
+          g.fillStyle = p.line;
+          g.font = '700 18px system-ui, sans-serif';
+          g.textAlign = 'center';
+          g.fillText(String(c.score), cx, rimY - 14);
+        }
       }
     }
   }
