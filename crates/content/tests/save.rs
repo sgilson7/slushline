@@ -72,3 +72,15 @@ fn a_pass_opens_the_next_mission_and_a_worse_run_keeps_the_best() {
     assert_eq!(s.best[&ms[0].id], 70);
     assert_eq!(s.passed, vec![ms[0].id.clone()]);
 }
+
+#[test]
+fn a_save_from_before_the_belt_keys_loads_with_their_defaults() {
+    // The MVP's first deploy wrote saves with four spout keys and no belt.
+    let old = r#"{"format": "slushline.save", "version": 1, "best": {"m_first_pour": 80},
+        "passed": ["m_first_pour"], "options": {"short_codes": false},
+        "keys": {"spout_1": "KeyD", "spout_2": "KeyF", "spout_3": "KeyJ", "spout_4": "KeyK"}}"#;
+    let s = Save::load(old.as_bytes()).expect("an old save still loads");
+    assert_eq!(s.keys["spout_1"], "KeyD", "its own bindings are kept");
+    assert_eq!(s.keys["belt_slower"], "ArrowLeft");
+    assert_eq!(s.keys["belt_faster"], "ArrowRight");
+}

@@ -24,7 +24,10 @@ fn only_spout_bits_move_a_handle() {
         let ls = w.lines[0].as_ref().unwrap();
         assert!(ls.handles.iter().all(|h| h.opening().0 == 0), "bit {bit} moved a handle");
         assert_eq!(ls.emitted, 0, "bit {bit} poured slush");
-        assert_eq!(w.lines, quiet.lines, "bit {bit} changed the line");
+        let belt = (1u16 << bit) & (Input::BELT_FASTER | Input::BELT_SLOWER) != 0;
+        if !belt {
+            assert_eq!(w.lines, quiet.lines, "bit {bit} changed the line");
+        }
     }
 }
 
@@ -43,7 +46,9 @@ fn each_spout_bit_pulls_its_own_handle_and_no_other() {
 }
 
 #[test]
-fn no_key_moves_a_cup_or_the_belt() {
+fn only_the_belt_keys_change_the_belt() {
+    // Sam, 2026-10-05: the belt has a throttle on the other hand. The spout
+    // keys leave the belt alone; the belt keys move it and nothing else.
     let mut a = three_spouts();
     let mut b = three_spouts();
     for t in 0..300u32 {
@@ -51,8 +56,33 @@ fn no_key_moves_a_cup_or_the_belt() {
         b.step([Input((t % 16) as u16), Input::NONE]);
         let (la, lb) = (a.lines[0].as_ref().unwrap(), b.lines[0].as_ref().unwrap());
         assert_eq!(la.travel, lb.travel);
-        assert!(la.cups.iter().zip(&lb.cups).all(|(x, y)| x.x == y.x), "a key moved a cup at tick {t}");
+        assert!(la.cups.iter().zip(&lb.cups).all(|(x, y)| x.x == y.x), "a spout key moved a cup at tick {t}");
     }
+}
+
+#[test]
+fn the_belt_keys_speed_the_belt_up_and_slow_it_down_and_it_keeps_its_speed() {
+    let base = three_spouts().belt_speed(0);
+    let mut w = three_spouts();
+    for _ in 0..600 {
+        w.step([Input(Input::BELT_FASTER), Input::NONE]);
+    }
+    assert_eq!(w.belt_speed(0), base * sim::balance::BELT_MAX, "held, the belt reaches its top speed and stops there");
+    for _ in 0..60 {
+        w.step([Input::NONE; 2]);
+    }
+    assert_eq!(w.belt_speed(0), base * sim::balance::BELT_MAX, "let go, it keeps the speed");
+    for _ in 0..600 {
+        w.step([Input(Input::BELT_SLOWER), Input::NONE]);
+    }
+    assert_eq!(w.belt_speed(0), base * sim::balance::BELT_MIN, "and slows to its lowest");
+    let ls = w.lines[0].as_ref().unwrap();
+    assert!(ls.handles.iter().all(|h| h.opening().0 == 0) && ls.emitted == 0, "the belt keys pour nothing");
+    let mut both = three_spouts();
+    for _ in 0..60 {
+        both.step([Input(Input::BELT_FASTER | Input::BELT_SLOWER), Input::NONE]);
+    }
+    assert_eq!(both.belt_speed(0), base, "both held cancel");
 }
 
 #[test]

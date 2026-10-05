@@ -202,9 +202,22 @@ def a_mission_plays_to_a_result_and_round_trips_through_a_replay_file(page, name
     page.click("#start-mission")
     page.wait_for_function("window.slushline.tick() > 5")
     # A player's hands for a moment, then the timer pilot to the end.
-    page.keyboard.down("d")
+    page.keyboard.down("a")
     page.wait_for_timeout(300)
-    page.keyboard.up("d")
+    page.keyboard.up("a")
+    # The belt's throttle, on the other hand: held, it speeds up, and it keeps
+    # the speed it is left at (Sam, 2026-10-05).
+    page.keyboard.down("ArrowRight")
+    page.wait_for_timeout(500)
+    page.keyboard.up("ArrowRight")
+    page.wait_for_timeout(100)
+    faster = page.evaluate("window.slushline.frame().lines[0].belt_pct")
+    page.keyboard.down("ArrowLeft")
+    page.wait_for_timeout(1500)
+    page.keyboard.up("ArrowLeft")
+    slower = page.evaluate("window.slushline.frame().lines[0].belt_pct")
+    if not (faster > 100 and slower < 100):
+        problems.append(f"the belt keys left the belt at {faster} and then {slower} percent")
     problems += lines_not_in_copy(page, "the mission")
     page.evaluate("window.slushline.autoplay(10000)")
     page.wait_for_selector(".verdict", timeout=20000)
@@ -231,7 +244,7 @@ def a_mission_plays_to_a_result_and_round_trips_through_a_replay_file(page, name
         problems.append(f"the replay's result reads {page.inner_text('.verdict')!r}, the run's read {verdict!r}")
     if problems:
         return [f"{name}: {p}" for p in problems]
-    print(f"ok: {name}: the first mission played to {verdict!r} ({final}); its replay ({size} bytes) loaded after a reload, ends on {got}, and shows the same result")
+    print(f"ok: {name}: the belt ran at {faster} % after the faster key and {slower} % after the slower; the first mission played to {verdict!r} ({final}); its replay ({size} bytes) loaded after a reload, ends on {got}, and shows the same result")
     page.click("#to-missions")
     page.click("#back-to-menu")
     return []
@@ -280,16 +293,16 @@ def the_save_keeps_a_pass_and_round_trips_through_a_file(page, name):
 def two_actions_cannot_share_a_key_in_settings(page, name):
     page.click("#menu-settings")
     page.click("#bind-spout_1")
-    page.keyboard.press("f")
+    page.keyboard.press("s")
     page.wait_for_selector("#bind-note:not([hidden])")
     note = page.inner_text("#bind-note")
-    want = COPY["settings"]["keys"]["conflict"].replace("{key}", "F").replace("{action}", COPY["settings"]["keys"]["actions"]["spout"].replace("{n}", "2"))
+    want = COPY["settings"]["keys"]["conflict"].replace("{key}", "S").replace("{action}", COPY["settings"]["keys"]["actions"]["spout"].replace("{n}", "2"))
     problems = [] if note == want else [f"the conflict reads {note!r}, not {want!r}"]
     page.click("#bind-spout_1")
-    page.keyboard.press("a")
-    page.wait_for_function("document.querySelector('#bind-spout_1').textContent === 'A'")
+    page.keyboard.press("q")
+    page.wait_for_function("document.querySelector('#bind-spout_1').textContent === 'Q'")
     page.click("#reset-keys")
-    page.wait_for_function("document.querySelector('#bind-spout_1').textContent === 'D'")
+    page.wait_for_function("document.querySelector('#bind-spout_1').textContent === 'A'")
     problems += lines_not_in_copy(page, "settings")
     page.click("#back-to-menu")
     page.click("#menu-how")
@@ -297,7 +310,7 @@ def two_actions_cannot_share_a_key_in_settings(page, name):
     page.click("#back-to-menu")
     if problems:
         return [f"{name}: {p}" for p in problems]
-    print(f"ok: {name}: a taken key is refused with {note!r}; a free one binds; reset restores D")
+    print(f"ok: {name}: a taken key is refused with {note!r}; a free one binds; reset restores A")
     return []
 
 
@@ -316,7 +329,7 @@ def every_flavor_differs_in_gray_on_the_rendered_page(page, name):
     # from its pattern mark.
     page.evaluate("""localStorage.setItem('slushline.save', JSON.stringify({format:'slushline.save',version:1,best:{},
         passed:['m_first_pour','m_tail','m_two_spouts','m_half','m_two_one','m_third'],
-        keys:{spout_1:'KeyD',spout_2:'KeyF',spout_3:'KeyJ',spout_4:'KeyK'},options:{short_codes:false}}))""")
+        keys:{spout_1:'KeyA',spout_2:'KeyS',spout_3:'KeyD',spout_4:'KeyF',belt_slower:'ArrowLeft',belt_faster:'ArrowRight'},options:{short_codes:false}}))""")
     page.reload(wait_until="load")
     page.wait_for_function("document.body.dataset.ready === '1'")
     page.click("#menu-missions")

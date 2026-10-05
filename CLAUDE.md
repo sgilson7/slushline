@@ -13,7 +13,7 @@ Break one of these and the failure is silent and expensive.
 - **`crates/wasm` decides nothing.** It moves bytes across the boundary. An `if` in the shim is a rule that belongs in `sim`.
 - **The page draws numbers core sent it.** It may interpolate between two frames it was given. It never integrates, predicts, detects a contact, or keeps its own copy of a constant.
 - **Slush holds a slope and swells, and that is the design.** Do not make it level like water, or hold units at one size, to make the fluid "right". See `PLAN.md` D6 and the tests `a_pile_of_slush_keeps_its_slope` and `a_cup_keeps_rising_after_the_last_unit_lands`.
-- **A key pulls a handle and does nothing else.** No key adds slush to a cup, moves a cup or changes the belt.
+- **A spout key pulls its handle and does nothing else; the belt keys move the belt's throttle and nothing else** (Sam, 2026-10-05, replacing the brief's "no key changes the belt"). No key adds slush to a cup or moves a cup by itself. Guards: `only_spout_bits_move_a_handle`, `only_the_belt_keys_change_the_belt`.
 - **No flavor is carried by hue alone.** Every flavor has a pattern and a brightness step in `data/palette.json` and `data/flavors.json`, the page never blends two flavors' colors, and `crates/content/tests/look.rs` checks both.
 - **The score is the one rule in `sim::score`.** The page shows the number core sent.
 - **Every unit is in one place.** A change that adds somewhere a unit can be extends the conservation test in the same commit.

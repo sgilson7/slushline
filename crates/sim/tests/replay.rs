@@ -59,7 +59,7 @@ fn a_damaged_replay_is_refused_rather_than_half_loaded() {
 
 #[test]
 fn a_replay_with_a_reserved_or_spare_bit_set_is_refused() {
-    for bit in [Input::RESERVED, 1 << 7, 1 << 15] {
+    for bit in [Input::RESERVED, 1 << 9, 1 << 15] {
         let mut r = recorded(60).replay();
         r.inputs[10][1] |= bit;
         assert_eq!(replay::load(&postcard::to_allocvec(&r).unwrap()), Err(ReplayError::Damaged), "bit {bit:#x}");

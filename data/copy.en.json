@@ -3,7 +3,6 @@
   "_placeholders": {
     "game": "`game.name`",
     "hash": "the build hash stamped by `packaging/package-web.sh`",
-    "key, key.spout_1, key.spout_2, key.spout_3, key.spout_4": "the current binding for that handle, from `data/controls.json` or the player's save",
     "keys_upper, keys_lower": "the bound keys of that line, joined in spout order",
     "flavor, flavor_mid, short": "`flavors.<id>.name`, `.name_mid` and `.short`",
     "blend": "`blends.<id>.name`",
@@ -15,7 +14,9 @@
     "fill_pct, waste_pct, cause": "computed by core for the result; `{cause}` is `results.cause.<id>`",
     "swell_s": "the swell time in `sim::balance`, converted to seconds by core",
     "upper_name, lower_name, winner": "`lines.upper.name` or `lines.lower.name`",
-    "delay_ms, tick, code, theirs, ours, file_name, error, action": "as in Vagrancy's copy file"
+    "delay_ms, tick, code, theirs, ours, file_name, error, action": "as in Vagrancy's copy file",
+    "belt_pct": "the belt's throttle as a percentage, from the frame core sends",
+    "key, key.spout_1, key.spout_2, key.spout_3, key.spout_4, key.belt_slower, key.belt_faster": "the current binding for that handle, from `data/controls.json` or the player's save"
   },
   "_depends": {
     "how.spout.body, how.tail.body": "D7, D8, and Part I question 4",
@@ -244,6 +245,11 @@
     "files": {
       "title": "Replays and save files",
       "body": "Download a run as a replay from its result screen. Loading that file plays the same run again, input for input. Settings has the save file, which holds your progress through the missions."
+    },
+    "belt": {
+      "title": "Belt speed",
+      "body": "Hold {key.belt_faster} to speed the belt up and {key.belt_slower} to slow it down. The belt keeps the speed you leave it at, so slow it while a cup fills and speed it up between cups.",
+      "review": "new"
     }
   },
   "flavors": {
@@ -291,7 +297,10 @@
     "score": "{score} of {max_score}",
     "waste": "Waste: {waste_pct} percent",
     "keys": "Your keys, in spout order: {keys_upper}.",
-    "delay": "Input delay: {delay_ms} ms"
+    "delay": "Input delay: {delay_ms} ms",
+    "belt": "Belt: {belt_pct} percent of its speed",
+    "belt_keys": "Hold {key.belt_slower} to slow the belt and {key.belt_faster} to speed it up.",
+    "review": "new: belt and belt_keys"
   },
   "missions": {
     "order": {
@@ -435,7 +444,10 @@
     },
     "keys": {
       "actions": {
-        "spout": "Pull the handle on spout {n}"
+        "spout": "Pull the handle on spout {n}",
+        "belt_slower": "Slow the belt down",
+        "belt_faster": "Speed the belt up",
+        "review": "new: belt_slower and belt_faster (Sam, 2026-10-05)"
       },
       "solo": {
         "heading": "Keys for missions and online matches"

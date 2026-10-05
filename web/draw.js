@@ -7,7 +7,7 @@
 const VIEW_LEFT = -10;
 const VIEW_WIDTH = 480;
 // The lowest centimeter shown: a little below the belt, which is at 50.
-const VIEW_BOTTOM = 34;
+const VIEW_BOTTOM = 22;
 
 export class Stage {
   constructor(canvas, numbers, palette, flavors) {
@@ -211,7 +211,7 @@ export class Stage {
     for (const [x, y, r, f] of at) this.patternInCircle(f, x, y, r);
   }
 
-  // The order bar over each cup: split by share, each segment in its
+  // The order bar under each cup, below the belt (Sam, 2026-10-05): split by share, each segment in its
   // flavor's fill and pattern, with a marker for how much of that flavor the
   // cup holds so far. Drawn from the shares and counts core sent.
   drawBars(L) {
@@ -223,7 +223,7 @@ export class Stage {
       const cx = this.sx(c.x);
       if (cx < -80 || cx > this.c.width + 80) continue;
       const half = this.len(L.inner_half) + 2;
-      const y = rimY - 22;
+      const y = this.sy(L.belt_y) + this.len(6 * this.one) + 6;
       const h = 12;
       let x = cx - half;
       const total = c.shares.reduce((a, s) => a + s[1], 0) || 1;
@@ -243,7 +243,7 @@ export class Stage {
         g.fillStyle = p.line;
         g.font = '600 10px system-ui, sans-serif';
         g.textAlign = 'left';
-        g.fillText(this.codes[f], x + 2, y - 3);
+        g.fillText(this.codes[f], x + 2, y + h + 11);
         x += w;
       }
       // Settings' switch: each flavor's short code on its slush in the cup,

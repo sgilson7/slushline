@@ -296,6 +296,7 @@ pub fn hud(w: &World) -> Value {
         "order": order,
         "score": (!scores.is_empty()).then(|| fill("hud.score", &json!({ "score": average(&scores), "max_score": sim::balance::MAX_SCORE }))),
         "waste": fill("hud.waste", &json!({ "waste_pct": waste(ls.wasted, ls.emitted) })),
+        "belt": fill("hud.belt", &json!({ "belt_pct": (ls.belt_factor.0 as i64 * 100 + 2048) >> 12 })),
     })
 }
 

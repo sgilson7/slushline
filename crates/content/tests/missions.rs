@@ -341,10 +341,11 @@ fn judged_units_leave_the_world() {
 
 #[test]
 fn the_waste_limit_is_decided_exactly() {
-    // 20 of 100 is not under a 20 % limit; 19 of 100 is.
-    assert_eq!(content::missions::waste(20, 100), 20);
+    // 35 of 100 is not under mission 2's 35 % limit (Sam, 2026-10-05:
+    // "for mission 2, 20% is too tight").
+    assert_eq!(content::missions::waste(35, 100), 35);
     let m = mission("m_tail").unwrap();
-    assert_eq!(m.pass.waste_pct, Some(20));
+    assert_eq!(m.pass.waste_pct, Some(35));
     let _ = setup_of;
 }
 

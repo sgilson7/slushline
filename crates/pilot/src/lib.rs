@@ -73,7 +73,7 @@ impl Pilot {
             self.pours = vec![Pour::default(); n];
             self.tail = vec![14; n];
         }
-        let speed = line.belt.speed_at(w.tick);
+        let speed = w.belt_speed(seat);
         let mut bits = 0u16;
         for i in 0..n {
             let poured = ls.valves[i].poured;

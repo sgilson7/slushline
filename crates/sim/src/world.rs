@@ -87,6 +87,8 @@ pub struct LineState {
     pub results: Vec<CupResult>,
     /// How far the belt has moved, for drawing its marks.
     pub travel: Fx,
+    /// The throttle: the share of the mission's belt speed the belt runs at.
+    pub belt_factor: Fx,
     pub emitted: u32,
     pub judged: u32,
     pub wasted: u32,
@@ -134,6 +136,7 @@ impl World {
                 .collect(),
             results: Vec::new(),
             travel: Fx(0),
+            belt_factor: ONE,
             emitted: 0,
             judged: 0,
             wasted: 0,
@@ -152,7 +155,7 @@ impl World {
         for seat in 0..2 {
             if self.lines[seat].is_some() {
                 self.handles(seat, inputs[seat], &t);
-                self.belt(seat);
+                self.belt(seat, inputs[seat]);
                 self.valves(seat);
             }
         }
@@ -245,14 +248,29 @@ impl World {
 
     // --- the belt and the rails -------------------------------------------
 
-    fn belt(&mut self, seat: usize) {
-        let speed = self.line(seat).belt.speed_at(self.tick);
+    /// The belt keys move the throttle; then the belt carries the cups at
+    /// the mission's speed times the throttle. Only the belt bits touch it.
+    fn belt(&mut self, seat: usize, input: Input) {
+        let ls = self.lines[seat].as_mut().unwrap();
+        if input.has(Input::BELT_FASTER) && !input.has(Input::BELT_SLOWER) {
+            ls.belt_factor = (ls.belt_factor + balance::BELT_STEP).min(balance::BELT_MAX);
+        } else if input.has(Input::BELT_SLOWER) && !input.has(Input::BELT_FASTER) {
+            ls.belt_factor = (ls.belt_factor - balance::BELT_STEP).max(balance::BELT_MIN);
+        }
+        let speed = self.belt_speed(seat);
         let ls = self.lines[seat].as_mut().unwrap();
         ls.travel += speed;
         for c in &mut ls.cups {
             c.prev_x = c.x;
             c.x += speed;
         }
+    }
+
+    /// How fast the belt runs this tick, cm per tick: the mission's speed
+    /// (and its schedule) times the throttle.
+    pub fn belt_speed(&self, seat: usize) -> Fx {
+        let base = self.line(seat).belt.speed_at(self.tick);
+        base * self.lines[seat].as_ref().unwrap().belt_factor
     }
 
     /// Where spout `i`'s nozzle is this tick: its place, moved by its rail.

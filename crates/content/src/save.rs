@@ -81,7 +81,15 @@ impl Save {
         if version > VERSION {
             return Err(SaveError::Newer { theirs: version, ours: VERSION });
         }
-        let s: Save = serde_json::from_value(v).map_err(|_| SaveError::Damaged)?;
+        let mut s: Save = serde_json::from_value(v).map_err(|_| SaveError::Damaged)?;
+        // A save from before the belt keys (2026-10-05) has none: they take
+        // their defaults where the key is free, rather than refusing a file
+        // that was right when it was written.
+        for (action, code) in default_keys() {
+            if !s.keys.contains_key(&action) && !s.keys.values().any(|c| *c == code) {
+                s.keys.insert(action, code);
+            }
+        }
         let ids: Vec<String> = crate::missions::missions().into_iter().map(|m| m.id).collect();
         let actions: Vec<&str> = sim::Input::ACTIONS.iter().map(|a| a.0).collect();
         let consistent = s.best.keys().all(|k| ids.contains(k))

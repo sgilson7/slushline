@@ -31,5 +31,7 @@ export function keyName(code) {
   if (side) return `${side[2]} ${side[1] === 'Control' ? 'Ctrl' : side[1]}`;
   const punct = { Semicolon: ';', Comma: ',', Period: '.', Slash: '/', Quote: "'", BracketLeft: '[', BracketRight: ']', Minus: '-', Equal: '=', Backquote: '`', Backslash: '\\', Space: 'Space' };
   if (code in punct) return punct[code];
+  const arrows = { ArrowLeft: '\u2190', ArrowRight: '\u2192', ArrowUp: '\u2191', ArrowDown: '\u2193' };
+  if (code in arrows) return arrows[code];
   return code.replace(/^Key/, '').replace(/^Digit/, '').replace(/^Arrow/, '').replace(/^Numpad/, 'Numpad ');
 }

@@ -106,3 +106,11 @@ pub const MAX_SCORE: u32 = 100;
 /// Where a handle's pivot sits relative to its spout's nozzle, cm. It is
 /// drawn there; nothing in the world touches it.
 pub const HANDLE_PIVOT: (i32, i32) = (0, 16);
+
+/// The belt's throttle (Sam, 2026-10-05): the mission's speed times a factor
+/// that the belt keys move by `BELT_STEP` a tick, between `BELT_MIN` and
+/// `BELT_MAX`. 1/120 a tick is from normal speed to double in two seconds.
+/// *(guesses until Sam plays them)*
+pub const BELT_MIN: Fx = Fx::ratio(1, 4);
+pub const BELT_MAX: Fx = Fx::int(2);
+pub const BELT_STEP: Fx = Fx::ratio(1, 120);

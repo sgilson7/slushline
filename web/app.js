@@ -82,8 +82,14 @@ function keyNames() {
 function keyValues() {
   const n = keyNames();
   const v = {};
-  n.forEach((name, i) => { v[`key.spout_${i + 1}`] = name; });
+  NUM.actions.forEach(([action], i) => { v[`key.${action}`] = n[i]; });
   return v;
+}
+
+// What Settings calls an action: the spouts by number, the belt by name.
+function actionLabel(action) {
+  const spout = action.match(/^spout_(\d)$/);
+  return spout ? t('settings.keys.actions.spout', { n: spout[1] }) : t(`settings.keys.actions.${action}`);
 }
 
 // --- tuning: ?tuning=0|1|2 -------------------------------------------------
@@ -159,6 +165,7 @@ function card(id) {
     ...m.conditions.map((c) => el('p', { class: 'condition' }, el('strong', {}, c.name), ' ', c.desc)),
     el('p', { class: 'try' }, t(m.try_key, { ...kv, keys_upper: keyNames().slice(0, m.spouts).join(', '), keys_lower: '' })),
     el('ul', { class: 'spouts' }, ...m.spout_labels.map((label, i) => el('li', {}, label, ' ', el('strong', {}, t('spout.key', { key: keyNames()[i] }))))),
+    el('p', {}, t('hud.belt_keys', kv)),
     el('div', { class: 'controls' },
       button(t('missions.start.label'), () => startMission(id), { id: 'start-mission' }),
       button(t('results.to_missions.label'), () => path(), { class: 'quiet', id: 'to-missions' })),
@@ -242,6 +249,7 @@ function hudStatic() {
   $('hud').replaceChildren(
     el('div', { id: 'hud-live' }),
     el('p', { id: 'hud-keys' }, t('hud.keys', { keys_upper: names.slice(0, line.spouts.length).join(', ') })),
+    run.game.is_replay() ? null : el('p', { id: 'hud-belt-keys' }, t('hud.belt_keys', keyValues())),
     el('ul', { class: 'spouts' }, ...line.spouts.map((s, i) => el('li', {}, labels[i] || null, labels[i] ? ' ' : null, el('strong', {}, t('spout.key', { key: names[i] }))))),
   );
   hudLive();
@@ -252,7 +260,7 @@ function hudLive() {
   const h = JSON.parse(run.game.hud());
   const live = $('hud-live');
   if (!live) return;
-  const parts = [h.cup, h.order, h.score, h.waste].filter(Boolean);
+  const parts = [h.cup, h.order, h.score, h.waste, h.belt].filter(Boolean);
   const text = parts.join('\u0000');
   if (live.dataset.text === text) return;
   live.dataset.text = text;
@@ -314,7 +322,7 @@ async function loadReplay() {
 
 function how() {
   const values = { ...keyValues(), swell_s: core.swell_seconds(tuning()), max_score: NUM.max_score };
-  const topics = ['spout', 'lead', 'tail', 'swell', 'order', 'score', 'pass', 'blend', 'files'];
+  const topics = ['spout', 'lead', 'tail', 'swell', 'belt', 'order', 'score', 'pass', 'blend', 'files'];
   screen(
     el('h2', {}, t('menu.how.label')),
     ...topics.map((k) => el('section', { class: 'how' }, el('h3', {}, t(`how.${k}.title`)), el('p', {}, t(`how.${k}.body`, values)))),
@@ -326,8 +334,8 @@ function how() {
 
 function settings(message = null) {
   const b = bindings();
-  const rows = NUM.actions.map(([action], i) => el('li', {},
-    el('span', {}, t('settings.keys.actions.spout', { n: i + 1 })), ' ',
+  const rows = NUM.actions.map(([action]) => el('li', {},
+    el('span', {}, actionLabel(action)), ' ',
     button(keys.keyName(b[action]), () => waitForKey(action), { id: `bind-${action}`, class: 'quiet key', 'data-value': '1' }),
   ));
   const short = el('input', { type: 'checkbox', id: 'short-codes', checked: options().short_codes });
@@ -379,8 +387,7 @@ window.addEventListener('keydown', (e) => {
     settings();
   } catch (err) {
     const why = JSON.parse(typeof err === 'string' ? err : String(err));
-    const n = Number(why.other.split('_')[1]);
-    settings(t(why.key, { key: keys.keyName(e.code), action: t('settings.keys.actions.spout', { n }) }));
+    settings(t(why.key, { key: keys.keyName(e.code), action: actionLabel(why.other) }));
   }
 }, true);
 

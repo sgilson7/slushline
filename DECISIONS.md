@@ -11,6 +11,13 @@ Why things are the way they are, one paragraph each. The full argument for D1 to
   - **Q4.** "The fluid physics movement system" is the fully simulated lever: a handle driven by a servo, with a spring (D7).
   - **Q5.** The MVP ends at gate 5. The second line, two players and online play come after it, with mission 12.
 - **2026-10-05, after the plan was written:** "dont stop working until the MVP is deployed on my github pages, you have free reign to create a github repo, with pages and deployments all allowed". This replaces the brief's stop after `PLAN.md` (Part B) and its no-push rule (Part G) for this run, and the house rule that a milestone waits for Sam to see the last gate. Checks that need Sam's hands are carried as notebook rows with status *the human's*.
+- **2026-10-05, after the MVP deployed:** "for mission 2, 20% is too tight. also the fill meter for each cup should be underneath the cup. you should also have controls on the other hand to speed up or slow down the conveyer belt". The agent decided:
+  - Mission 2's waste limit is 35 %. The other missions keep 20 %.
+  - The order bar (the fill meter) is drawn under each cup, below the belt.
+  - The belt has a throttle: holding one key speeds it up, the other slows it, and it keeps the speed it is left at, from a quarter of the mission's speed to double (`sim::balance::BELT_MIN`, `BELT_MAX`, `BELT_STEP`; one second held moves it by half its speed). Input bits 7 and 8, keeping bits 4 and 5 reserved for moving a spout. SIM_VERSION 3, so earlier replays are refused with their sentence.
+  - The spouts move to A, S, D, F (one hand) and the belt is on ← and → (the other), all rebindable. A save from before the belt keys loads, keeping its bindings and taking the belt keys' defaults.
+  - New strings, marked review: `settings.keys.actions.belt_slower`, `.belt_faster`, `hud.belt`, `hud.belt_keys`, `how.belt.*`.
+  - This replaces the brief's rule that no key changes the belt; `CLAUDE.md` says so.
 - **Questions 6 to 12** were taken at the brief's recommendation by the agent, for Sam to overrule (PLAN.md §8).
 
 ## The build

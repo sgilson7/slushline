@@ -15,17 +15,24 @@ impl Input {
     pub const RESERVED: u16 = (1 << 4) | (1 << 5);
     /// "Start", from the page's button or a pilot.
     pub const READY: u16 = 1 << 6;
-    /// Every bit that may be set: the spouts and ready.
-    pub const VALID: u16 = 0x0F | Self::READY;
+    /// The belt's throttle, on the other hand from the spouts (Sam,
+    /// 2026-10-05): held, the belt speeds up or slows down, and it keeps the
+    /// speed it is left at. Bits 4 and 5 stay reserved for moving a spout.
+    pub const BELT_FASTER: u16 = 1 << 7;
+    pub const BELT_SLOWER: u16 = 1 << 8;
+    /// Every bit that may be set: the spouts, ready, and the belt.
+    pub const VALID: u16 = 0x0F | Self::READY | Self::BELT_FASTER | Self::BELT_SLOWER;
 
     /// The actions a key can be bound to, in the order Settings lists them.
     /// The page reads these names and bits from here rather than keeping a
     /// copy (CLAUDE.md: the page keeps no constant of its own).
-    pub const ACTIONS: [(&'static str, u16); 4] = [
+    pub const ACTIONS: [(&'static str, u16); 6] = [
         ("spout_1", Self::SPOUT[0]),
         ("spout_2", Self::SPOUT[1]),
         ("spout_3", Self::SPOUT[2]),
         ("spout_4", Self::SPOUT[3]),
+        ("belt_slower", Self::BELT_SLOWER),
+        ("belt_faster", Self::BELT_FASTER),
     ];
 
     pub const fn has(self, bit: u16) -> bool {

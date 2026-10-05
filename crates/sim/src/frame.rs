@@ -28,6 +28,8 @@ pub struct LineView {
     pub lid_x: i32,
     pub end_x: i32,
     pub travel: i32,
+    /// The throttle as a percentage of the mission's belt speed.
+    pub belt_pct: u32,
     pub capacity: u32,
     pub spouts: Vec<SpoutView>,
     pub cups: Vec<CupView>,
@@ -81,6 +83,7 @@ pub fn frame(w: &World) -> Frame {
             lid_x: line.lid_x.0,
             end_x: line.end_x.0,
             travel: ls.travel.0,
+            belt_pct: ((ls.belt_factor.0 as i64 * 100 + 2048) >> 12) as u32,
             capacity: line.cup.capacity,
             spouts: line
                 .spouts

@@ -8,7 +8,7 @@
     {"id": "m_tail", "chapter": "pouring", "teaches": ["K02"], "builds_on": ["K01_K02"], "requires": [{"pass": "m_first_pour"}],
      "line": {"belt": "steady", "cup": "small", "spouts": ["cola"]},
      "orders": [{"count": 5, "parts": {"cola": 1}}],
-     "conditions": [], "pass": {"average": 60, "waste_pct": 20}},
+     "conditions": [], "pass": {"average": 60, "waste_pct": 35}},
     {"id": "m_two_spouts", "chapter": "orders", "teaches": ["K03"], "builds_on": ["K02_K03"], "requires": [{"pass": "m_tail"}],
      "line": {"belt": "steady", "cup": "regular", "spouts": ["cola", "lemon"]},
      "orders": [{"count": 1, "parts": {"cola": 1}}, {"count": 1, "parts": {"lemon": 1}}, {"count": 1, "parts": {"cola": 1}}, {"count": 1, "parts": {"lemon": 1}}],
