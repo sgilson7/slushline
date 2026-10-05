@@ -1,0 +1,9 @@
+{
+  "_about": "Default key bindings, as KeyboardEvent.code values (PLANNING-BRIEF 0.1). The action names are sim::Input::ACTIONS; the page reads the bits from there. A player's own bindings live in the save file.",
+  "solo": {
+    "spout_1": "KeyD",
+    "spout_2": "KeyF",
+    "spout_3": "KeyJ",
+    "spout_4": "KeyK"
+  }
+}

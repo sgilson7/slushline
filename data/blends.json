@@ -1,0 +1,6 @@
+{
+  "_about": "A blend spout pours single-flavor units in a fixed repeating order built from its parts, in the order listed (D10; H4). A blend has no flavor of its own.",
+  "blends": [
+    { "id": "cherry_cola", "parts": [["cherry", 1], ["cola", 1]] }
+  ]
+}

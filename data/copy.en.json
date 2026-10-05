@@ -1,0 +1,488 @@
+{
+  "_about": "Every string a player reads (PLANNING-BRIEF 0.9). Written from 'Game text' against TONE.md; the build implements each exactly. Keys starting with _ are instructions and are never shown. A string the build needed and this file lacked carries \"review\": \"new\" beside it.",
+  "_placeholders": {
+    "game": "`game.name`",
+    "hash": "the build hash stamped by `packaging/package-web.sh`",
+    "key, key.spout_1, key.spout_2, key.spout_3, key.spout_4": "the current binding for that handle, from `data/controls.json` or the player's save",
+    "keys_upper, keys_lower": "the bound keys of that line, joined in spout order",
+    "flavor, flavor_mid, short": "`flavors.<id>.name`, `.name_mid` and `.short`",
+    "blend": "`blends.<id>.name`",
+    "pattern": "`patterns.<id>`, for the pattern `data/palette.json` gives that flavor",
+    "recipe, a, b, c, a_parts, b_parts, c_parts": "built by core from an order or a blend with the `recipe.*` strings",
+    "n, count, mission": "the cup's or spout's number, the cups in the order, and `missions.list.<id>.name`",
+    "score, max_score, avg, win_avg, lose_avg": "`sim::score`",
+    "pass, waste_limit_pct": "that mission's `pass` in `data/missions.json`",
+    "fill_pct, waste_pct, cause": "computed by core for the result; `{cause}` is `results.cause.<id>`",
+    "swell_s": "the swell time in `sim::balance`, converted to seconds by core",
+    "upper_name, lower_name, winner": "`lines.upper.name` or `lines.lower.name`",
+    "delay_ms, tick, code, theirs, ours, file_name, error, action": "as in Vagrancy's copy file"
+  },
+  "_depends": {
+    "how.spout.body, how.tail.body": "D7, D8, and Part I question 4",
+    "how.swell.body": "D6",
+    "how.score.body": "D11",
+    "how.pass.body, missions.pass, results.mission.fail_waste": "D11, and Part I question 7",
+    "how.blend.body, spout.blend": "D10, and Part I question 3",
+    "missions.list.m_two_one.try, m_cherry_cola.try, m_more_cola.try, m_lemon_cherry_cola.try": "That mission's line and orders in data/missions.json",
+    "missions.list.m_rail.try, conditions.rail.desc": "D13, H8",
+    "local.intro, results.versus.*": "D15, and Part I question 6",
+    "game.name, flavors.*, blends.*": "Part I questions 1 and 2"
+  },
+  "_universals": {
+    "how.score.body": {
+      "word": "nothing",
+      "test": "slush_past_its_share_scores_nothing"
+    },
+    "missions.list.m_more_cola.try": {
+      "word": "only",
+      "test": "every_order_can_reach_full_marks_from_its_line"
+    },
+    "replay.error.damaged": {
+      "word": "nothing",
+      "test": "a_damaged_replay_is_refused_rather_than_half_loaded",
+      "_note": "carried from Vagrancy; universal entry added by the agent"
+    },
+    "replay.error.format": {
+      "word": "nothing",
+      "test": "a_file_that_is_not_a_replay_is_refused",
+      "_note": "carried from Vagrancy; universal entry added by the agent"
+    },
+    "settings.keys.desc": {
+      "word": "cannot",
+      "test": "two_actions_cannot_share_a_key",
+      "_note": "carried from Vagrancy; universal entry added by the agent"
+    },
+    "settings.save.error.damaged": {
+      "word": "nothing",
+      "test": "a_damaged_save_is_refused_rather_than_half_loaded",
+      "_note": "carried from Vagrancy; universal entry added by the agent"
+    },
+    "settings.save.error.format": {
+      "word": "nothing",
+      "test": "a_file_that_is_not_a_save_is_refused",
+      "_note": "carried from Vagrancy; universal entry added by the agent"
+    },
+    "settings.save.error.newer": {
+      "word": "nothing",
+      "test": "a_save_from_a_newer_version_is_refused",
+      "_note": "carried from Vagrancy; universal entry added by the agent"
+    }
+  },
+  "_glossary": {
+    "slush": {
+      "means": "what a spout pours",
+      "not": [
+        "slushie",
+        "slurry",
+        "ice",
+        "drink"
+      ]
+    },
+    "cup": {
+      "means": "what the belt carries and the lid scores",
+      "not": [
+        "glass",
+        "drink"
+      ]
+    },
+    "order": {
+      "means": "the flavors a cup should hold and their shares",
+      "not": [
+        "recipe",
+        "ticket",
+        "request"
+      ]
+    },
+    "share": {
+      "means": "how much of a cup an order gives one flavor",
+      "not": [
+        "ratio",
+        "portion",
+        "fraction"
+      ]
+    },
+    "spout": {
+      "means": "where slush comes out",
+      "not": [
+        "tap",
+        "dispenser",
+        "nozzle"
+      ]
+    },
+    "handle": {
+      "means": "what a key pulls to open a spout",
+      "not": [
+        "lever",
+        "crank"
+      ]
+    },
+    "belt": {
+      "means": "what moves the cups",
+      "not": [
+        "conveyor"
+      ]
+    },
+    "line": {
+      "means": "one belt with its spouts",
+      "not": [
+        "lane",
+        "station"
+      ]
+    },
+    "lid": {
+      "means": "where a cup is scored",
+      "not": [
+        "cap",
+        "judge"
+      ]
+    },
+    "blend": {
+      "means": "a spout that pours more than one flavor",
+      "not": [
+        "mix",
+        "combo"
+      ]
+    },
+    "waste": {
+      "means": "slush that lands outside a cup",
+      "not": [
+        "spill",
+        "mess"
+      ]
+    },
+    "mark": {
+      "means": "the average a mission asks for",
+      "not": [
+        "threshold",
+        "target"
+      ]
+    },
+    "mission": {
+      "means": "one set of orders on one line",
+      "not": [
+        "level",
+        "stage"
+      ]
+    },
+    "run": {
+      "means": "one play of a mission or a match, as a replay holds it",
+      "not": [
+        "recording",
+        "attempt"
+      ]
+    }
+  },
+  "game": {
+    "name": "Slushline",
+    "loading": "Loading {game}…",
+    "loading_error": "The game could not load. Reload the page and try again.",
+    "fallback": "This game requires JavaScript and WebAssembly.",
+    "canvas_name": "{game} game",
+    "back_link": "Tools and games",
+    "build": "Build {hash}"
+  },
+  "menu": {
+    "missions": {
+      "label": "Play the missions",
+      "desc": "Fill each mission's orders to open the next one."
+    },
+    "local": {
+      "label": "Play at one keyboard",
+      "desc": "Two players share this keyboard, and each one runs a line."
+    },
+    "online": {
+      "label": "Play a friend online",
+      "desc": "One of you hosts a match and the other joins it."
+    },
+    "replay": {
+      "label": "Load a replay",
+      "desc": "Open a replay file and watch that run again."
+    },
+    "how": {
+      "label": "Read how to play"
+    },
+    "settings": {
+      "label": "Open settings"
+    },
+    "back": {
+      "label": "Go back to the menu"
+    }
+  },
+  "how": {
+    "spout": {
+      "title": "Spouts and handles",
+      "body": "Hold {key.spout_1} to pull the handle on the first spout. The spout opens further the longer you hold the key, until it is fully open. Let go and a spring swings the handle shut."
+    },
+    "lead": {
+      "title": "The belt keeps moving",
+      "body": "Start pouring before the cup is under the spout, because the slush takes a moment to fall and the belt carries the cup along while it does."
+    },
+    "tail": {
+      "title": "The tail",
+      "body": "Let go before the cup looks full. The handle takes a moment to swing shut, and the slush already in the air still has to land."
+    },
+    "swell": {
+      "title": "Slush swells",
+      "body": "Slush grows for about {swell_s} seconds after it leaves the spout, so a cup keeps rising after you let go. Stop short of the rim and let the slush fill the rest."
+    },
+    "order": {
+      "title": "Orders",
+      "body": "Each cup carries its order as a bar above it. The bar shows which flavors the cup should hold and how much of the cup each one gets, which is that flavor's share. Each flavor has its own pattern and short name, so the bar can be read without color."
+    },
+    "score": {
+      "title": "How a cup is scored",
+      "body": "A cup is scored out of {max_score} when it reaches the lid. Slush counts toward the score while its flavor is still under its share. Slush past that share, and slush of a flavor the order did not ask for, takes up room and adds nothing."
+    },
+    "pass": {
+      "title": "Passing a mission",
+      "body": "A mission's score is the average of its cups. To pass, reach the mission's mark and keep your waste under its limit. Waste is slush that lands outside a cup."
+    },
+    "blend": {
+      "title": "Blends",
+      "body": "A blend spout pours more than one flavor, in shares that do not change. The label on the spout lists them. When an order's shares differ from the blend's, pour part of the cup from the blend and the rest from a single-flavor spout."
+    },
+    "files": {
+      "title": "Replays and save files",
+      "body": "Download a run as a replay from its result screen. Loading that file plays the same run again, input for input. Settings has the save file, which holds your progress through the missions."
+    }
+  },
+  "flavors": {
+    "cola": {
+      "name": "Cola",
+      "name_mid": "cola",
+      "short": "Co"
+    },
+    "cherry": {
+      "name": "Cherry",
+      "name_mid": "cherry",
+      "short": "Ch"
+    },
+    "lemon": {
+      "name": "Lemon",
+      "name_mid": "lemon",
+      "short": "Le"
+    }
+  },
+  "blends": {
+    "cherry_cola": {
+      "name": "Cherry cola",
+      "name_mid": "cherry cola"
+    }
+  },
+  "patterns": {
+    "solid": "solid",
+    "stripes": "diagonal stripes",
+    "dots": "dots"
+  },
+  "spout": {
+    "single": "{flavor} ({short}), {pattern}",
+    "blend": "{blend}: {recipe}",
+    "key": "Hold {key}"
+  },
+  "recipe": {
+    "one": "{flavor_mid}",
+    "two_equal": "equal shares of {a} and {b}",
+    "two": "{a} and {b}, {a_parts} to {b_parts}",
+    "three": "{a}, {b} and {c}, {a_parts} to {b_parts} to {c_parts}"
+  },
+  "hud": {
+    "order": "Order: {recipe}",
+    "cup": "Cup {n} of {count}",
+    "score": "{score} of {max_score}",
+    "waste": "Waste: {waste_pct} percent",
+    "keys": "Your keys, in spout order: {keys_upper}.",
+    "delay": "Input delay: {delay_ms} ms"
+  },
+  "missions": {
+    "order": {
+      "same": "Fill {count} cups with {recipe}.",
+      "mixed": "Fill {count} cups. Each cup carries its own order."
+    },
+    "pass": "To pass, average {pass} of {max_score} and keep waste under {waste_limit_pct} percent.",
+    "pass_no_limit": "To pass, average {pass} of {max_score}.",
+    "locked": "Pass {mission} to open this mission.",
+    "best": "Your best: {avg} of {max_score}.",
+    "start": {
+      "label": "Start the mission"
+    },
+    "list": {
+      "m_first_pour": {
+        "name": "First pour",
+        "try": "Hold {key.spout_1} while the cup is under the spout. Let go as the slush nears the rim, because slush that goes over it is wasted."
+      },
+      "m_tail": {
+        "name": "The tail",
+        "try": "Let go earlier than looks right. The handle takes a moment to swing shut, and these cups are small enough for that last slush to overfill them."
+      },
+      "m_two_spouts": {
+        "name": "Two spouts",
+        "try": "Read each cup's order before the cup reaches the first spout, so you know which handle to pull."
+      },
+      "m_half": {
+        "name": "Half and half",
+        "try": "Fill the cup halfway at the first spout and finish it at the second. A cup that is full when it reaches the second spout has no room left, and what you pour there is wasted."
+      },
+      "m_two_one": {
+        "name": "Two to one",
+        "try": "Stop each pour where its share ends on the order bar. The first share is the larger one here, so the first pour is the longer one."
+      },
+      "m_third": {
+        "name": "A new spout",
+        "try": "Let a cup pass a spout its order does not name, because a flavor the order did not ask for takes up room. {key.spout_3} pulls the new handle."
+      },
+      "m_three": {
+        "name": "Cola, cherry and lemon",
+        "try": "Stop each pour where its share ends on the order bar. Each spout gets one pass at the cup, and the belt does not go back."
+      },
+      "m_cherry_cola": {
+        "name": "Cherry cola",
+        "try": "Read the label on the second spout. It now pours cherry and cola together, in the shares the label lists."
+      },
+      "m_more_cola": {
+        "name": "More cola than cherry",
+        "try": "Work out how much of the cup the blend should fill, then finish with cola. Cherry now reaches a cup only through the blend, and it brings cola with it."
+      },
+      "m_rail": {
+        "name": "A spout on a rail",
+        "try": "Pull the handle as the sliding spout comes over the cup, and let go before it slides past. Slush falls straight down from wherever the spout is."
+      },
+      "m_lemon_cherry_cola": {
+        "name": "Lemon cherry cola",
+        "try": "Fill half the cup from the blend, which covers the cherry and the cola together. The sliding spout pours the rest."
+      },
+      "m_two_lines": {
+        "name": "Two lines",
+        "try": "Run the upper line with {keys_upper} and the lower line with {keys_lower}. Watch whichever cup is closest to a spout, since that one needs you next."
+      }
+    }
+  },
+  "conditions": {
+    "rail": {
+      "name": "A spout on a rail",
+      "desc": "One spout slides back and forth above the belt."
+    },
+    "second_line": {
+      "name": "A second line",
+      "desc": "A second belt runs below the first, with its own spouts and its own keys."
+    },
+    "jet": {
+      "name": "A rocket nozzle",
+      "desc": "One spout fires a straight jet with no fall time, and the jet pushes what it hits."
+    }
+  },
+  "results": {
+    "cup": {
+      "line": "Cup {n}: {score} of {max_score}.",
+      "full": "The cup was full and each flavor matched its share.",
+      "short": "The cup was {fill_pct} percent full.",
+      "over": "The cup held more {flavor_mid} than its share.",
+      "wrong": "The cup held {flavor_mid}, which its order did not ask for."
+    },
+    "mission": {
+      "pass": "You passed. Your cups averaged {avg} of {max_score}, and the mark is {pass}.",
+      "fail_score": "You did not pass. Your cups averaged {avg} of {max_score}, and the mark is {pass}.",
+      "fail_waste": "You did not pass. {waste_pct} percent of your slush landed outside a cup, and the limit is {waste_limit_pct} percent.",
+      "cause": "Most of the lost points came from {cause}."
+    },
+    "cause": {
+      "empty": "room left empty",
+      "over": "flavors poured past their share",
+      "wrong": "flavors the order did not ask for"
+    },
+    "versus": {
+      "win": "{winner} won, {win_avg} to {lose_avg}.",
+      "tie": "The two lines tied at {avg}."
+    },
+    "next": {
+      "label": "Go to the next mission"
+    },
+    "again": {
+      "label": "Run the mission again"
+    },
+    "rematch": {
+      "label": "Play another match"
+    },
+    "to_missions": {
+      "label": "Go back to the missions"
+    },
+    "replay": {
+      "label": "Download replay"
+    },
+    "key_hint": "Press {key} to choose the first button."
+  },
+  "lines": {
+    "upper": {
+      "name": "Upper line"
+    },
+    "lower": {
+      "name": "Lower line"
+    }
+  },
+  "local": {
+    "intro": "Two players share this keyboard. {upper_name} uses {keys_upper}, and {lower_name} uses {keys_lower}. Both lines get the same orders.",
+    "start": {
+      "label": "Start the match"
+    },
+    "keyboard_limit": "Some keyboards stop registering new keys when several are held at once. If a handle stops responding, try different key bindings in Settings."
+  },
+  "settings": {
+    "look": {
+      "title": "Flavor patterns",
+      "short": {
+        "label": "Show short names on the slush",
+        "desc": "Draws each flavor's short name on its slush in the cups, as it already appears on the spouts and the order bars."
+      }
+    },
+    "keys": {
+      "actions": {
+        "spout": "Pull the handle on spout {n}"
+      },
+      "solo": {
+        "heading": "Keys for missions and online matches"
+      },
+      "title": "Key bindings",
+      "desc": "Choose a key for each action. Two actions cannot share a key.",
+      "conflict": "{key} is already used for {action}. Choose a different key, or change that binding first.",
+      "reset": {
+        "label": "Restore the default keys"
+      }
+    },
+    "save": {
+      "title": "Save file",
+      "download": {
+        "label": "Download save file",
+        "desc": "This writes your progress through the missions and your settings to a file that you keep."
+      },
+      "load": {
+        "label": "Load save file"
+      },
+      "loaded": "The save file was loaded.",
+      "autosave": "The game also keeps a copy in this browser so that you can continue after a reload. Clearing the site's data removes it.",
+      "error": {
+        "format": "This file is not a {game} save file, so nothing was loaded.",
+        "newer": "This save file was written by a newer version of the game. It is save version {theirs}, and this build reads up to version {ours}. Nothing was loaded.",
+        "damaged": "This save file is incomplete or damaged, so nothing was loaded. Your current progress is unchanged."
+      }
+    },
+    "motion": {
+      "label": "Reduce motion"
+    }
+  },
+  "replay": {
+    "download": {
+      "label": "Download replay"
+    },
+    "load": {
+      "label": "Load a replay"
+    },
+    "playing": "You are watching a replay. Pressing keys does not change it.",
+    "stop": {
+      "label": "Stop the replay"
+    },
+    "error": {
+      "format": "This file is not a {game} replay, so nothing was loaded.",
+      "sim": "This replay was recorded with simulation version {theirs}, and this build runs version {ours}, so the replay was not loaded.",
+      "damaged": "This replay file is incomplete or damaged, so nothing was loaded."
+    }
+  }
+}

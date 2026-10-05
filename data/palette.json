@@ -1,0 +1,20 @@
+{
+  "_about": "The only place a color is written (D17). Flavors carry a pattern and a brightness as well as a hue (PLANNING-BRIEF 0.5); crates/content/tests/look.rs checks every pair. packaging/package-web.sh turns the top-level values into CSS variables.",
+  "paper": "#EFE8D8",
+  "panel": "#E4DBC6",
+  "line": "#2B2A28",
+  "muted": "#6B6457",
+  "focus": "#3E4A89",
+  "belt": "#8F8370",
+  "belt_mark": "#6B6457",
+  "machine": "#C9BEA6",
+  "cup": "#FBF8F1",
+  "lid": "#6B6457",
+  "pattern_ink": "#2B2A28",
+  "pattern_ink_on_dark": "#EFE8D8",
+  "flavors": {
+    "cola": { "fill": "#2B2A28" },
+    "cherry": { "fill": "#D55E00" },
+    "lemon": { "fill": "#F0E442" }
+  }
+}

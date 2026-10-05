@@ -1,0 +1,8 @@
+{
+  "_about": "Each flavor's short code and pattern (PLANNING-BRIEF 0.5). Its name is in the copy file under flavors.<id>, its fill in palette.json under flavors.<id>. The order here is the flavor's number in sim.",
+  "flavors": [
+    { "id": "cola", "pattern": "solid" },
+    { "id": "cherry", "pattern": "stripes" },
+    { "id": "lemon", "pattern": "dots" }
+  ]
+}

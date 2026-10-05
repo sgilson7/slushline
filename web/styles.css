@@ -1,0 +1,11 @@
+/* Colors are variables written from data/palette.json by package-web.sh;
+   this file names none of its own (crates/content/tests/look.rs). */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; background: var(--paper); color: var(--line); }
+body { font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+#app { max-width: 1240px; margin: 0 auto; padding: 16px; }
+#masthead h1 { margin: 0 0 8px; font-size: 1.6rem; font-weight: 650; letter-spacing: 0.01em; }
+#status, #loading-error { margin: 8px 0; }
+#foot { display: flex; justify-content: space-between; gap: 16px; margin-top: 24px; color: var(--muted); font-size: 0.9rem; }
+#foot a { color: var(--focus); }

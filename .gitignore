@@ -1,0 +1,5 @@
+/reference/
+/target/
+/dist/
+/.venv-test/
+.DS_Store

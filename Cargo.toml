@@ -1,0 +1,58 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/sim",
+    "crates/content",
+    "crates/pilot",
+    "crates/wasm",
+    "crates/lab",
+]
+
+[workspace.package]
+edition = "2021"
+rust-version = "1.88"
+
+[workspace.dependencies]
+sim = { path = "crates/sim" }
+content = { path = "crates/content" }
+pilot = { path = "crates/pilot" }
+
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+# Default features drag in heapless, which nothing here uses; `alloc` is what
+# `to_allocvec` needs, and `to_allocvec` is what `checksum()` hashes.
+# (Floodline's Cargo.toml, by way of Vagrancy's.)
+postcard = { version = "1.1", default-features = false, features = ["alloc"] }
+serde_json = "1.0"
+# Pinned exactly: the CLI on the build machine and in CI must be this version,
+# and package-web.sh reads it back out of Cargo.lock to check.
+wasm-bindgen = "=0.2.127"
+
+# Vagrancy's profiles, comments and all, because the reasoning is the part
+# worth keeping.
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true
+# An integer overflow must not mean two different things in two builds.
+# Rust checks overflow in debug and wraps in release; a native test build is
+# debug and the browser is always release wasm, so without this an overflow in
+# `sim` panics on one and silently wraps on the other. Here the likeliest
+# place is a fixed-point product in a crowded cup (PLANNING-BRIEF Part E).
+overflow-checks = true
+# Deliberately NOT panic = "abort": the browser would then report only
+# "unreachable" with no hint of what broke.
+
+# Test binaries carry line tables and nothing else (Floodline).
+[profile.test]
+debug = "line-tables-only"
+opt-level = 2
+
+# Everything is optimised under test: the slush tests step thousands of units
+# for thousands of ticks, and a suite nobody waits for is a suite nobody runs.
+# `overflow-checks` and `debug-assertions` are independent of `opt-level`.
+[profile.test.package."*"]
+opt-level = 2
+
+[profile.dev.package."*"]
+opt-level = 2
