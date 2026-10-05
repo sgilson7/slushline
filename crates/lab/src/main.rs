@@ -12,6 +12,48 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str) {
         Some("recon-m1") => recon_m1(),
+        Some("recon-m2") => recon_m2(),
+        Some("splash") => {
+            for hold in [20u32, 30, 40] {
+                let mut w = World::new(content::setup::standing(1, sim::balance::DEFAULT_TUNING));
+                for t in 0..400 {
+                    w.step([Input(if t < hold { Input::SPOUT[0] } else { 0 }), Input::NONE]);
+                }
+                let ls = w.lines[0].as_ref().unwrap();
+                let inside: u32 = w.in_cup_counts(0)[0].iter().sum();
+                println!("held {hold}: emitted {} inside {inside} wasted {} loose {}", ls.emitted, ls.wasted, w.units.len() as u32 - inside);
+            }
+            // Where the pilot's waste lands, on the first mission.
+            let m = content::missions::mission("m_first_pour").unwrap();
+            let mut w = World::new(m.setup(1, sim::balance::DEFAULT_TUNING));
+            let mut p = pilot::Pilot::new(pilot::Kind::Timer);
+            let mut xs = Vec::new();
+            let mut held = 0;
+            while !w.done() {
+                let i = p.input(&w, 0);
+                if i.0 != 0 { held += 1; }
+                w.step([i, Input::NONE]);
+                for e in &w.events {
+                    if let sim::world::Event::Waste { x, .. } = e {
+                        let c = w.lines[0].as_ref().unwrap().cups.iter().map(|c| (x.0 - c.x.0) / 4096).min_by_key(|d| d.abs()).unwrap();
+                        xs.push(c);
+                    }
+                }
+            }
+            xs.sort();
+            println!("held {held} ticks; waste offsets from nearest cup center (cm): {:?}", xs);
+        }
+        Some("play") => {
+            for m in content::missions::missions() {
+                let mut w = World::new(m.setup(1, sim::balance::DEFAULT_TUNING));
+                let mut p = pilot::Pilot::new(pilot::Kind::Timer);
+                while !w.done() && w.tick < 20_000 {
+                    pilot::drive(&mut w, &mut p);
+                }
+                let o = content::missions::outcome(&m, &w);
+                println!("{:22} ticks {:5} scores {:?} avg {:3} waste {:2}% passed {} cause {:?}", m.id, w.tick, o.scores, o.average, o.waste_pct, o.passed, o.cause);
+            }
+        }
         Some("golden") => golden(),
         Some("bench") => {
             let mut w = loaded(2000, 200, sim::balance::DEFAULT_TUNING);
@@ -151,6 +193,68 @@ fn recon_m1() {
             k += 1;
         }
         println!("| {tuning} | {k}{} |", if k >= 3000 { " (did not settle)" } else { "" });
+    }
+}
+
+fn recon_m2() {
+    use sim::world::Handle;
+    println!("# M2.0 recon\n");
+    println!("## The tail: units out after the key is let go, from full travel held for a second\n");
+    println!("| tuning | spring rad/tick² | units after release | ticks to close |\n|---|---|---|---|");
+    for tuning in 0..3u8 {
+        let mut w = World::new(content::setup::standing(1, tuning));
+        w.lines[0].as_mut().unwrap().handles[0] = Handle::full();
+        for _ in 0..60 {
+            w.step([Input(Input::SPOUT[0]), Input::NONE]);
+        }
+        let before = w.lines[0].as_ref().unwrap().emitted;
+        let mut k = 0;
+        while w.lines[0].as_ref().unwrap().handles[0].opening().0 > 0 && k < 600 {
+            w.step([Input::NONE; 2]);
+            k += 1;
+        }
+        let after = w.lines[0].as_ref().unwrap().emitted;
+        let spring = sim::balance::tuning(tuning).spring;
+        println!("| {tuning} | {:.4} | {} | {k} |", spring.0 as f64 / 4096.0, after - before);
+    }
+
+    println!("\n## Spill from a full cup carried by the belt\n");
+    println!("A standing regular cup overfilled for 110 ticks and left 300 to settle, then carried 400 cm. Units lost on the way.\n");
+    println!("| belt | cm/s | units in the cup before | units lost |\n|---|---|---|---|");
+    let d = content::setup::line_def();
+    for belt in ["slow", "steady", "quick"] {
+        let mut l = content::setup::line(&["cola"], "regular", belt, vec![content::setup::order(&[("cola", 1)])]);
+        let speed = l.belt.speed;
+        l.belt.speed = Fx(0);
+        l.belt.schedule = vec![(410, speed)];
+        l.first_x = l.spouts[0].x;
+        l.lid_x = Fx::int(10_000);
+        l.end_x = Fx::int(10_000);
+        let mut w = World::new(content::setup::setup_of(1, sim::balance::DEFAULT_TUNING, l));
+        for t in 0..410 {
+            w.step([Input(if t < 110 { Input::SPOUT[0] } else { 0 }), Input::NONE]);
+        }
+        let before: u32 = w.in_cup_counts(0)[0].iter().sum();
+        let wasted0 = w.lines[0].as_ref().unwrap().wasted;
+        let ticks = (400 * 4096 / speed.0.max(1)) as u32;
+        for _ in 0..ticks {
+            w.step([Input::NONE; 2]);
+        }
+        let after: u32 = w.in_cup_counts(0)[0].iter().sum();
+        let lost = w.lines[0].as_ref().unwrap().wasted - wasted0;
+        println!("| {belt} | {} | {before} | {lost} (in cup after: {after}) |", d.belts[belt]);
+    }
+
+    println!("\n## Encoding and hashing the world\n");
+    println!("| units | µs per checksum (mean of 200) |\n|---|---|");
+    for n in [500usize, 2000] {
+        let w = loaded(n, 200, sim::balance::DEFAULT_TUNING);
+        let t0 = Instant::now();
+        let mut x = 0u64;
+        for _ in 0..200 {
+            x ^= w.checksum();
+        }
+        println!("| {n} | {:.1} |{}", t0.elapsed().as_secs_f64() * 1e6 / 200.0, if x == 1 { " " } else { "" });
     }
 }
 

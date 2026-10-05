@@ -99,7 +99,11 @@ fn a_filled_cup_comes_to_rest() {
     let mut settle = Vec::new();
     for tuning in 0..3u8 {
         let mut w = World::new(standing(1, tuning));
-        for _ in 0..70 {
+        // Filled, not overfilled: let go when what is out plus the tail
+        // (15 units at the default spring, analysis/recon-m2.md) is the
+        // cup's capacity.
+        let cap = w.line(0).cup.capacity;
+        while w.lines[0].as_ref().unwrap().emitted + 15 < cap {
             w.step([Input(Input::SPOUT[0]), Input::NONE]);
         }
         for _ in 0..60 {

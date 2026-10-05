@@ -2,15 +2,33 @@
   "_about": "Where things are on a line, in whole cm (x right, y up; the floor is y = 0). Belt speeds are cm per second. Spout places depend on how many spouts the line has.",
   "belt_y": 50,
   "spout_y": 172,
-  "first_x": -40,
-  "spacing": 120,
+  "first_x": -30,
+  "spacing": 100,
   "lid_x": 440,
   "end_x": 500,
   "spout_x": {
-    "1": [190],
-    "2": [150, 300],
-    "3": [120, 230, 340],
-    "4": [100, 185, 270, 355]
+    "1": [
+      190
+    ],
+    "2": [
+      150,
+      300
+    ],
+    "3": [
+      120,
+      230,
+      340
+    ],
+    "4": [
+      100,
+      185,
+      270,
+      355
+    ]
   },
-  "belts": { "steady": 30, "slow": 21, "quick": 39 }
+  "belts": {
+    "steady": 18,
+    "slow": 12,
+    "quick": 24
+  }
 }

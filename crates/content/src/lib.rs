@@ -6,4 +6,6 @@
 pub mod copy;
 pub mod look;
 pub mod messages;
+pub mod missions;
+pub mod save;
 pub mod setup;

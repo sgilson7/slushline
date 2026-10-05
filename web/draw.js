@@ -38,7 +38,7 @@ export class Stage {
     const kind = this.flavors[f].pattern;
     if (kind === 'stripes') {
       g.strokeStyle = this.ink(f);
-      g.lineWidth = Math.max(1, r * 0.32);
+      g.lineWidth = Math.max(1, r * 0.26);
       g.beginPath();
       g.moveTo(x - r * 0.62, y + r * 0.62);
       g.lineTo(x + r * 0.62, y - r * 0.62);
@@ -46,7 +46,7 @@ export class Stage {
     } else if (kind === 'dots') {
       g.fillStyle = this.ink(f);
       g.beginPath();
-      g.arc(x, y, Math.max(1, r * 0.36), 0, Math.PI * 2);
+      g.arc(x, y, Math.max(0.9, r * 0.28), 0, Math.PI * 2);
       g.fill();
     }
   }
@@ -175,24 +175,31 @@ export class Stage {
     }
   }
 
+  // Slush in three passes: every unit's outline in the line color, a little
+  // larger than the unit; then every fill; then every pattern. Each unit has
+  // its outline, and where units touch the fills cover the inner edges, so
+  // the outline shows round the mass and a cup of lemon reads as one bright
+  // area. Outlined and dotted one by one at 4 to 5 pixels, lemon read darker
+  // than cherry in gray (SECOND-ORDER-M3).
   drawUnits(u) {
     const g = this.g;
+    const at = [];
     for (let k = 0; k < u.length; k += 5) {
-      const x = this.sx(u[k + 1]);
-      const y = this.sy(u[k + 2]);
-      const r = this.len(u[k + 3]);
-      const f = u[k + 4] & 255;
+      at.push([this.sx(u[k + 1]), this.sy(u[k + 2]), this.len(u[k + 3]), u[k + 4] & 255]);
+    }
+    g.fillStyle = this.pal.line;
+    for (const [x, y, r] of at) {
+      g.beginPath();
+      g.arc(x, y, r + 1, 0, Math.PI * 2);
+      g.fill();
+    }
+    for (const [x, y, r, f] of at) {
       g.fillStyle = this.fill(f);
       g.beginPath();
       g.arc(x, y, r, 0, Math.PI * 2);
       g.fill();
-      // Every unit has an outline in the line color: lemon sits close to the
-      // paper in brightness, and the outline is what separates them (0.5).
-      g.strokeStyle = this.pal.line;
-      g.lineWidth = 1;
-      g.stroke();
-      this.patternInCircle(f, x, y, r);
     }
+    for (const [x, y, r, f] of at) this.patternInCircle(f, x, y, r);
   }
 
   // The order bar over each cup: split by share, each segment in its

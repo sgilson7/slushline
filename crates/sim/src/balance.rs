@@ -36,6 +36,10 @@ pub const CONTACT_MARGIN: Fx = Fx::ratio(1, 2);
 /// set still (`slush::rest`). *(guess; M1.0)*
 pub const REST_SPEED: Fx = Fx::ratio(1, 10);
 
+/// The most speed, cm per tick, a contact's push may add along itself
+/// (`slush::inelastic`). 0.3 rises 0.17 cm. *(M2.0)*
+pub const BOUNCE: Fx = Fx(0);
+
 /// Half the thickness of a cup's walls and floor, cm.
 pub const WALL_HALF: Fx = Fx::int(1);
 

@@ -1,15 +1,18 @@
 // The page: screens and the clock. It draws numbers core sent and decides
-// nothing (CLAUDE.md). Every word it shows comes through t().
+// nothing (CLAUDE.md). Every word it shows comes through t(), or is a
+// sentence core filled from the copy file.
 import init, * as core from './pkg/slushline_wasm.js';
 import { Stage } from './draw.js';
 import * as keys from './keys.js';
 import { download, pick } from './files.js';
 
 const BUILD = '__BUILD__';
-let COPY, NUM, PAL, FLAVORS, CONTROLS, ACTION_BITS;
+const STORE = 'slushline.save';
+let COPY, NUM, PAL, FLAVORS, ACTION_BITS;
 let stage = null;
-let run = null;          // { game, kind, ... } while a run is on screen
-let bindings = null;     // action -> KeyboardEvent.code
+let run = null;          // the run on screen
+let save = null;         // the save, as core's JSON
+let rebinding = null;    // the action waiting for a key
 
 const $ = (id) => document.getElementById(id);
 
@@ -33,7 +36,7 @@ function el(tag, attrs = {}, ...kids) {
     else if (v === true) e.setAttribute(k, '');
     else if (v !== false && v != null) e.setAttribute(k, v);
   }
-  for (const c of kids.flat()) if (c != null) e.append(c);
+  for (const c of kids.flat()) if (c != null && c !== false) e.append(c);
   return e;
 }
 
@@ -41,7 +44,49 @@ function button(label, onClick, attrs = {}) {
   return el('button', { type: 'button', ...attrs, on: { click: onClick } }, label);
 }
 
-// --- tuning: ?tuning=0|1|2, as Vagrancy's motor tunings were ---------------
+// A key's name, as a value inside a sentence rather than a sentence.
+function keyValue(code) {
+  return el('span', { class: 'key', 'data-value': '1' }, keys.keyName(code));
+}
+
+// --- the save ------------------------------------------------------------
+
+function bindings() { return JSON.parse(save).keys; }
+function options() { return JSON.parse(save).options; }
+
+// The convenience copy in this browser. The save file the player downloads
+// is the real one (settings.save.autosave says so).
+function keep(json) {
+  save = json;
+  try { localStorage.setItem(STORE, json); } catch { /* storage refused */ }
+  stage.showCodes = options().short_codes;
+}
+
+function restore() {
+  let stored = null;
+  try { stored = localStorage.getItem(STORE); } catch { /* storage refused */ }
+  if (stored) {
+    try {
+      save = core.save_load(new TextEncoder().encode(stored));
+      return;
+    } catch { /* a stale copy is dropped, not shown */ }
+  }
+  save = core.save_default();
+}
+
+function keyNames() {
+  const b = bindings();
+  return NUM.actions.map(([action]) => keys.keyName(b[action] ?? ''));
+}
+
+function keyValues() {
+  const n = keyNames();
+  const v = {};
+  n.forEach((name, i) => { v[`key.spout_${i + 1}`] = name; });
+  return v;
+}
+
+// --- tuning: ?tuning=0|1|2 -------------------------------------------------
 function tuning() {
   const q = new URLSearchParams(location.search).get('tuning');
   const n = Number.parseInt(q ?? '', 10);
@@ -52,6 +97,7 @@ function tuning() {
 
 function screen(...kids) {
   stopRun();
+  rebinding = null;
   const s = $('screen');
   s.replaceChildren(...kids);
   s.hidden = false;
@@ -66,8 +112,10 @@ function menu() {
     el('div', { class: 'item' }, button(t(`menu.${key}.label`), onClick, { id: `menu-${key}` }), desc ? el('p', {}, t(`menu.${key}.desc`)) : null);
   screen(
     el('nav', { class: 'menu' },
-      item('missions', () => startPour()),
+      item('missions', () => path()),
       item('replay', () => loadReplay()),
+      item('how', () => how(), false),
+      item('settings', () => settings(), false),
     ),
     el('p', { id: 'notice', role: 'alert', hidden: true }),
   );
@@ -80,29 +128,66 @@ function notice(sentence) {
   n.hidden = false;
 }
 
-// --- a run ---------------------------------------------------------------
-
-function keyNames() {
-  return NUM.actions.map(([action]) => keys.keyName(bindings[action] ?? ''));
+function back() {
+  return button(t('menu.back.label'), () => menu(), { id: 'back-to-menu', class: 'quiet' });
 }
 
-function startPour() {
-  const game = core.Game.standing(Date.now() % 100000, tuning());
-  begin({ game, kind: 'pour' });
+// --- the path ------------------------------------------------------------
+
+function missions() { return JSON.parse(core.path_json(save)); }
+
+function path() {
+  const ms = missions();
+  const max = NUM.max_score;
+  const rows = ms.map((m) => el('li', { class: m.open ? 'open' : 'locked' },
+    m.open
+      ? button(m.name, () => card(m.id), { id: `mission-${m.id}`, class: m.passed ? 'passed' : '' })
+      : el('span', { class: 'name' }, m.name),
+    m.open ? null : el('p', {}, t('missions.locked', { mission: m.locked_by })),
+    m.best != null ? el('p', {}, t('missions.best', { avg: m.best, max_score: max })) : null,
+  ));
+  screen(el('h2', {}, t('menu.missions.label')), el('ol', { class: 'path' }, ...rows), el('div', { class: 'controls' }, back()));
+}
+
+function card(id) {
+  const m = missions().find((x) => x.id === id);
+  const kv = keyValues();
+  screen(
+    el('h2', { id: 'card-name' }, m.name),
+    el('p', {}, m.order),
+    el('p', {}, m.pass),
+    ...m.conditions.map((c) => el('p', { class: 'condition' }, el('strong', {}, c.name), ' ', c.desc)),
+    el('p', { class: 'try' }, t(m.try_key, { ...kv, keys_upper: keyNames().slice(0, m.spouts).join(', '), keys_lower: '' })),
+    el('ul', { class: 'spouts' }, ...m.spout_labels.map((label, i) => el('li', {}, label, ' ', el('strong', {}, t('spout.key', { key: keyNames()[i] }))))),
+    el('div', { class: 'controls' },
+      button(t('missions.start.label'), () => startMission(id), { id: 'start-mission' }),
+      button(t('results.to_missions.label'), () => path(), { class: 'quiet', id: 'to-missions' })),
+  );
+}
+
+// --- a run ---------------------------------------------------------------
+
+function seed() { return (Date.now() % 1000000) >>> 0; }
+
+function startMission(id) {
+  const game = core.Game.mission(id, seed(), tuning());
+  begin({ game, kind: id });
 }
 
 function begin(r) {
   stopRun();
-  run = { ...r, acc: 0, last: performance.now(), frame: null };
+  rebinding = null;
+  const m = r.game.mission_id() ? missions().find((x) => x.id === r.game.mission_id()) : null;
+  run = { ...r, acc: 0, last: performance.now(), frame: null, mission: m, finished: false };
   const s = $('screen');
   s.hidden = false;
   $('stage').hidden = false;
   $('hud').hidden = false;
   const controls = r.game.is_replay()
     ? [el('p', { id: 'replay-note' }, t('replay.playing')), button(t('replay.stop.label'), () => menu(), { id: 'replay-stop' })]
-    : [button(t('replay.download.label'), () => saveReplay(), { id: 'download-replay' }), button(t('menu.back.label'), () => menu(), { id: 'back-to-menu' })];
+    : [button(t('results.to_missions.label'), () => path(), { id: 'leave-run', class: 'quiet' })];
   s.replaceChildren(el('div', { class: 'controls' }, ...controls));
-  hud();
+  hudStatic();
   draw();
   run.raf = requestAnimationFrame(loop);
 }
@@ -125,11 +210,21 @@ function loop(now) {
       if (run.game.replay_done()) break;
       run.game.step(0, 0);
     } else {
-      run.game.step(keys.bits(bindings, ACTION_BITS), 0);
+      if (run.game.done()) break;
+      run.game.step(keys.bits(bindings(), ACTION_BITS), 0);
     }
   }
-  if (steps) draw();
-  run.raf = requestAnimationFrame(loop);
+  if (steps) {
+    draw();
+    hudLive();
+  }
+  const over = run.game.is_replay() ? run.game.replay_done() : run.game.done();
+  if (over && !run.finished && run.mission) {
+    run.finished = true;
+    // Let the last lid close on screen for a moment before the result.
+    setTimeout(() => { if (run?.finished) results(); }, 700);
+  }
+  if (run) run.raf = requestAnimationFrame(loop);
 }
 
 function draw() {
@@ -138,36 +233,67 @@ function draw() {
   document.body.dataset.tick = String(run.game.tick());
 }
 
-// The HUD: each spout's label and key, in spout order. Every line is a copy
-// string; the key names and flavor names are values filled into it.
-function hud() {
+// The HUD: the keys and spouts once, then the live numbers core worked out.
+function hudStatic() {
   const f = JSON.parse(run.game.frame());
   const line = f.lines[0];
   const names = keyNames();
-  const rows = line.spouts.map((s, i) => el('li', {}, spoutLabel(s.pours), ' ', el('strong', {}, t('spout.key', { key: names[i] }))));
+  const labels = run.mission ? run.mission.spout_labels : line.spouts.map(() => '');
   $('hud').replaceChildren(
-    el('p', {}, t('hud.keys', { keys_upper: names.slice(0, line.spouts.length).join(', ') })),
-    el('ul', { class: 'spouts' }, ...rows),
+    el('div', { id: 'hud-live' }),
+    el('p', { id: 'hud-keys' }, t('hud.keys', { keys_upper: names.slice(0, line.spouts.length).join(', ') })),
+    el('ul', { class: 'spouts' }, ...line.spouts.map((s, i) => el('li', {}, labels[i] || null, labels[i] ? ' ' : null, el('strong', {}, t('spout.key', { key: names[i] }))))),
   );
+  hudLive();
 }
 
-function flavorOf(f) { return FLAVORS[f].id; }
+function hudLive() {
+  if (!run?.mission) return;
+  const h = JSON.parse(run.game.hud());
+  const live = $('hud-live');
+  if (!live) return;
+  const parts = [h.cup, h.order, h.score, h.waste].filter(Boolean);
+  const text = parts.join('\u0000');
+  if (live.dataset.text === text) return;
+  live.dataset.text = text;
+  live.replaceChildren(...parts.map((p) => el('span', {}, p)));
+}
 
-function spoutLabel(pours) {
-  const ids = [...new Set(pours)];
-  if (ids.length === 1) {
-    const id = flavorOf(ids[0]);
-    return t('spout.single', { flavor: t(`flavors.${id}.name`), short: t(`flavors.${id}.short`), pattern: t(`patterns.${FLAVORS[ids[0]].pattern}`) });
+// --- results -------------------------------------------------------------
+
+function results() {
+  const game = run.game;
+  const m = run.mission;
+  const o = JSON.parse(game.outcome());
+  const replay = game.is_replay();
+  if (!replay) keep(core.save_record(save, m.id, o.average, o.passed));
+  const ms = missions();
+  const next = m.next ? ms.find((x) => x.id === m.next) : null;
+  const bytes = game.replay_bytes();
+  const name = `slushline-${m.id}-${o.average}.replay`;
+  const buttons = [
+    o.passed && next?.open && !replay ? button(t('results.next.label'), () => card(next.id), { id: 'next-mission' }) : null,
+    replay ? null : button(t('results.again.label'), () => startMission(m.id), { id: 'run-again' }),
+    button(t('results.to_missions.label'), () => path(), { id: 'to-missions', class: 'quiet' }),
+    button(t('results.replay.label'), () => download(bytes, name), { id: 'download-replay', class: 'quiet' }),
+  ].filter(Boolean);
+  const cups = [];
+  for (let k = 0; k < o.lines.length - (o.cause ? 2 : 1); k += 2) {
+    cups.push(el('li', {}, el('strong', {}, o.lines[k]), ' ', o.lines[k + 1]));
   }
-  return ids.map((f) => t(`flavors.${flavorOf(f)}.name`)).join(', ');
+  const tail = o.lines.slice(cups.length * 2);
+  screen(
+    el('h2', {}, m.name),
+    ...tail.map((l, i) => el('p', { class: i === 0 ? 'verdict' : '' }, l)),
+    el('ul', { class: 'cups' }, ...cups),
+    el('div', { class: 'controls' }, ...buttons),
+    el('p', { class: 'hint' }, t('results.key_hint', { key: keys.keyName('Enter') })),
+  );
+  document.body.dataset.result = o.passed ? 'pass' : 'fail';
+  $('screen').dataset.average = String(o.average);
 }
 
 // --- replays -----------------------------------------------------------
-
-function saveReplay() {
-  if (!run) return;
-  download(run.game.replay_bytes(), `slush-${run.kind}-${run.game.tick()}.replay`);
-}
 
 async function loadReplay() {
   const f = await pick('.replay,application/octet-stream');
@@ -184,6 +310,98 @@ async function loadReplay() {
   begin({ game, kind: 'replay' });
 }
 
+// --- how to play ---------------------------------------------------------
+
+function how() {
+  const values = { ...keyValues(), swell_s: core.swell_seconds(tuning()), max_score: NUM.max_score };
+  const topics = ['spout', 'lead', 'tail', 'swell', 'order', 'score', 'pass', 'blend', 'files'];
+  screen(
+    el('h2', {}, t('menu.how.label')),
+    ...topics.map((k) => el('section', { class: 'how' }, el('h3', {}, t(`how.${k}.title`)), el('p', {}, t(`how.${k}.body`, values)))),
+    el('div', { class: 'controls' }, back()),
+  );
+}
+
+// --- settings ------------------------------------------------------------
+
+function settings(message = null) {
+  const b = bindings();
+  const rows = NUM.actions.map(([action], i) => el('li', {},
+    el('span', {}, t('settings.keys.actions.spout', { n: i + 1 })), ' ',
+    button(keys.keyName(b[action]), () => waitForKey(action), { id: `bind-${action}`, class: 'quiet key', 'data-value': '1' }),
+  ));
+  const short = el('input', { type: 'checkbox', id: 'short-codes', checked: options().short_codes });
+  short.addEventListener('change', () => keep(core.save_set_short_codes(save, short.checked)));
+  screen(
+    el('h2', {}, t('menu.settings.label')),
+    el('section', {},
+      el('h3', {}, t('settings.look.title')),
+      el('label', { for: 'short-codes', class: 'switch' }, short, ' ', t('settings.look.short.label')),
+      el('p', {}, t('settings.look.short.desc'))),
+    el('section', {},
+      el('h3', {}, t('settings.keys.title')),
+      el('p', {}, t('settings.keys.desc')),
+      el('h4', {}, t('settings.keys.solo.heading')),
+      el('ul', { class: 'bindings' }, ...rows),
+      el('p', { id: 'bind-note', role: 'alert', hidden: !message }, message ?? ''),
+      button(t('settings.keys.reset.label'), () => { keep(core.save_reset_keys(save)); settings(); }, { id: 'reset-keys', class: 'quiet' })),
+    el('section', {},
+      el('h3', {}, t('settings.save.title')),
+      el('p', {}, t('settings.save.download.desc')),
+      el('div', { class: 'controls' },
+        button(t('settings.save.download.label'), () => download(new TextEncoder().encode(save), 'slushline.save', 'application/json'), { id: 'download-save' }),
+        button(t('settings.save.load.label'), () => loadSave(), { id: 'load-save', class: 'quiet' })),
+      el('p', {}, t('settings.save.autosave')),
+      el('p', { id: 'save-note', role: 'status', hidden: true })),
+    el('div', { class: 'controls' }, back()),
+  );
+}
+
+function waitForKey(action) {
+  rebinding = action;
+  const btn = $(`bind-${action}`);
+  if (btn) btn.classList.add('waiting');
+}
+
+window.addEventListener('keydown', (e) => {
+  if (!rebinding) {
+    if (e.code === 'Enter' && !$('screen').hidden && !run) {
+      const first = $('screen').querySelector('button');
+      if (first && document.activeElement?.tagName !== 'BUTTON') { e.preventDefault(); first.click(); }
+    }
+    return;
+  }
+  e.preventDefault();
+  const action = rebinding;
+  rebinding = null;
+  try {
+    keep(core.save_rebind(save, action, e.code));
+    settings();
+  } catch (err) {
+    const why = JSON.parse(typeof err === 'string' ? err : String(err));
+    const n = Number(why.other.split('_')[1]);
+    settings(t(why.key, { key: keys.keyName(e.code), action: t('settings.keys.actions.spout', { n }) }));
+  }
+}, true);
+
+async function loadSave() {
+  const f = await pick('.save,.json,application/json');
+  if (!f) return;
+  try {
+    keep(core.save_load(f.bytes));
+    settings();
+    const n = $('save-note');
+    n.textContent = t('settings.save.loaded');
+    n.hidden = false;
+  } catch (err) {
+    const why = JSON.parse(typeof err === 'string' ? err : String(err));
+    settings();
+    const n = $('save-note');
+    n.textContent = t(why.key, why.values);
+    n.hidden = false;
+  }
+}
+
 // --- start ------------------------------------------------------------
 
 async function main() {
@@ -198,12 +416,12 @@ async function main() {
   NUM = JSON.parse(core.numbers());
   PAL = JSON.parse(core.palette_json());
   FLAVORS = JSON.parse(core.flavors_json()).flavors;
-  CONTROLS = JSON.parse(core.controls_json());
   ACTION_BITS = Object.fromEntries(NUM.actions);
-  bindings = { ...CONTROLS.solo };
   stage = new Stage($('stage'), NUM, PAL, FLAVORS);
   stage.codes = FLAVORS.map((f) => t(`flavors.${f.id}.short`));
-  keys.listen((code) => Object.values(bindings).includes(code));
+  restore();
+  stage.showCodes = options().short_codes;
+  keys.listen((code) => run && Object.values(bindings()).includes(code));
   // Hooks for the gate (testing/drive.py). They read core; they decide nothing.
   window.slushline = {
     scriptChecksum: (ticks) => core.script_checksum(ticks),
@@ -211,7 +429,29 @@ async function main() {
     recordedChecksum: () => run?.game.recorded_checksum(),
     tick: () => run?.game.tick(),
     replayDone: () => run?.game.replay_done(),
+    done: () => run?.game.done(),
     frame: () => run?.frame,
+    save: () => save,
+    // Step the run on screen as fast as the browser can, with the given
+    // input, so the gate does not wait a mission's length in real time.
+    // Step a replay being watched, as fast as the browser can.
+    skipReplay: (ticks) => {
+      for (let k = 0; k < ticks && run?.game.is_replay() && !run.game.replay_done(); k += 1) run.game.step(0, 0);
+      if (run) draw();
+    },
+    // Where each unit was drawn, in canvas pixels, with its flavor.
+    unitPixels: () => {
+      if (!run) return [];
+      const u = run.game.units();
+      const out = [];
+      for (let k = 0; k < u.length; k += 5) out.push({ f: u[k + 4] & 255, x: stage.sx(u[k + 1]), y: stage.sy(u[k + 2]), r: stage.len(u[k + 3]) });
+      return out;
+    },
+    autoplay: (ticks) => {
+      if (!run) return;
+      run.game.autoplay(ticks);
+      draw();
+    },
   };
   $('status').hidden = true;
   menu();

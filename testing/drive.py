@@ -185,36 +185,184 @@ def the_browser_computes_the_native_checksum(page, name):
     return []
 
 
-@check
-def a_pour_round_trips_through_a_replay_file(page, name):
-    page.click("#menu-missions")
-    page.wait_for_function("window.slushline.tick() > 10")
-    page.keyboard.down("d")
-    page.wait_for_timeout(900)
-    page.keyboard.up("d")
-    page.wait_for_function("window.slushline.tick() > 200")
+def lines_not_in_copy(page, where):
     bad = visible_lines_not_in_copy(page)
-    if bad:
-        return [f"{name}: text on the pour screen that is not in the copy file: {bad}"]
+    return [f"text on {where} that is not in the copy file: {bad}"] if bad else []
+
+
+@check
+def a_mission_plays_to_a_result_and_round_trips_through_a_replay_file(page, name):
+    page.evaluate("localStorage.clear()")
+    page.reload(wait_until="load")
+    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.click("#menu-missions")
+    problems = lines_not_in_copy(page, "the path")
+    page.click("#mission-m_first_pour")
+    problems += lines_not_in_copy(page, "the mission card")
+    page.click("#start-mission")
+    page.wait_for_function("window.slushline.tick() > 5")
+    # A player's hands for a moment, then the timer pilot to the end.
+    page.keyboard.down("d")
+    page.wait_for_timeout(300)
+    page.keyboard.up("d")
+    problems += lines_not_in_copy(page, "the mission")
+    page.evaluate("window.slushline.autoplay(10000)")
+    page.wait_for_selector(".verdict", timeout=20000)
+    problems += lines_not_in_copy(page, "the result")
+    verdict = page.inner_text(".verdict")
+    final = page.evaluate("window.slushline.checksum && document.body.dataset.result")
     with page.expect_download() as dl:
         page.click("#download-replay")
     path = dl.value.path()
-    want_tick = None
-    data = Path(path).read_bytes()
+    size = len(Path(path).read_bytes())
     page.reload(wait_until="load")
     page.wait_for_function("document.body.dataset.ready === '1'")
     with page.expect_file_chooser() as fc:
         page.click("#menu-replay")
     fc.value.set_files(path)
+    page.wait_for_function("window.slushline.tick() > 2")
+    page.evaluate("window.slushline.skipReplay(100000)")
     page.wait_for_function("window.slushline.replayDone() === true", timeout=60000)
     got, want = page.evaluate("[window.slushline.checksum(), window.slushline.recordedChecksum()]")
     if got != want or not got:
-        return [f"{name}: the replay ended on {got}, and recorded {want}"]
-    bad = visible_lines_not_in_copy(page)
-    if bad:
-        return [f"{name}: text on the replay screen that is not in the copy file: {bad}"]
-    print(f"ok: {name}: a pour downloaded as a replay ({len(data)} bytes), loaded after a reload, ends on its recorded checksum {got}")
-    page.click("#replay-stop")
+        problems.append(f"the replay ended on {got}, and recorded {want}")
+    page.wait_for_selector(".verdict", timeout=20000)
+    if page.inner_text(".verdict") != verdict:
+        problems.append(f"the replay's result reads {page.inner_text('.verdict')!r}, the run's read {verdict!r}")
+    if problems:
+        return [f"{name}: {p}" for p in problems]
+    print(f"ok: {name}: the first mission played to {verdict!r} ({final}); its replay ({size} bytes) loaded after a reload, ends on {got}, and shows the same result")
+    page.click("#to-missions")
+    page.click("#back-to-menu")
+    return []
+
+
+@check
+def the_save_keeps_a_pass_and_round_trips_through_a_file(page, name):
+    page.click("#menu-missions")
+    opened = page.locator("#mission-m_tail").count()
+    if not opened:
+        return [f"{name}: passing the first mission did not open the second"]
+    page.click("#back-to-menu")
+    page.click("#menu-settings")
+    with page.expect_download() as dl:
+        page.click("#download-save")
+    path = dl.value.path()
+    saved = json.loads(Path(path).read_text())
+    page.evaluate("localStorage.clear()")
+    page.reload(wait_until="load")
+    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.click("#menu-missions")
+    if page.locator("#mission-m_tail").count():
+        return [f"{name}: a cleared browser still opened the second mission"]
+    page.click("#back-to-menu")
+    page.click("#menu-settings")
+    with page.expect_file_chooser() as fc:
+        page.click("#load-save")
+    fc.value.set_files(path)
+    page.wait_for_selector("#save-note:not([hidden])")
+    note = page.inner_text("#save-note")
+    if note != COPY["settings"]["save"]["loaded"]:
+        return [f"{name}: loading the save says {note!r}"]
+    problems = lines_not_in_copy(page, "settings")
+    page.click("#back-to-menu")
+    page.click("#menu-missions")
+    if not page.locator("#mission-m_tail").count():
+        problems.append("the loaded save did not open the second mission")
+    page.click("#back-to-menu")
+    if problems:
+        return [f"{name}: {p}" for p in problems]
+    print(f"ok: {name}: a pass opened the next mission; the save file ({saved['passed']}) brought it back after the browser was cleared")
+    return []
+
+
+@check
+def two_actions_cannot_share_a_key_in_settings(page, name):
+    page.click("#menu-settings")
+    page.click("#bind-spout_1")
+    page.keyboard.press("f")
+    page.wait_for_selector("#bind-note:not([hidden])")
+    note = page.inner_text("#bind-note")
+    want = COPY["settings"]["keys"]["conflict"].replace("{key}", "F").replace("{action}", COPY["settings"]["keys"]["actions"]["spout"].replace("{n}", "2"))
+    problems = [] if note == want else [f"the conflict reads {note!r}, not {want!r}"]
+    page.click("#bind-spout_1")
+    page.keyboard.press("a")
+    page.wait_for_function("document.querySelector('#bind-spout_1').textContent === 'A'")
+    page.click("#reset-keys")
+    page.wait_for_function("document.querySelector('#bind-spout_1').textContent === 'D'")
+    problems += lines_not_in_copy(page, "settings")
+    page.click("#back-to-menu")
+    page.click("#menu-how")
+    problems += lines_not_in_copy(page, "how to play")
+    page.click("#back-to-menu")
+    if problems:
+        return [f"{name}: {p}" for p in problems]
+    print(f"ok: {name}: a taken key is refused with {note!r}; a free one binds; reset restores D")
+    return []
+
+
+def srgb_lum(rgb):
+    def lin(c):
+        c = c / 255
+        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+    r, g, b = (lin(x) for x in rgb)
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+
+@check
+def every_flavor_differs_in_gray_on_the_rendered_page(page, name):
+    # PLANNING-BRIEF 0.5: render a mixed cup, reduce the canvas to gray, and
+    # check that each pair of flavors still differs. Each unit is sampled away
+    # from its pattern mark.
+    page.evaluate("""localStorage.setItem('slushline.save', JSON.stringify({format:'slushline.save',version:1,best:{},
+        passed:['m_first_pour','m_tail','m_two_spouts','m_half','m_two_one','m_third'],
+        keys:{spout_1:'KeyD',spout_2:'KeyF',spout_3:'KeyJ',spout_4:'KeyK'},options:{short_codes:false}}))""")
+    page.reload(wait_until="load")
+    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.click("#menu-missions")
+    page.click("#mission-m_three")
+    page.click("#start-mission")
+    page.wait_for_function("window.slushline.tick() > 2")
+    page.evaluate("window.slushline.autoplay(1150)")
+    page.wait_for_timeout(100)
+    lums = page.evaluate("""() => {
+        const c = document.getElementById('stage');
+        const g = c.getContext('2d');
+        const by = {};
+        const us = window.slushline.unitPixels();
+        us.forEach((u, i) => {
+            if (u.r < 3) return;
+            const x = Math.round(u.x + u.r * 0.45), y = Math.round(u.y + u.r * 0.45);
+            // Units are drawn in order; a point a later unit (or its
+            // outline) covers shows that unit, not this one.
+            // Fills are drawn after every outline, so only a later unit's
+            // fill can cover this point.
+            for (let j = i + 1; j < us.length; j += 1) {
+                const v = us[j];
+                if (v.f !== u.f && (v.x - x) ** 2 + (v.y - y) ** 2 < (v.r + 0.5) ** 2) return;
+            }
+            const d = g.getImageData(x, y, 1, 1).data;
+            (by[u.f] ??= []).push([d[0], d[1], d[2]]);
+        });
+        return by;
+    }""")
+    page.click("#leave-run")
+    page.click("#back-to-menu")
+    gray = {}
+    for f, px in lums.items():
+        ls = sorted(srgb_lum(p) for p in px)
+        gray[int(f)] = ls[len(ls) // 2]
+    problems = []
+    if len(gray) < 3:
+        problems.append(f"only {len(gray)} flavors were on the canvas")
+    fs = sorted(gray)
+    for i, a in enumerate(fs):
+        for b in fs[i + 1:]:
+            if abs(gray[a] - gray[b]) <= 0.08:
+                problems.append(f"flavors {a} and {b} are {gray[a]:.3f} and {gray[b]:.3f} in gray")
+    if problems:
+        return [f"{name}: {p}" for p in problems]
+    print(f"ok: {name}: in gray the rendered flavors read " + ", ".join(f"{gray[f]:.3f}" for f in fs))
     return []
 
 

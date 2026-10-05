@@ -1,0 +1,6 @@
+{
+  "_about": "Conditions on a mission (PLANNING-BRIEF 0.7; D13): each is a change to the mission's Setup, applied by content before the world is built. sim does not know which mission it is running. A held condition is designed and not yet built.",
+  "rail": {"spout": 1, "amplitude": 36, "period": 288},
+  "second_line": {"held": "after the MVP (PLAN.md §8 Q5)"},
+  "jet": {"held": "M6"}
+}

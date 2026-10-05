@@ -26,3 +26,22 @@ button.quiet { color: var(--line); background: var(--panel); }
 #hud p { margin: 0; }
 #hud ul { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 0; padding: 0; list-style: none; }
 #notice { margin-top: 12px; }
+h2 { font-size: 1.3rem; margin: 8px 0 12px; }
+h3 { font-size: 1.05rem; margin: 18px 0 6px; }
+h4 { font-size: 0.95rem; margin: 12px 0 4px; color: var(--muted); }
+.path { display: grid; gap: 8px; padding-left: 1.6em; max-width: 720px; }
+.path li p { margin: 2px 0 0; color: var(--muted); }
+.path li.locked .name { color: var(--muted); font-weight: 600; }
+.path button.passed::after { content: " \2713"; }
+.try { font-style: italic; }
+.spouts { display: flex; flex-wrap: wrap; gap: 4px 20px; padding: 0; list-style: none; }
+.cups { padding-left: 1.2em; }
+.verdict { font-weight: 650; }
+.hint { color: var(--muted); font-size: 0.9rem; }
+.bindings { list-style: none; padding: 0; display: grid; gap: 6px; }
+.bindings button { min-width: 4em; }
+button.waiting { outline: 3px dashed var(--focus); }
+.switch { font-weight: 600; }
+#hud-live { display: flex; flex-wrap: wrap; gap: 4px 24px; width: 100%; font-weight: 600; }
+.key { font-weight: 700; }
+section.how p { max-width: 720px; margin: 0; }

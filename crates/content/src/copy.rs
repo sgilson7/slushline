@@ -9,7 +9,13 @@ use serde_json::Value;
 pub const COPY_JSON: &str = include_str!("../../../data/copy.en.json");
 
 pub fn copy() -> Value {
-    serde_json::from_str(COPY_JSON).expect("data/copy.en.json is valid JSON")
+    parsed().clone()
+}
+
+/// The copy file parsed once.
+fn parsed() -> &'static Value {
+    static C: std::sync::OnceLock<Value> = std::sync::OnceLock::new();
+    C.get_or_init(|| serde_json::from_str(COPY_JSON).expect("data/copy.en.json is valid JSON"))
 }
 
 /// Every player-facing string as `(dotted.key, text)`, in file order.
@@ -53,5 +59,37 @@ pub fn placeholders(s: &str) -> Vec<&str> {
             None => break,
         }
     }
+    out
+}
+
+/// A copy string by dotted key, with its `{placeholders}` filled from
+/// `values` and `{game}` from `game.name`. Panics on a missing key or an
+/// unfilled placeholder: a sentence half-filled is a bug, not a fallback.
+pub fn fill(key: &str, values: &Value) -> String {
+    let c = parsed();
+    let mut v = c;
+    for k in key.split('.') {
+        v = &v[k];
+    }
+    let s = v.as_str().unwrap_or_else(|| panic!("no copy string {key}"));
+    let mut out = String::new();
+    let mut rest = s;
+    while let Some(i) = rest.find('{') {
+        out.push_str(&rest[..i]);
+        let j = rest[i..].find('}').unwrap_or_else(|| panic!("an open brace in {key}"));
+        let name = &rest[i + 1..i + j];
+        let val = if name == "game" {
+            c["game"]["name"].as_str().unwrap().to_string()
+        } else {
+            match values.get(name) {
+                Some(Value::String(s)) => s.clone(),
+                Some(other) => other.to_string(),
+                None => panic!("no value for {{{name}}} in {key}"),
+            }
+        };
+        out.push_str(&val);
+        rest = &rest[i + j + 1..];
+    }
+    out.push_str(rest);
     out
 }

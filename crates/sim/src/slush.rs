@@ -29,13 +29,18 @@ pub struct Unit {
 }
 
 impl Unit {
-    /// The swell (D6 rule 3): the radius grows linearly from birth to full
-    /// size over `swell_ticks`, then holds.
+    /// The swell (D6 rule 3): the radius grows from birth to full size over
+    /// `swell_ticks`, then holds. It grows with the square of the unit's age,
+    /// slowly at first, so most of the swell happens after the unit has
+    /// landed, where a player can see the cup rise. Linear growth spent most
+    /// of itself in the air, and the solver hid the rest (SECOND-ORDER-M1
+    /// row 4, M2 row 3).
     pub fn grow(&mut self, t: &Tuning) {
         if self.age < t.swell_ticks {
             self.age += 1;
             let span = balance::R_FULL - balance::R_BIRTH;
-            self.r = balance::R_BIRTH + span.scale(self.age as i64, t.swell_ticks.max(1) as i64);
+            let (a, n) = (self.age as i64, t.swell_ticks.max(1) as i64);
+            self.r = balance::R_BIRTH + span.scale(a * a, n * n);
         }
     }
 }
@@ -227,6 +232,36 @@ pub fn rest(u: &mut Unit) {
     let s = balance::REST_SPEED.raw() as i64;
     if v.len_sq_raw() < s * s {
         u.q = u.p;
+    }
+}
+
+/// Contacts stop slush; they do not throw it. In a Verlet solver every push
+/// a contact makes becomes velocity, so a fast unit driven deep into a pile
+/// was pushed out faster than it came in and splashed over the cup's walls
+/// (M2.0: a standing cup lost 12 of 44 units). After the passes, the speed a
+/// unit has along the way it was pushed is held to what it had that way
+/// before the passes, and to no more than zero if it was moving against the
+/// push: the push separates, and the bounce is gone. `before` is where the
+/// unit was before the passes.
+pub fn inelastic(u: &mut Unit, before: V2) {
+    let push = u.p - before;
+    let psq = push.len_sq_raw();
+    if psq == 0 {
+        return;
+    }
+    let v_pre = before - u.q;
+    let v_now = u.p - u.q;
+    // Along the push, as raw dot products over |push|²: comparing
+    // v·push directly keeps it to one division.
+    // A small allowance is kept, so the gentle pushes of swelling slush
+    // still carry it upward through a deep pile in six passes; only a
+    // bounce bigger than the allowance is taken away.
+    let allow = balance::BOUNCE.raw() as i64 * crate::fx::isqrt(psq as u64) as i64;
+    let pre = v_pre.dot_raw(push).max(0) + allow;
+    let now = v_now.dot_raw(push);
+    if now > pre {
+        let excess = push.scale(now - pre, psq);
+        u.q += excess;
     }
 }
 

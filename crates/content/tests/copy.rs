@@ -235,13 +235,7 @@ fn every_universal_names_a_test_that_exists() {
     }
     // Carried as SECOND-ORDER rows until the milestone that writes the test.
     // Each name leaves this list in the commit that writes its test.
-    let pending: &[&str] = &[
-        "every_order_can_reach_full_marks_from_its_line", // M3
-        "two_actions_cannot_share_a_key",                 // M3
-        "a_damaged_save_is_refused_rather_than_half_loaded", // M4
-        "a_file_that_is_not_a_save_is_refused",           // M4
-        "a_save_from_a_newer_version_is_refused",         // M4
-    ];
+    let pending: &[&str] = &[];
     missing.retain(|m| !pending.iter().any(|p| m.contains(p)));
     assert!(missing.is_empty(), "\nthese universals name a test that does not exist yet:\n{}\n", missing.join("\n"));
 }

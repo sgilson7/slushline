@@ -27,4 +27,6 @@ pub use world::World;
 /// Bumped whenever what the simulation does changes, together with the
 /// golden replays, in the same commit (CLAUDE.md). A replay from another
 /// version is refused with a sentence.
-pub const SIM_VERSION: u32 = 1;
+/// 2: contacts are inelastic (`slush::inelastic`); slush no longer splashes
+/// out of a cup (SECOND-ORDER-M2).
+pub const SIM_VERSION: u32 = 2;

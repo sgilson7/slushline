@@ -160,6 +160,7 @@ impl World {
         let sides = self.sides();
         let pairs = slush::pairs(&self.units, balance::CONTACT_MARGIN);
         slush::thicken(&mut self.units, &pairs, t.thick_k);
+        let before: Vec<V2> = self.units.iter().map(|u| u.p).collect();
         let mut touched = vec![false; self.units.len()];
         for _ in 0..balance::PASSES {
             for &(i, j) in &pairs {
@@ -168,6 +169,9 @@ impl World {
                 slush::contact(&mut lo[i], &mut hi[0], &t);
             }
             self.walls(&sides, &t, &mut touched);
+        }
+        for (u, &b) in self.units.iter_mut().zip(&before) {
+            slush::inelastic(u, b);
         }
         let cap = self.setup.physics.cap;
         for &(i, j) in &pairs {
