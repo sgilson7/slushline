@@ -7,3 +7,6 @@ description = "Players that are not people. A pilot returns an Input and nothing
 
 [dependencies]
 sim.workspace = true
+
+[dev-dependencies]
+content.workspace = true

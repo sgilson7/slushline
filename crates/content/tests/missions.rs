@@ -148,12 +148,31 @@ fn the_path_is_a_chain() {
 
 #[test]
 fn every_component_is_taught_after_the_ones_it_builds_on() {
+    // `builds_on` lists edges `A_B` of data/kc_graph.json: B is what the
+    // mission teaches, and A must have been taught by an earlier one.
+    let g: serde_json::Value = serde_json::from_str(include_str!("../../../data/kc_graph.json")).unwrap();
+    let nodes: Vec<&str> = g["nodes"].as_array().unwrap().iter().map(|n| n["id"].as_str().unwrap()).collect();
+    let edges: Vec<&str> = g["edges"].as_array().unwrap().iter().map(|e| e.as_str().unwrap()).collect();
+    let copy = content::copy::copy();
     let mut taught: Vec<String> = Vec::new();
-    for m in missions() {
+    for m in missions().into_iter().chain(held()) {
+        for t in &m.teaches {
+            assert!(nodes.contains(&t.as_str()), "{} teaches {t}, which is not in the graph", m.id);
+            for part in ["name", "when", "then"] {
+                assert!(copy["kc"][t][part].is_string(), "kc.{t}.{part} has no sentence");
+            }
+        }
         for b in &m.builds_on {
-            assert!(taught.contains(b), "{} builds on {b}, which no earlier mission teaches", m.id);
+            let (from, to) = b.split_once('_').unwrap_or_else(|| panic!("{}: {b} is not an edge", m.id));
+            assert!(edges.contains(&b.as_str()), "{}: the edge {b} is not in the graph", m.id);
+            assert!(copy["kc_edge"][b].is_string(), "kc_edge.{b} has no sentence");
+            assert!(m.teaches.iter().any(|t| t == to), "{} builds on {b} but does not teach {to}", m.id);
+            assert!(taught.iter().any(|t| t == from), "{} builds on {from}, which no earlier mission teaches", m.id);
         }
         taught.extend(m.teaches.iter().cloned());
+    }
+    for e in &edges {
+        assert!(missions().into_iter().chain(held()).any(|m| m.builds_on.iter().any(|b| b == e)), "the edge {e} is used by no mission");
     }
 }
 
@@ -327,4 +346,45 @@ fn the_waste_limit_is_decided_exactly() {
     let m = mission("m_tail").unwrap();
     assert_eq!(m.pass.waste_pct, Some(20));
     let _ = setup_of;
+}
+
+/// The ladder's rows: mission, average, standard error.
+fn ladder() -> (String, Vec<(String, f64, f64)>) {
+    let text = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../../analysis/ladder.md"))
+        .expect("analysis/ladder.md exists; run `make ladder`");
+    let fp = text.lines().find_map(|l| l.strip_prefix("fingerprint: ")).expect("the ladder records its fingerprint").trim().to_string();
+    let rows = text
+        .lines()
+        .filter(|l| l.starts_with("| ") && !l.starts_with("| #"))
+        .map(|l| {
+            let c: Vec<&str> = l.split('|').map(str::trim).collect();
+            (c[2].to_string(), c[4].parse().unwrap(), c[5].parse().unwrap())
+        })
+        .collect();
+    (fp, rows)
+}
+
+#[test]
+fn the_path_gets_no_easier_within_a_chapter() {
+    // PLANNING-BRIEF 0.6 names this lint `the_path_gets_no_easier`. The
+    // ladder (yardstick averages, 200 seeded runs a mission) rises within
+    // every chapter and falls where a chapter opens on a new idea, and the
+    // path cannot be reordered past what each mission builds on. So this
+    // checks the claim the measurement supports, within chapters, and the
+    // whole-path claim is SECOND-ORDER-M4 row 2, for Sam's play to settle.
+    let (fp, rows) = ladder();
+    assert_eq!(fp, content::missions::fingerprint(pilot::VERSION), "analysis/ladder.md is stale; run `make ladder`");
+    let ms = missions();
+    assert_eq!(rows.iter().map(|r| r.0.clone()).collect::<Vec<_>>(), ms.iter().map(|m| m.id.clone()).collect::<Vec<_>>());
+    let mut steps = 0;
+    for (w, pair) in ms.windows(2).zip(rows.windows(2)) {
+        if w[0].chapter != w[1].chapter {
+            continue;
+        }
+        let ((_, a, sa), (_, b, sb)) = (&pair[0], &pair[1]);
+        let noise = 2.0 * (sa * sa + sb * sb).sqrt();
+        assert!(b <= &(a + noise), "{} ({b:.2}) is easier than {} ({a:.2}) for the yardstick, beyond the noise of {noise:.2}", w[1].id, w[0].id);
+        steps += 1;
+    }
+    assert!(steps >= 5, "only {steps} steps within chapters were checked");
 }

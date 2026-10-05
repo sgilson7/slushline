@@ -484,5 +484,100 @@
       "sim": "This replay was recorded with simulation version {theirs}, and this build runs version {ours}, so the replay was not loaded.",
       "damaged": "This replay file is incomplete or damaged, so nothing was loaded."
     }
+  },
+  "kc": {
+    "K01": {
+      "name": "Holding a handle open",
+      "when": "A cup is under a spout.",
+      "then": "Hold the spout's key to pull its handle, and the valve opens as the handle swings.",
+      "review": "new"
+    },
+    "K02": {
+      "name": "The tail",
+      "when": "A cup is nearly full.",
+      "then": "Let go early, because the handle takes a moment to shut and the slush in the air still lands.",
+      "review": "new"
+    },
+    "K03": {
+      "name": "Reading an order",
+      "when": "A cup comes toward the first spout.",
+      "then": "Read its order bar, so you know which handles that cup needs.",
+      "review": "new"
+    },
+    "K04": {
+      "name": "Two flavors in one cup",
+      "when": "An order names two flavors.",
+      "then": "Fill part of the cup at one spout and the rest at the next, because each spout gets one pass at it.",
+      "review": "new"
+    },
+    "K05": {
+      "name": "Unequal shares",
+      "when": "An order gives one flavor more of the cup.",
+      "then": "Pour longer at that flavor's spout, and stop where its share ends on the bar.",
+      "review": "new"
+    },
+    "K06": {
+      "name": "Letting a cup pass",
+      "when": "A cup reaches a spout its order does not name.",
+      "then": "Keep that handle shut, because a flavor the order did not ask for takes up room.",
+      "review": "new"
+    },
+    "K07": {
+      "name": "A third share in one pass",
+      "when": "An order names a third flavor.",
+      "then": "Stop each pour where its share ends, because the belt does not go back.",
+      "review": "new"
+    },
+    "K08": {
+      "name": "A blend pours its parts",
+      "when": "A spout's label lists two flavors.",
+      "then": "Expect both in the cup, in the shares the label lists.",
+      "review": "new"
+    },
+    "K09": {
+      "name": "Topping up a blend",
+      "when": "An order's shares differ from a blend's.",
+      "then": "Pour part of the cup from the blend and the rest from a single-flavor spout.",
+      "review": "new"
+    },
+    "K10": {
+      "name": "Pouring from a moving spout",
+      "when": "A spout slides back and forth on a rail.",
+      "then": "Pull its handle as it comes over the cup, because slush falls straight down from where the spout is.",
+      "review": "new"
+    },
+    "K11": {
+      "name": "A blend and a rail together",
+      "when": "A line has a blend and a sliding spout.",
+      "then": "Pour the blend's part of the cup first, then time the sliding spout to the cup.",
+      "review": "new"
+    },
+    "K12": {
+      "name": "Two lines at once",
+      "when": "Two belts run at once.",
+      "then": "Watch whichever cup is closest to a spout, since that one needs you next.",
+      "review": "new"
+    }
+  },
+  "kc_edge": {
+    "K01_K02": "The tail is the same handle, let go before the cup looks full.",
+    "K02_K03": "Reading the order decides which pours need their tail judged.",
+    "K03_K04": "An order with two flavors is read the same way, and asks for two pours.",
+    "K04_K05": "Unequal shares are two pours of different lengths.",
+    "K03_K06": "Reading the order tells you which spouts to let a cup pass.",
+    "K04_K06": "A cup with two flavors passes the third spout untouched.",
+    "K05_K07": "A third share is one more unequal pour.",
+    "K06_K07": "With a third spout, each pour stops where its share ends.",
+    "K04_K08": "A blend fills two flavors of an order in one pour.",
+    "K06_K08": "The blend takes the place of the cherry spout, so cherry comes with cola.",
+    "K08_K09": "When the order's shares differ from the blend's, the blend fills part of the cup.",
+    "K05_K09": "The rest of the cup is an unequal share from a single-flavor spout.",
+    "K04_K10": "The two pours are the same, and one of them moves.",
+    "K02_K10": "The tail now has to land while the spout is still over the cup.",
+    "K09_K11": "The blend fills its part of the cup as before.",
+    "K10_K11": "The sliding spout pours the rest.",
+    "K03_K12": "Each line's orders are read the same way.",
+    "K04_K12": "Each line asks for the same pours as one line did.",
+    "review": "new"
   }
 }

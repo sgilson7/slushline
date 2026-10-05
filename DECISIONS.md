@@ -24,3 +24,5 @@ Why things are the way they are, one paragraph each. The full argument for D1 to
 - **Slush is drawn as outlines, then fills, then patterns,** so each unit has its outline and a cup of one flavor reads as one area in gray.
 - **The belt runs at 12, 18 or 24 cm/s** (`data/line.json`), slower than first written, so a full pour fits while a cup passes a spout.
 - **A replay finds its mission by its setup,** in `content`, so a replay of a mission shows that mission's result.
+- **`builds_on` lists edges of `data/kc_graph.json`,** as the brief's example does; the components' sentences are new strings for Sam.
+- **The ladder test checks the path within chapters.** The yardstick's averages rise within every chapter and fall where a chapter opens; the whole-path claim waits on Sam's play (SECOND-ORDER-M4 row 2).

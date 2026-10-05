@@ -16,6 +16,13 @@ use sim::rng::Rng;
 use sim::setup::Flavor;
 use sim::{Input, World};
 
+/// Bumped when a pilot plays differently, so `analysis/ladder.md` is known to
+/// be stale.
+pub const VERSION: u32 = 1;
+
+/// The yardstick's error on each let-go, in units either way.
+pub const YARDSTICK_ERROR: u32 = 10;
+
 #[derive(Clone, Debug)]
 pub enum Kind {
     Idle,

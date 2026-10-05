@@ -13,6 +13,10 @@ fn main() {
     match args.get(1).map(String::as_str) {
         Some("recon-m1") => recon_m1(),
         Some("recon-m2") => recon_m2(),
+        Some("ladder") => {
+            let runs: u64 = args.get(2).and_then(|s| s.parse().ok()).unwrap_or(200);
+            ladder(runs);
+        }
         Some("splash") => {
             for hold in [20u32, 30, 40] {
                 let mut w = World::new(content::setup::standing(1, sim::balance::DEFAULT_TUNING));
@@ -256,6 +260,52 @@ fn recon_m2() {
         }
         println!("| {n} | {:.1} |{}", t0.elapsed().as_secs_f64() * 1e6 / 200.0, if x == 1 { " " } else { "" });
     }
+}
+
+/// Play the yardstick on every mission, `runs` times each with its own
+/// seed, and write `analysis/ladder.md` (PLANNING-BRIEF M4.0).
+fn ladder(runs: u64) {
+    let ms = content::missions::missions();
+    let handles: Vec<_> = ms
+        .iter()
+        .cloned()
+        .map(|m| {
+            std::thread::spawn(move || {
+                let mut avgs = Vec::new();
+                let mut passes = 0;
+                for seed in 0..runs {
+                    let mut w = World::new(m.setup(seed, sim::balance::DEFAULT_TUNING));
+                    let mut p = pilot::Pilot::new(pilot::Kind::Yardstick { seed: seed + 1, error: pilot::YARDSTICK_ERROR });
+                    while !w.done() && w.tick < 30_000 {
+                        pilot::drive(&mut w, &mut p);
+                    }
+                    let o = content::missions::outcome(&m, &w);
+                    avgs.push(o.average as f64);
+                    passes += o.passed as u32;
+                }
+                let n = avgs.len() as f64;
+                let mean = avgs.iter().sum::<f64>() / n;
+                let var = avgs.iter().map(|a| (a - mean).powi(2)).sum::<f64>() / (n - 1.0).max(1.0);
+                (m.id.clone(), mean, (var / n).sqrt(), passes)
+            })
+        })
+        .collect();
+    let rows: Vec<(String, f64, f64, u32)> = handles.into_iter().map(|h| h.join().unwrap()).collect();
+    let mut out = String::new();
+    out.push_str("# The ladder\n\n");
+    out.push_str(&format!(
+        "The yardstick pilot (the timer with up to {} units of error on each let-go, seeded) on every mission, {runs} runs each, tuning {}. Written by `make ladder`; read by `the_path_gets_no_easier`.\n\n",
+        pilot::YARDSTICK_ERROR,
+        sim::balance::DEFAULT_TUNING
+    ));
+    out.push_str(&format!("fingerprint: {}\n\n", content::missions::fingerprint(pilot::VERSION)));
+    out.push_str("| # | mission | runs | average | standard error | passed |\n|---|---|---|---|---|---|\n");
+    for (i, (id, mean, se, passes)) in rows.iter().enumerate() {
+        out.push_str(&format!("| {} | {id} | {runs} | {mean:.2} | {se:.2} | {passes} |\n", i + 1));
+    }
+    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../analysis/ladder.md");
+    std::fs::write(path, &out).unwrap();
+    print!("{out}");
 }
 
 /// Record the golden replay: the fixed script over the standing pour.

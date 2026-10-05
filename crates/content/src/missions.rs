@@ -298,3 +298,16 @@ pub fn hud(w: &World) -> Value {
         "waste": fill("hud.waste", &json!({ "waste_pct": waste(ls.wasted, ls.emitted) })),
     })
 }
+
+/// What the ladder's numbers depend on: the simulation, the data that builds
+/// a mission, and the pilots' version. `analysis/ladder.md` records it, and
+/// `the_path_gets_no_easier` refuses a ladder made from anything else.
+pub fn fingerprint(pilot_version: u32) -> String {
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(&sim::SIM_VERSION.to_le_bytes());
+    bytes.extend_from_slice(&pilot_version.to_le_bytes());
+    for f in [MISSIONS_JSON, CONDITIONS_JSON, setup::CUPS_JSON, setup::LINE_JSON, setup::BLENDS_JSON, crate::look::FLAVORS_JSON] {
+        bytes.extend_from_slice(f.as_bytes());
+    }
+    format!("{:016x}", sim::world::fnv1a(&bytes))
+}

@@ -158,6 +158,14 @@ Each claim quoted, given a verdict, cited by line in `reference/` at the commits
 12. **The brief's Part J lists `gear-master` as one of "six named in 0.2".** 0.2 names five (`vagrancy`, `gear-master-2d`, `floodline`, and the shapes inside them); A.1 counts six plus the site. All seven were cloned.
 13. **`index.html` and `game.about_link`.** Vagrancy's copy has `game.about_link` (`vagrancy/data/copy.en.json`); this game's copy does not, which matches Q9's "no About link until the project page exists".
 
+**Found while building** (each has its notebook row)
+
+14. **"2,000 units fit in 2 ms in wasm" (Part C).** No: 6.6 ms natively at 2,000. A mission's live units are bounded by the lid, and a three-spout mission costs 0.10 to 0.16 ms a tick in wasm (SECOND-ORDER-M1 row 1, M4 row 5).
+15. **"Held open for 10 ticks it emits 20 … = 20" (H5).** True for a ramp, not for the lever Sam chose: the tail adds units after the key is let go (SECOND-ORDER-M1 row 6).
+16. **Vagrancy's release profile, `opt-level = "z"`,** did not inline fixed-point arithmetic; this game builds with 3 (SECOND-ORDER-M1 row 2).
+17. **`the_path_gets_no_easier` (0.6).** The ladder supports it within chapters only (SECOND-ORDER-M4 row 2).
+18. **`builds_on` as component ids** in the first data; the brief's example uses edges (SECOND-ORDER-M4 row 3).
+
 ## 8. Open questions for Sam
 
 Answered before the plan (2026-10-05):

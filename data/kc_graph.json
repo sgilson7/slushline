@@ -1,0 +1,76 @@
+{
+  "_about": "The knowledge components the path teaches, in Vagrancy's format (data/kc_graph.json there): a node per component, an edge per builds_on in data/missions.json. Words are in copy.en.json under kc and kc_edge. K12 belongs to mission 12, which is held until after the MVP. The kit has not been run on this graph (PLAN.md \u00a78 Q10).",
+  "nodes": [
+    {
+      "id": "K01",
+      "group": "pour"
+    },
+    {
+      "id": "K02",
+      "group": "pour"
+    },
+    {
+      "id": "K03",
+      "group": "read"
+    },
+    {
+      "id": "K04",
+      "group": "read"
+    },
+    {
+      "id": "K05",
+      "group": "read"
+    },
+    {
+      "id": "K06",
+      "group": "read"
+    },
+    {
+      "id": "K07",
+      "group": "read"
+    },
+    {
+      "id": "K08",
+      "group": "blend"
+    },
+    {
+      "id": "K09",
+      "group": "blend"
+    },
+    {
+      "id": "K10",
+      "group": "condition"
+    },
+    {
+      "id": "K11",
+      "group": "condition"
+    },
+    {
+      "id": "K12",
+      "group": "condition"
+    }
+  ],
+  "edges": [
+    "K01_K02",
+    "K02_K03",
+    "K02_K10",
+    "K03_K04",
+    "K03_K06",
+    "K03_K12",
+    "K04_K05",
+    "K04_K06",
+    "K04_K08",
+    "K04_K10",
+    "K04_K12",
+    "K05_K07",
+    "K05_K09",
+    "K06_K07",
+    "K06_K08",
+    "K08_K09",
+    "K09_K11",
+    "K10_K11"
+  ],
+  "held": [
+    "K12"
+  ]
+}
