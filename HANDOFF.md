@@ -1,6 +1,6 @@
 # Handoff
 
-Written for a reader with none of the last session's context. This one is for v0.3.1 (2026-10-06, build `8ab59de5`), which added a pour sound and a blurred store behind the line. Nothing Sam has asked for is unstarted; section 7 lists what waits on him.
+Written for a reader with none of the last session's context. This one is for v0.3.1 (2026-10-06), which added a pour sound and a blurred store behind the line. Nothing Sam has asked for is unstarted; section 7 lists what waits on him.
 
 ## 1. What this is
 
@@ -58,4 +58,5 @@ The pour sound and the store are built and deployed (DECISIONS.md, 2026-10-06; n
 
 - **The pour** (`web/sound.js`, `pourFrame`; level `POUR_GAIN`): a psst as a valve opens, then a breathy hiss over a low wobbling body, fading as it closes. Whether it reads as a slush machine and is gentle enough. The gate checks only that holding a key starts a voice and letting go stops it.
 - **The store** (`web/backdrop.js`; `WASH`, `SMALL`; colors `backdrop.*` in `palette.json`). On two-line missions it is stretched tall (M7 row 6).
+- **WebKit crashed once on CI** after the first push of this round and passed on a re-run (M7 row 9). If it happens again, suspect the pour voices first.
 - His other open items are the "the human's" rows in `SECOND-ORDER-M2` to `M7`.

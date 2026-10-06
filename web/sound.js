@@ -338,7 +338,7 @@ function voice() {
   const t = ctx.currentTime;
   src.start(t, Math.random() * 1.9);
   wobble.start(t);
-  return { src, wobble, out, open: false, stopAt: 0 };
+  return { src, wobble, out, open: false, stopAt: 0, level: 0 };
 }
 
 // The psst as a valve opens: a short burst of noise that falls from a
@@ -384,10 +384,17 @@ export function pourFrame(frame) {
         seen.add(key);
         if (!v) { v = voice(); voices.set(key, v); }
         if (!v.open && volume > 0) psst(t);
+        const level = POUR_GAIN * Math.sqrt(open);
+        // About 30 ms to follow the handle, so a change never clicks. Only
+        // when the level moves: a held handle would otherwise schedule an
+        // event every frame, which an engine with no sound device, whose
+        // clock stands still, never clears.
+        if (!v.open || Math.abs(level - v.level) > POUR_GAIN * 0.02) {
+          v.out.gain.setTargetAtTime(level, t, 0.03);
+          v.level = level;
+        }
         v.open = true;
         v.stopAt = 0;
-        // About 30 ms to follow the handle, so a change never clicks.
-        v.out.gain.setTargetAtTime(POUR_GAIN * Math.sqrt(open), t, 0.03);
       }
     });
   }
