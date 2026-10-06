@@ -7,6 +7,7 @@ import * as keys from './keys.js';
 import { download, pick } from './files.js';
 import * as sound from './sound.js';
 import * as grooveArt from './groove.js';
+import { blendFrame, blendUnits } from './blend.js';
 
 const BUILD = '__BUILD__';
 const STORE = 'slushline.save';
@@ -374,6 +375,8 @@ function loop(now) {
   while (run.acc >= dt && steps < 6) {
     run.acc -= dt;
     steps += 1;
+    // The tick before the newest is what the screen draws from (blend.js).
+    if (run.acc < dt) run.prev = run.cur && run.cur.tick === run.game.tick() ? run.cur : snapshot();
     if (run.game.is_replay()) {
       if (run.game.replay_done()) break;
       run.game.step(0, 0);
@@ -387,7 +390,7 @@ function loop(now) {
     }
   }
   if (steps) {
-    draw();
+    take();
     hudLive();
     for (const j of JSON.parse(run.game.take_judged())) judge(j.word, j.groove);
   }
@@ -398,16 +401,42 @@ function loop(now) {
     // Let the last lid close on screen for a moment before the result.
     setTimeout(() => { if (run?.finished) results(); }, 700);
   }
-  if (run) run.raf = requestAnimationFrame(loop);
+  // Every screen refresh draws, at the share of a tick the clock has run
+  // past the newest one.
+  if (run) {
+    paint(Math.min(1, run.acc / dt));
+    run.raf = requestAnimationFrame(loop);
+  }
 }
 
-function draw() {
-  run.frame = JSON.parse(run.game.frame());
-  stage.draw(run.frame, run.game.units(), keyNames(), lowerKeyNames());
+function snapshot() {
+  return { tick: run.game.tick(), frame: JSON.parse(run.game.frame()), units: run.game.units() };
+}
+
+// The newest tick core has stepped to: kept for drawing, and for the sound.
+function take() {
+  run.cur = snapshot();
+  run.frame = run.cur.frame;
   // The pour's sound follows the openings core sent in this frame.
   const over = run.game.is_replay() ? run.game.replay_done() : run.game.done();
   if (!over) sound.pourFrame(run.frame);
-  document.body.dataset.tick = String(run.game.tick());
+  document.body.dataset.tick = String(run.cur.tick);
+}
+
+// Draw `t` of the way from the tick before the newest to the newest. The
+// canvas is sized from the newest frame as core sent it, so a blended handle
+// never nudges its height.
+function paint(t) {
+  const { cur, prev } = run;
+  const p = prev && prev.tick === cur.tick - 1 ? prev : null;
+  stage.draw(blendFrame(p?.frame, cur.frame, t), blendUnits(p?.units, cur.units, t), keyNames(), lowerKeyNames(), cur.frame);
+}
+
+// Step outside the clock (a new run, the gate's hooks): draw the newest tick.
+function draw() {
+  take();
+  run.prev = null;
+  paint(1);
 }
 
 // A judged cup: the lid's sound and a big word over the line, after Dance

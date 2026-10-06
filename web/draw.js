@@ -132,8 +132,8 @@ export class Stage {
   }
 
   // One frame: the line, its spouts, cups and slush.
-  draw(frame, units, keyNames, lowerKeyNames = []) {
-    this.fit(frame);
+  draw(frame, units, keyNames, lowerKeyNames = [], fitTo = frame) {
+    this.fit(fitTo);
     this.tick = frame.tick;
     const g = this.g;
     const p = this.pal;

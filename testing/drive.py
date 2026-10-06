@@ -493,6 +493,32 @@ def every_flavor_differs_in_gray_on_the_rendered_page(page, name):
 
 
 @check
+def the_page_draws_between_two_ticks_and_never_past_the_newest(page, name):
+    # Sam, 2026-10-06: "whenever the spout opens there is a little bit of
+    # framerate lag". The screen draws at its own rate between the last two
+    # ticks core sent (web/blend.js). Halfway is halfway, a unit new this tick
+    # is where core put it, and two frames that are not one tick apart are
+    # not blended.
+    got = page.evaluate("""async () => {
+        const b = await import('./blend.js');
+        // id, x, y, r, flavor + 256 * line
+        const prev = [7, 0, 1000, 10, 1];
+        const cur = [7, 200, 600, 30, 1, 8, 50, 50, 5, 2];
+        const u = Array.from(b.blendUnits(prev, cur, 0.5));
+        const f0 = { tick: 9, lines: [{ seat: 0, travel: 100, spouts: [{ x: 0, y: 0, pivot: [0, 0], tip: [0, 10] }], cups: [{ order: 3, x: 40, base: 0, floor: 0, rim: 0 }] }] };
+        const f1 = { tick: 10, lines: [{ seat: 0, travel: 140, spouts: [{ x: 0, y: 0, pivot: [0, 0], tip: [10, 0] }], cups: [{ order: 3, x: 80, base: 0, floor: 0, rim: 0 }, { order: 4, x: -60, base: 0, floor: 0, rim: 0 }] }] };
+        const f = b.blendFrame(f0, f1, 0.25);
+        const far = b.blendFrame({ ...f0, tick: 7 }, f1, 0.25);
+        return { u, travel: f.lines[0].travel, cups: f.lines[0].cups.map((c) => c.x), tip: f.lines[0].spouts[0].tip, far: far === f1 };
+    }""")
+    want = {"u": [7, 100, 800, 20, 1, 8, 50, 50, 5, 2], "travel": 110, "cups": [50, -60], "tip": [2.5, 7.5], "far": True}
+    if got != want:
+        return [f"{name}: blending gave {got}, not {want}"]
+    print(f"ok: {name}: halfway is halfway, a new unit stays where core put it, and frames two ticks apart are not blended")
+    return []
+
+
+@check
 def a_file_that_is_not_a_replay_is_refused_with_a_sentence(page, name):
     junk = ROOT / "testing" / "replays" / "not-a-replay.txt"
     junk.write_text("this is not a replay")

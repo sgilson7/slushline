@@ -1,6 +1,6 @@
 # Handoff
 
-Written for a reader with none of the last session's context. This one is for v0.4.0 (2026-10-06, build `3bf187c1`, live gate walked in three engines): a pour sound and a blurred store behind the line (`SECOND-ORDER-M7`), then flower-pot cups (SIM_VERSION 7) and the fix for a lag the store caused (`SECOND-ORDER-M8`). Nothing Sam has asked for is unstarted; section 7 lists what waits on him.
+Written for a reader with none of the last session's context. This one is for v0.4.0 (2026-10-06, build `3bf187c1`, live gate walked in three engines): a pour sound and a blurred store behind the line (`SECOND-ORDER-M7`), then flower-pot cups (SIM_VERSION 7), the fix for a lag the store caused, and drawing between ticks (`SECOND-ORDER-M8`). Nothing Sam has asked for is unstarted; section 7 lists what waits on him.
 
 ## 1. What this is
 
@@ -28,7 +28,7 @@ Slushline is a browser game at https://sgilson7.github.io/slushline/ (repo `sgil
 | `wasm` | the shim: `Game` (step, frame, hud, outcome, take_judged, autoplay), the path, chapters, the save |
 | `lab` | `recon-m1`, `recon-m2`, `ladder`, `play`, `fields`, `splash`, `golden`, `script-checksum`, `bench` |
 
-The page is `web/`: `app.js` (screens, the clock, the tree and lanes, HUD, results, settings), `draw.js` (`Stage`: canvas sized to the page, fields, belt, tray, spouts, cups, slush in three passes, nozzles, fill gauges), `sound.js` (WebAudio synth: lid thunk, judgement phrases, the groove, and a pour voice per spout that follows each frame's `opening`; a 2.2 kHz low-pass and a compressor on everything), `backdrop.js` (the store: painted small, box-blurred, scaled up and washed in paper, once per canvas size; colors in `palette.json` `backdrop.*`), `groove.js`, `keys.js`, `files.js`. `index.html` holds only `{{copy.key}}` tokens. The gate is `testing/drive.py`.
+The page is `web/`: `app.js` (screens, the clock, the tree and lanes, HUD, results, settings), `draw.js` (`Stage`: canvas sized to the page, fields, belt, tray, spouts, cups, slush in three passes, nozzles, fill gauges), `sound.js` (WebAudio synth: lid thunk, judgement phrases, the groove, and a pour voice per spout that follows each frame's `opening`; a 2.2 kHz low-pass and a compressor on everything), `backdrop.js` (the store: painted small, box-blurred, scaled up and washed in paper, once per canvas size; colors in `palette.json` `backdrop.*`), `groove.js`, `keys.js`, `files.js`, `blend.js` (draws between the last two ticks: every screen refresh paints at the share of a tick the clock has run; the canvas is sized from the newest real frame). `index.html` holds only `{{copy.key}}` tokens. The gate is `testing/drive.py`.
 
 ## 4. The commands
 
@@ -60,5 +60,6 @@ The pour sound and the store are built and deployed (DECISIONS.md, 2026-10-06; n
 - **The pour** (`web/sound.js`, `pourFrame`; level `POUR_GAIN`): a psst as a valve opens, then a breathy hiss over a low wobbling body, fading as it closes. Whether it reads as a slush machine and is gentle enough. The gate checks only that holding a key starts a voice and letting go stops it.
 - **The store** (`web/backdrop.js`; `WASH`, `SMALL`; colors `backdrop.*` in `palette.json`). On two-line missions it is stretched tall (M7 row 6).
 - **WebKit crashed once on CI** after the first push of this round and passed on a re-run (M7 row 9). If it happens again, suspect the pour voices first.
+- **Whether the stutter on opening a spout is gone** (M8 row 10). It was never reproduced here; if it is still there, ask which browser and screen.
 - **The flower-pot cups** (M8 row 7): whether they read as slush cups, and whether Layers, now on a small cup, is too hard.
 - His other open items are the "the human's" rows in `SECOND-ORDER-M2` to `M8`.

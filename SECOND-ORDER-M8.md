@@ -1,6 +1,6 @@
 # SECOND-ORDER-M8
 
-The notebook for the lag and the flower-pot cups (Sam, 2026-10-06: "ok the game is start to run a little laggily when there are three nozzles going on with complicated cups, please investigate that. also the cups should be more slurpee shaped, like a flower pot shape").
+The notebook for the lag and the flower-pot cups (Sam, 2026-10-06: "ok the game is start to run a little laggily when there are three nozzles going on with complicated cups, please investigate that. also the cups should be more slurpee shaped, like a flower pot shape"), and the stutter that followed ("whenever the spout opens there is a little bit of framerate lag or something").
 
 | # | Kind | Status | Row |
 |---|---|---|---|
@@ -11,5 +11,8 @@ The notebook for the lag and the flower-pot cups (Sam, 2026-10-06: "ok the game 
 | 5 | finding | done | **`a_full_cup_is_narrow_at_its_floor_and_wide_at_its_rim`**: slush at rest in a full cup stays within the cup's width 6 cm up and spreads at least 4 cm past the floor's width near the rim. Broken by setting the regular cup's flare to 0, it failed with "slush near the rim reaches only 21.0 cm from the middle; the floor is 21.0". |
 | 6 | finding | done | **The leaning walls cost about 9 % per tick** on `lab bench` (2000 units in one cup: 1.59 ms against 1.46), from a square root per unit near a cup. A mission holds a few hundred units, so it was left. |
 | 7 | worklist | the human's | **Sam looks at the cups and plays a lift and the layers:** whether the pot reads as a slush cup, and whether Layers is too hard now (the yardstick passes it 156 times in 200, at 65.6; it was 199 at 67.9). |
+| 8 | finding | done | **No frame stall when a spout opens could be reproduced.** Frame intervals around each key press, in visible Chromium, Firefox and WebKit windows on this Mac (120 Hz and 60 Hz): 60 presses with simulated key repeat over a whole run of Storm, and 10 on Lemon, cherry and cola. No frame after a press was longer than the frames around it. A one-off 133 ms frame on Chromium's first press did not return in four more runs, with the pour sound on or off. The JavaScript a press adds (a pour voice, the psst) is about 4 ms the first time and under 1 ms after. |
+| 9 | finding | done | **Drawing the newest tick moves the picture unevenly, and that shows on falling slush.** Core steps 60 times a second; the screen refreshes at its own rate. At 120 Hz half the refreshes repeated the last picture; at 75 or 144 Hz, or at 60 Hz with the clock near a tick's edge, the steps per refresh run uneven (1, 1, 1, 1, 0…). The belt is slow enough to hide it and the stream, the moment a spout opens, is not. `web/blend.js` draws between the last two ticks: on a 120 Hz screen the strip under a pouring nozzle changed on 120 of 240 refreshes before and on 240 of 240 after. Storm still holds 120 frames a second. The gate check `the_page_draws_between_two_ticks_and_never_past_the_newest` was broken once by blending frames two ticks apart and failed on `'far': False`. |
+| 10 | worklist | the human's | **Sam says whether the stutter is gone**, and if not, which browser and screen he plays on: nothing here reproduced a stall, so the cause in row 9 is the likeliest, not a proven one. |
 
 No new strings. Old replays are refused with their sentence (SIM_VERSION 7).
