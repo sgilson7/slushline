@@ -204,9 +204,21 @@ def a_mission_plays_to_a_result_and_round_trips_through_a_replay_file(page, name
     page.click("#start-mission")
     page.wait_for_function("window.slushline.tick() > 5")
     # A player's hands for a moment, then the timer pilot to the end.
+    # Holding a spout key opens its valve, and the pour's sound follows the
+    # opening core sent (Sam, 2026-10-06: "a gentle pshht sound"): a voice
+    # sounds while the valve is open and stops once it has closed.
     page.keyboard.down("a")
     page.wait_for_timeout(300)
+    pouring = page.evaluate("window.slushline.pourVoices()")
     page.keyboard.up("a")
+    try:
+        page.wait_for_function("window.slushline.frame().lines[0].spouts[0].opening === 0", timeout=5000)
+        page.wait_for_timeout(100)
+        after = page.evaluate("window.slushline.pourVoices()")
+    except Exception:
+        after = "the valve did not close"
+    if pouring != 1 or after != 0:
+        problems.append(f"holding A left {pouring} pour voices sounding, and letting go {after}")
     # The belt's throttle, on the other hand: held, it speeds up, and it keeps
     # the speed it is left at (Sam, 2026-10-05).
     page.keyboard.down("ArrowRight")
@@ -265,7 +277,7 @@ def a_mission_plays_to_a_result_and_round_trips_through_a_replay_file(page, name
         problems.append(f"the replay's result reads {page.inner_text('.verdict')!r}, the run's read {verdict!r}")
     if problems:
         return [f"{name}: {p}" for p in problems]
-    print(f"ok: {name}: the first lid showed {seen[1] if seen else None!r}; the belt ran at {faster} % after the faster key and {slower} % after the slower; the first mission played to {verdict!r} ({final}); its replay ({size} bytes) loaded after a reload, ends on {got}, and shows the same result")
+    print(f"ok: {name}: holding A sounded {pouring} pour voice and letting go {after}; the first lid showed {seen[1] if seen else None!r}; the belt ran at {faster} % after the faster key and {slower} % after the slower; the first mission played to {verdict!r} ({final}); its replay ({size} bytes) loaded after a reload, ends on {got}, and shows the same result")
     page.click("#to-missions")
     page.click("#back-to-menu")
     return []

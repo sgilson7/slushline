@@ -1,5 +1,5 @@
 {
-  "_about": "The only place a color is written (D17). Flavors carry a pattern and a brightness as well as a hue (PLANNING-BRIEF 0.5); crates/content/tests/look.rs checks every pair. packaging/package-web.sh turns the top-level values into CSS variables. Each flavor's `dim` is its fill with most of the saturation gone and pulled toward the paper: the unfilled part of its band in the gauge under a cup (Sam, 2026-10-05).",
+  "_about": "The only place a color is written (D17). Flavors carry a pattern and a brightness as well as a hue (PLANNING-BRIEF 0.5); crates/content/tests/look.rs checks every pair. packaging/package-web.sh turns the top-level values into CSS variables. Each flavor's `dim` is its fill with most of the saturation gone and pulled toward the paper: the unfilled part of its band in the gauge under a cup (Sam, 2026-10-05). `backdrop` holds the store behind the line (Sam, 2026-10-06): a generic shop seen from behind its counter, blurred and washed in paper by web/backdrop.js, in colors that carry no brand.",
   "paper": "#EFE8D8",
   "panel": "#E4DBC6",
   "line": "#2B2A28",
@@ -35,5 +35,27 @@
   "judge_edge": "#2B2A28",
   "judge_glow": "#56B4E9",
   "field": "#56B4E9",
-  "field_ink": "#3E4A89"
+  "field_ink": "#3E4A89",
+  "backdrop": {
+    "ceiling": "#D9D4C7",
+    "light": "#FFFDF4",
+    "wall": "#CFC6B2",
+    "floor": "#BDB4A2",
+    "floor_far": "#A99F8C",
+    "shelf": "#8C8272",
+    "shelf_edge": "#6F6759",
+    "cooler": "#7E8C93",
+    "cooler_glow": "#E8F2F2",
+    "window": "#C9DCE0",
+    "window_frame": "#77705F",
+    "door": "#B9CED2",
+    "counter": "#9D8F78",
+    "counter_edge": "#6F6352",
+    "pack_1": "#C97B5A",
+    "pack_2": "#7FA07A",
+    "pack_3": "#D8BE6A",
+    "pack_4": "#7C8FB5",
+    "pack_5": "#B57C9E",
+    "pack_6": "#E2D7C0"
+  }
 }

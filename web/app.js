@@ -359,6 +359,7 @@ function begin(r) {
 function stopRun() {
   if (run?.raf) cancelAnimationFrame(run.raf);
   run = null;
+  sound.pourStop();
   const j = $('judge');
   if (j) j.hidden = true;
   grooveArt.stop($('groove'));
@@ -391,6 +392,7 @@ function loop(now) {
     for (const j of JSON.parse(run.game.take_judged())) judge(j.word, j.groove);
   }
   const over = run.game.is_replay() ? run.game.replay_done() : run.game.done();
+  if (over && !run.finished) sound.pourStop();
   if (over && !run.finished && run.mission) {
     run.finished = true;
     // Let the last lid close on screen for a moment before the result.
@@ -402,6 +404,9 @@ function loop(now) {
 function draw() {
   run.frame = JSON.parse(run.game.frame());
   stage.draw(run.frame, run.game.units(), keyNames(), lowerKeyNames());
+  // The pour's sound follows the openings core sent in this frame.
+  const over = run.game.is_replay() ? run.game.replay_done() : run.game.done();
+  if (!over) sound.pourFrame(run.frame);
   document.body.dataset.tick = String(run.game.tick());
 }
 
@@ -648,6 +653,9 @@ async function main() {
   // Any key a player presses lets the browser start sound, so the first
   // lid is not lost to a context still waking up.
   window.addEventListener('keydown', () => sound.wake(), { passive: true });
+  // A hidden tab stops drawing frames, so its pours would hiss on unheard
+  // by the frames that would close them.
+  document.addEventListener('visibilitychange', () => { if (document.hidden) sound.pourStop(); });
   // Hooks for the gate (testing/drive.py). They read core; they decide nothing.
   window.slushline = {
     scriptChecksum: (ticks) => core.script_checksum(ticks),
@@ -686,6 +694,7 @@ async function main() {
     // Play the groove on the run on screen, as three top cups in a row would.
     groove: () => playGroove(),
     grooveShowing: () => !$('groove').hidden,
+    pourVoices: () => sound.pourVoices(),
     judgement: () => { const j = $('judge'); return j && !j.hidden ? [j.dataset.word, j.textContent] : null; },
   };
   $('status').hidden = true;

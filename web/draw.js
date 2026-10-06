@@ -2,6 +2,8 @@
 // point, counts, openings. The page converts units and picks colors from the
 // palette; it never integrates, predicts or detects a contact (D2).
 
+import { Backdrop } from './backdrop.js';
+
 // The view: centimeters of the line shown across the canvas. A layout
 // choice of the page, not a rule of the game.
 const VIEW_LEFT = -10;
@@ -19,6 +21,7 @@ export class Stage {
     this.flavors = flavors;
     this.showCodes = false;
     this.codes = [];
+    this.backdrop = new Backdrop(palette);
   }
 
   get scale() { return this.c.width / VIEW_WIDTH; }
@@ -125,8 +128,8 @@ export class Stage {
     this.tick = frame.tick;
     const g = this.g;
     const p = this.pal;
-    g.fillStyle = p.paper;
-    g.fillRect(0, 0, this.c.width, this.c.height);
+    // The store behind the line, at the canvas's size this frame.
+    g.drawImage(this.backdrop.at(this.c.width, this.c.height), 0, 0);
     for (const line of frame.lines) this.drawFields(line);
     for (const line of frame.lines) this.drawLine(line, line.seat === 1 ? lowerKeyNames : keyNames);
     this.drawUnits(units);

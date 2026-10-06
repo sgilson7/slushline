@@ -47,6 +47,7 @@ window.addEventListener('pagehide', () => {
     const c = ctx;
     ctx = null;
     master = null;
+    voices.clear();
     c.close().catch(() => {});
   }
 });
@@ -269,4 +270,154 @@ export function groove() {
   note(t + 8 * beat, 523.25, 1.4, { type: 'sine', gain: 0.12, vibrato: 4 });
   note(t + 8 * beat, 783.99, 1.2, { type: 'sine', gain: 0.05 });
   return 8 * beat + 1.2;
+}
+
+// --- the pour: a spout's valve open (Sam, 2026-10-06) ----------------------
+//
+// "a gentle pshht sound" while a nozzle pours. A frozen carbonated drink is
+// held under pressure and foams as it reaches the air (SECOND-ORDER-M7 row
+// 1), so the sound is a soft airy psst as the valve opens, then a breathy
+// hiss with a low, slowly wobbling body under it (the thick pour) and now and
+// then a fine crackle of bubbles, fading as the valve closes. All of it is
+// noise through filters, under the same low-pass as everything else, and
+// quieter than a lid.
+//
+// When a valve is open is core's: each frame carries every spout's opening
+// (4096 is fully open), and pourFrame follows it. A replay carries the same
+// openings, so it sounds the same.
+
+const FULL_OPEN = 4096;
+const POUR_GAIN = 0.07;
+const voices = new Map();   // "seat:spout" -> a voice
+let foam = null;            // two seconds of hiss with crackle, shared, looped
+
+function foamBuffer() {
+  if (foam && foam.sampleRate === ctx.sampleRate) return foam;
+  const n = Math.floor(ctx.sampleRate * 2);
+  foam = ctx.createBuffer(1, n, ctx.sampleRate);
+  const d = foam.getChannelData(0);
+  let crackle = 0, brown = 0;
+  for (let i = 0; i < n; i += 1) {
+    // Sparse, quick ticks: bubbles breaking at the cup.
+    if (Math.random() < 0.0009) crackle = 0.7 + Math.random() * 0.5;
+    crackle *= 0.992;
+    const white = Math.random() * 2 - 1;
+    // A little brown noise under the white, so the hiss is breathy rather
+    // than a bright shh.
+    brown = (brown + white * 0.02) * 0.995;
+    d[i] = white * (0.45 + crackle) + brown * 3;
+  }
+  return foam;
+}
+
+// One voice per spout: the hiss (a broad band near 1 kHz) and the body (a
+// low band, its level wobbling a few times a second like a thick pour).
+function voice() {
+  const src = ctx.createBufferSource();
+  src.buffer = foamBuffer();
+  src.loop = true;
+  const hiss = ctx.createBiquadFilter();
+  hiss.type = 'bandpass';
+  hiss.frequency.value = 1100;
+  hiss.Q.value = 0.6;
+  const body = ctx.createBiquadFilter();
+  body.type = 'lowpass';
+  body.frequency.value = 260;
+  const bodyGain = ctx.createGain();
+  bodyGain.gain.value = 0.55;
+  const wobble = ctx.createOscillator();
+  const wobbleDepth = ctx.createGain();
+  wobble.frequency.value = 4 + Math.random() * 2.5;
+  wobbleDepth.gain.value = 0.3;
+  wobble.connect(wobbleDepth).connect(bodyGain.gain);
+  const out = ctx.createGain();
+  out.gain.value = 0;
+  src.connect(hiss).connect(out);
+  src.connect(body).connect(bodyGain).connect(out);
+  out.connect(master);
+  const t = ctx.currentTime;
+  src.start(t, Math.random() * 1.9);
+  wobble.start(t);
+  return { src, wobble, out, open: false, stopAt: 0 };
+}
+
+// The psst as a valve opens: a short burst of noise that falls from a
+// brighter band into the hiss.
+function psst(t) {
+  const len = 0.28;
+  const n = Math.floor(ctx.sampleRate * len);
+  const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i += 1) d[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const f = ctx.createBiquadFilter();
+  f.type = 'bandpass';
+  f.Q.value = 0.8;
+  f.frequency.setValueAtTime(1900, t);
+  f.frequency.exponentialRampToValueAtTime(900, t + len);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(POUR_GAIN * 1.4, t + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  src.connect(f).connect(g).connect(master);
+  src.start(t);
+  src.stop(t + len + 0.02);
+}
+
+function retire(key, v, t) {
+  try { v.src.stop(t); v.wobble.stop(t); } catch { /* already stopped */ }
+  voices.delete(key);
+}
+
+// Follow the openings in a frame core sent.
+export function pourFrame(frame) {
+  if (!ctx || ctx.state === 'closed') return;
+  const t = ctx.currentTime;
+  const seen = new Set();
+  for (const L of frame.lines) {
+    L.spouts.forEach((s, j) => {
+      const key = `${L.seat}:${j}`;
+      const open = Math.max(0, Math.min(1, s.opening / FULL_OPEN));
+      let v = voices.get(key);
+      if (open > 0) {
+        seen.add(key);
+        if (!v) { v = voice(); voices.set(key, v); }
+        if (!v.open && volume > 0) psst(t);
+        v.open = true;
+        v.stopAt = 0;
+        // About 30 ms to follow the handle, so a change never clicks.
+        v.out.gain.setTargetAtTime(POUR_GAIN * Math.sqrt(open), t, 0.03);
+      }
+    });
+  }
+  // A valve that has closed: a soft tail, then the voice goes.
+  for (const [key, v] of voices) {
+    if (seen.has(key)) continue;
+    if (v.open) {
+      v.open = false;
+      v.out.gain.setTargetAtTime(0, t, 0.12);
+      v.stopAt = t + 0.8;
+    } else if (v.stopAt && t >= v.stopAt) {
+      retire(key, v, t);
+    }
+  }
+}
+
+// Every pour voice off at once: the run ended, the page was left or hidden.
+export function pourStop() {
+  if (!ctx || ctx.state === 'closed') { voices.clear(); return; }
+  const t = ctx.currentTime;
+  for (const [key, v] of voices) {
+    v.out.gain.cancelScheduledValues(t);
+    v.out.gain.setTargetAtTime(0, t, 0.04);
+    retire(key, v, t + 0.25);
+  }
+}
+
+// How many pour voices are sounding: for the gate, which cannot hear.
+export function pourVoices() {
+  let n = 0;
+  for (const v of voices.values()) if (v.open) n += 1;
+  return n;
 }
