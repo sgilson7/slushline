@@ -39,7 +39,16 @@ export class Stage {
       if (Math.abs(this.c.width - w) > 2) this.c.width = w;
     }
     let top = 0;
-    for (const L of frame.lines) for (const sp of L.spouts) top = Math.max(top, sp.tip[1] / this.one);
+    // A handle's reach, its pivot plus its length, rather than where its tip
+    // is now: the tip moves as the handle is pulled, and a height that moved
+    // with it resized the canvas and repainted the store every frame (Sam,
+    // 2026-10-06: "a little laggily when there are three nozzles going").
+    for (const L of frame.lines) {
+      for (const sp of L.spouts) {
+        const reach = Math.hypot(sp.tip[0] - sp.pivot[0], sp.tip[1] - sp.pivot[1]);
+        top = Math.max(top, (sp.pivot[1] + reach) / this.one);
+      }
+    }
     const h = Math.round((top + 18 - VIEW_BOTTOM) * this.scale);
     if (h > 0 && this.c.height !== h) {
       this.c.height = h;
