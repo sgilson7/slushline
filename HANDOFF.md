@@ -1,6 +1,6 @@
 # Handoff
 
-Written for a reader with none of the last session's context. This one is for v0.4.1 (2026-10-06, build `7203be02`, live gate walked in three engines): a pour sound and a blurred store behind the line (`SECOND-ORDER-M7`), then flower-pot cups (SIM_VERSION 7), the fix for a lag the store caused, and drawing between ticks (`SECOND-ORDER-M8`); then the soundtrack from SoundCloud, flair words on three cups in ten, and a spoken miss (`SECOND-ORDER-M9`). Nothing Sam has asked for is unstarted; section 7 lists what waits on him.
+Written for a reader with none of the last session's context. This one is for v0.5.0 (2026-10-06, build `b75bedbc`, live gate walked in three engines): a pour sound and a blurred store behind the line (`SECOND-ORDER-M7`), then flower-pot cups (SIM_VERSION 7), the fix for a lag the store caused, and drawing between ticks (`SECOND-ORDER-M8`); then the soundtrack from SoundCloud, flair words on three cups in ten, and a spoken miss (`SECOND-ORDER-M9`). Nothing Sam has asked for is unstarted; section 7 lists what waits on him.
 
 ## 1. What this is
 
