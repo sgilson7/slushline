@@ -997,7 +997,16 @@
     "nice": "NICE",
     "ok": "OK",
     "miss": "MISS",
-    "review": "new (Sam, 2026-10-05). These words are said for effect at Sam's request, the one exception to TONE.md rule 9."
+    "review": "new (Sam, 2026-10-05). These words are said for effect at Sam's request, the one exception to TONE.md rule 9. new (Sam, 2026-10-06): the flair words GROOVY, FUNKY, SMOOTH, CHILL and DARN, and the spoken lines under judge.voice (\"a man sadly saying OH NO, and the variation is he says DARN like a cowboy\"), all said for effect under the same exception.",
+    "groovy": "GROOVY",
+    "funky": "FUNKY",
+    "smooth": "SMOOTH",
+    "chill": "CHILL",
+    "darn": "DARN",
+    "voice": {
+      "miss": "Oh no",
+      "darn": "Darn"
+    }
   },
   "chapters": {
     "pouring": {
@@ -1034,5 +1043,15 @@
     "jets": {
       "name": "Jets"
     }
+  },
+  "music": {
+    "title": "Soundtrack",
+    "fold": "Hide the player",
+    "unfold": "Show the player",
+    "mute": "Mute the soundtrack",
+    "unmute": "Play the soundtrack",
+    "volume": "Soundtrack volume",
+    "blocked": "Press play on the player once to start the soundtrack, because this browser asks for that press on the player itself.",
+    "review": "new (Sam, 2026-10-06: play a song from SoundCloud as you play, after Gear Master's player)."
   }
 }

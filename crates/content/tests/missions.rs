@@ -579,3 +579,26 @@ fn the_chart_s_lines_are_the_hasse_diagram_and_open_the_same_missions() {
     assert_eq!(content::missions::hasse(&ms, get("m_half")), vec!["m_two_spouts", "m_tail"]);
     assert_eq!(content::missions::hasse(&ms, get("m_two_one")), vec!["m_half", "m_third"]);
 }
+
+#[test]
+fn about_three_cups_in_ten_show_their_word_s_flair_and_a_replay_shows_the_same() {
+    // Sam, 2026-10-06: a variation "you get 30% of the time that uses cooler
+    // more hip language, so instead of excellent say groovy". The roll is
+    // core's, from the world's state, so the same state always shows the
+    // same word.
+    let hits = (0..20_000u64).filter(|&k| content::missions::flair_roll(k)).count();
+    assert!((5_600..=6_400).contains(&hits), "{hits} of 20000 keys rolled the flair, not about 30 in a hundred");
+    assert_eq!(content::missions::flair_word("excellent").as_deref(), Some("groovy"));
+    let copy = content::copy::copy();
+    for w in ["excellent", "great", "nice", "ok", "miss"] {
+        let f = content::missions::flair_word(w).unwrap_or_else(|| panic!("{w} has no flair"));
+        assert!(copy["judge"][&f].is_string(), "judge.{f} has no text");
+    }
+    let m = mission("m_first_pour").unwrap();
+    let w = World::new(m.setup(7, 1));
+    let shown: Vec<(String, bool)> = (0..40u16).map(|c| content::missions::shown_word(&w, 0, c, 92)).collect();
+    let again: Vec<(String, bool)> = (0..40u16).map(|c| content::missions::shown_word(&w, 0, c, 92)).collect();
+    assert_eq!(shown, again);
+    assert!(shown.iter().any(|s| s.0 == "groovy") && shown.iter().any(|s| s.0 == "excellent"), "{shown:?}");
+    assert!(shown.iter().all(|s| (s.0 == "groovy") == s.1));
+}

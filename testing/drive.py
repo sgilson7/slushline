@@ -6,7 +6,10 @@ file and a file input feeds it back, and whether the browser's arithmetic is
 the native build's arithmetic.
 
 A console error or a request that leaves the origin fails the run, so "nothing
-is uploaded" is tested rather than asserted. Every visible line of text must
+is uploaded" is tested rather than asserted. The one exception is the
+soundtrack (Sam, 2026-10-06): the page may ask SoundCloud's widget host for its
+player, and the gate refuses those requests, so the run never depends on
+SoundCloud and checks the game carries on without it. Every visible line of text must
 be a string from data/copy.en.json, so "the page writes no words of its own"
 is tested from what the player sees.
 
@@ -37,6 +40,15 @@ PORT = 8137
 LIVE = (os.environ.get("ORIGIN") or "").rstrip("/")
 ORIGIN = LIVE or f"http://127.0.0.1:{PORT}"
 COPY = json.loads((ROOT / "data" / "copy.en.json").read_text())
+# The soundtrack's widget (web/music.js). The page names this host and no
+# other; everything SoundCloud loads after it comes from inside its frame.
+SOUNDTRACK_HOSTS = ("w.soundcloud.com",)
+TRACK = "tracks%2F78084887"
+
+
+def soundtrack(url):
+    from urllib.parse import urlparse
+    return (urlparse(url).hostname or "") in SOUNDTRACK_HOSTS
 
 CHECKS = []
 
@@ -103,13 +115,17 @@ def open_page(browser, query=""):
     ctx = browser.new_context(accept_downloads=True)
     page = ctx.new_page()
     problems, offsite = [], []
+    # A refused soundtrack request is reported by the browser as a load
+    # failure; it is the gate's doing, not the page's.
     page.on("console", lambda m: problems.append(f"console.{m.type}: {m.text}")
-            if m.type == "error" else None)
+            if m.type == "error" and not soundtrack(m.location.get("url") or "")
+            and not any(h in m.text for h in SOUNDTRACK_HOSTS) else None)
     page.on("pageerror", lambda e: problems.append(f"pageerror: {e}"))
     # blob: and data: URLs are the page talking to itself; anything else that
     # does not start with the origin has left it.
     page.on("request", lambda r: offsite.append(r.url)
-            if not (r.url.startswith(ORIGIN) or r.url.startswith(("blob:", "data:"))) else None)
+            if not (r.url.startswith(ORIGIN) or r.url.startswith(("blob:", "data:")) or soundtrack(r.url)) else None)
+    page.route(lambda url: soundtrack(url), lambda route: route.abort())
     page.goto(ORIGIN + "/" + query, wait_until="load")
     page.wait_for_function("document.body.dataset.ready === '1'", timeout=30000)
     return ctx, page, problems, offsite
@@ -515,6 +531,88 @@ def the_page_draws_between_two_ticks_and_never_past_the_newest(page, name):
     if got != want:
         return [f"{name}: blending gave {got}, not {want}"]
     print(f"ok: {name}: halfway is halfway, a new unit stays where core put it, and frames two ticks apart are not blended")
+    return []
+
+
+@check
+def the_soundtrack_names_its_track_and_the_game_plays_without_it(page, name):
+    # Sam, 2026-10-06: "have it play the following song from soundcloud as
+    # you play". The player's frame names the track; with SoundCloud refused
+    # (as the gate refuses it) the widget never loads, a run still starts and
+    # plays, and the panel's words are copy strings.
+    page.reload(wait_until="load")
+    page.wait_for_function("document.body.dataset.ready === '1'")
+    problems = []
+    src = page.get_attribute("#music-player", "src") or ""
+    if TRACK not in src or not soundtrack(src):
+        problems.append(f"the player's frame is {src!r}")
+    page.click("#menu-missions")
+    page.click("#mission-m_first_pour")
+    page.click("#open-mission")
+    page.click("#start-mission")
+    page.wait_for_function("window.slushline.tick() > 30")
+    state = page.evaluate("window.slushline.music()")
+    if state["loaded"] or not state["wanted"]:
+        problems.append(f"with SoundCloud refused the music reads {state}")
+    page.click("#music-fold")
+    if page.is_visible("#music-player"):
+        problems.append("the fold button left the player showing")
+    problems += lines_not_in_copy(page, "the soundtrack panel, folded")
+    page.click("#music-fold")
+    page.click("#leave-run")
+    page.click("#back-to-menu")
+    if problems:
+        return [f"{name}: {p}" for p in problems]
+    print(f"ok: {name}: the player names the track; with SoundCloud refused a run still plays, and the panel folds")
+    return []
+
+
+@check
+def a_missed_cup_is_said_aloud_in_the_copy_file_s_words(page, name):
+    # Sam, 2026-10-06: "a man sadly saying OH NO, and the variation is he
+    # says DARN like a cowboy". A test cannot hear; it catches what the page
+    # hands the browser's speech: the line from judge.voice, the cowboy lower
+    # and slower. A browser with no voice of its own on the machine says
+    # nothing, and the old phrase plays.
+    page.reload(wait_until="load")
+    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.click("#menu-missions")
+    page.click("#mission-m_first_pour")
+    page.click("#open-mission")
+    page.click("#start-mission")
+    page.wait_for_function("window.slushline.tick() > 2")
+    got = page.evaluate("""async () => {
+        if (!('speechSynthesis' in window)) return { voices: 0, said: [] };
+        const local = () => speechSynthesis.getVoices().filter((v) => v.localService && /^en/i.test(v.lang)).length;
+        for (let k = 0; k < 20 && !local(); k += 1) await new Promise((r) => setTimeout(r, 100));
+        const said = [];
+        const speak = speechSynthesis.speak.bind(speechSynthesis);
+        speechSynthesis.speak = (u) => { said.push([u.text, u.pitch, u.rate]); };
+        window.slushline.performJudgement('miss');
+        const missWord = document.getElementById('judge').textContent;
+        window.slushline.performJudgement('darn');
+        const darnWord = document.getElementById('judge').textContent;
+        speechSynthesis.speak = speak;
+        return { voices: local(), said, words: [missWord, darnWord] };
+    }""")
+    problems = []
+    if got.get("words") != [COPY["judge"]["miss"], COPY["judge"]["darn"]]:
+        problems.append(f"the words shown were {got.get('words')}")
+    voice = COPY["judge"]["voice"]
+    if got["voices"]:
+        said = got["said"]
+        if [x[0] for x in said] != [voice["miss"], voice["darn"]]:
+            problems.append(f"the voice said {said}")
+        elif not (said[1][1] < said[0][1] and said[1][2] < said[0][2]):
+            problems.append(f"the cowboy is not lower and slower than the sad line: {said}")
+    elif got["said"]:
+        problems.append(f"with no voice on the machine the page still spoke: {got['said']}")
+    page.click("#leave-run")
+    page.click("#back-to-menu")
+    if problems:
+        return [f"{name}: {p}" for p in problems]
+    how = f"said {[x[0] for x in got['said']]}" if got["voices"] else "no voice on this machine, so the old phrase"
+    print(f"ok: {name}: MISS and DARN showed their copy; {how}")
     return []
 
 

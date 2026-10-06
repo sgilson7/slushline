@@ -8,6 +8,7 @@ import { download, pick } from './files.js';
 import * as sound from './sound.js';
 import * as grooveArt from './groove.js';
 import { blendFrame, blendUnits } from './blend.js';
+import * as music from './music.js';
 
 const BUILD = '__BUILD__';
 const STORE = 'slushline.save';
@@ -341,6 +342,7 @@ function startMission(id) {
 
 function begin(r) {
   stopRun();
+  music.play();
   rebinding = null;
   const m = r.game.mission_id() ? missions().find((x) => x.id === r.game.mission_id()) : null;
   run = { ...r, acc: 0, last: performance.now(), frame: null, mission: m, finished: false, lines: JSON.parse(r.game.frame()).lines.length };
@@ -443,7 +445,9 @@ function draw() {
 // Dance Revolution (Sam, 2026-10-05). The word and the phrase are the ones
 // core chose for the score; the page only performs them.
 function judge(word, groove = false) {
-  sound.judged(word);
+  // A missed cup is said aloud, in words from the copy file (judge.voice).
+  const said = COPY.judge.voice?.[word] ? t(`judge.voice.${word}`) : null;
+  sound.judged(word, said);
   if (groove) setTimeout(() => playGroove(), 650);
   const j = $('judge');
   const fresh = j.cloneNode(false);
@@ -676,6 +680,7 @@ async function main() {
   stage.onResize = (w, h) => { const gc = $('groove'); gc.width = w; gc.height = h; };
   stage.codes = FLAVORS.map((f) => t(`flavors.${f.id}.short`));
   restore();
+  music.setup(t);
   stage.showCodes = options().short_codes;
   sound.setVolume(options().sound_volume / 100);
   keys.listen((code) => run && Object.values(bindings()).includes(code));
@@ -727,6 +732,9 @@ async function main() {
     groove: () => playGroove(),
     grooveShowing: () => !$('groove').hidden,
     pourVoices: () => sound.pourVoices(),
+    // Perform a judgement's word and sound, as a lid closing would.
+    performJudgement: (word) => judge(word),
+    music: () => music.state(),
     judgement: () => { const j = $('judge'); return j && !j.hidden ? [j.dataset.word, j.textContent] : null; },
   };
   $('status').hidden = true;

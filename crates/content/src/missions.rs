@@ -507,6 +507,38 @@ pub fn judgement(score: u32) -> String {
     unreachable!("the last judgement is at 0")
 }
 
+/// The word a judged cup shows and sounds: the word its score earns, or, on
+/// `flair.pct` cups in a hundred, that word's flair (Sam, 2026-10-06: a
+/// variation "you get 30% of the time that uses cooler more hip language").
+/// Which cups is decided from the world's state when the lid closes, so a
+/// replay shows the same words, and the simulation is not asked for a number.
+pub fn shown_word(w: &World, seat: usize, cup: u16, score: u32) -> (String, bool) {
+    let word = judgement(score);
+    let key = w.checksum() ^ ((seat as u64) << 32) ^ cup as u64;
+    match flair_word(&word) {
+        Some(f) if flair_roll(key) => (f, true),
+        _ => (word, false),
+    }
+}
+
+/// The flair `data/judgements.json` lists for a word, if any.
+pub fn flair_word(word: &str) -> Option<String> {
+    let v: Value = serde_json::from_str(JUDGEMENTS_JSON).expect("data/judgements.json is valid");
+    v["flair"]["words"][word].as_str().map(str::to_string)
+}
+
+/// Whether `key` falls in the flair's share: `flair.pct` in a hundred keys,
+/// spread by a SplitMix64 finalizer so neighboring cups are unrelated.
+pub fn flair_roll(key: u64) -> bool {
+    let v: Value = serde_json::from_str(JUDGEMENTS_JSON).expect("data/judgements.json is valid");
+    let pct = v["flair"]["pct"].as_u64().unwrap_or(0);
+    let mut z = key.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    z ^= z >> 31;
+    z % 100 < pct
+}
+
 /// How many cups in a row, ending with the last one judged on `seat`'s line,
 /// earned the streak's word; and whether that run has just reached a
 /// multiple of the streak's length, which plays the reward (Sam,

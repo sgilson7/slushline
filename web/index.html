@@ -24,11 +24,28 @@
     <div id="judge" aria-hidden="true" hidden></div>
   </div>
   <section id="screen" hidden></section>
+  <!-- The soundtrack (Sam, 2026-10-06), after Gear Master's: SoundCloud's own
+       widget, streamed from SoundCloud. No audio file of it is in the repo. -->
+  <aside id="music" aria-label="{{music.title}}">
+    <div class="music-head">
+      <span>{{music.title}}</span>
+      <button id="music-fold" type="button" class="quiet" aria-expanded="true">{{music.fold}}</button>
+    </div>
+    <iframe id="music-player" title="{{music.title}}" allow="autoplay; encrypted-media" scrolling="no" frameborder="no"
+      src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F78084887&amp;auto_play=false&amp;hide_related=true&amp;show_comments=false&amp;show_user=true&amp;show_reposts=false&amp;show_teaser=false&amp;visual=false"></iframe>
+    <p id="music-blocked" hidden>{{music.blocked}}</p>
+    <div class="music-row">
+      <button id="music-mute" type="button" class="quiet">{{music.mute}}</button>
+      <input id="music-volume" type="range" min="0" max="100" step="5" aria-label="{{music.volume}}">
+      <span id="music-level" data-value="1"></span>
+    </div>
+  </aside>
   <footer id="foot">
     <a id="back" href="https://sgilson7.github.io/">{{game.back_link}}</a>
     <span id="build">{{game.build}}</span>
   </footer>
 </main>
+<script src="https://w.soundcloud.com/player/api.js"></script>
 <script type="module" src="app.js"></script>
 </body>
 </html>

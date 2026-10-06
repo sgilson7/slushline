@@ -210,12 +210,14 @@ impl Game {
         for e in events {
             if let sim::world::Event::Judged { cup, score, line } = e {
                 let (run, groove) = content::missions::streak(self.world(), line as usize);
-                self.judged.push(json!({ "cup": cup, "score": score, "word": content::missions::judgement(score), "streak": run, "groove": groove }));
+                let (word, flair) = content::missions::shown_word(self.world(), line as usize, cup, score);
+                self.judged.push(json!({ "cup": cup, "score": score, "word": word, "flair": flair, "streak": run, "groove": groove }));
             }
         }
     }
-    /// The lids that closed since the last call: cup, score and the word
-    /// its score earns.
+    /// The lids that closed since the last call: cup, score, the word core
+    /// chose to show (its score's, or that word's flair) and whether it is
+    /// the flair.
     pub fn take_judged(&mut self) -> String {
         serde_json::to_string(&std::mem::take(&mut self.judged)).unwrap()
     }
@@ -267,7 +269,8 @@ impl Game {
             for e in r.world.events.clone() {
                 if let sim::world::Event::Judged { cup, score, line } = e {
                     let (run, groove) = content::missions::streak(&r.world, line as usize);
-                    self.judged.push(json!({ "cup": cup, "score": score, "word": content::missions::judgement(score), "streak": run, "groove": groove }));
+                    let (word, flair) = content::missions::shown_word(&r.world, line as usize, cup, score);
+                    self.judged.push(json!({ "cup": cup, "score": score, "word": word, "flair": flair, "streak": run, "groove": groove }));
                 }
             }
         }

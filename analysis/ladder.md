@@ -2,7 +2,7 @@
 
 The yardstick pilot (the timer with up to 10 units of error on each let-go, seeded) on every mission, 200 runs each, tuning 1. Written by `make ladder`; read by `the_path_gets_no_easier`.
 
-fingerprint: 48365b339e97c8df
+fingerprint: 95513b18865be065
 
 | # | mission | runs | average | standard error | passed |
 |---|---|---|---|---|---|

@@ -48,6 +48,7 @@ window.addEventListener('pagehide', () => {
     ctx = null;
     master = null;
     voices.clear();
+    try { window.speechSynthesis?.cancel(); } catch { /* no speech here */ }
     c.close().catch(() => {});
   }
 });
@@ -143,12 +144,182 @@ const PHRASES = {
   },
 };
 
-// A cup judged: the lid, then the phrase its judgement earned.
-export function judged(word) {
+// --- the flair: deep house, after the soundtrack (Sam, 2026-10-06) -------
+//
+// The flair words (GROOVY, FUNKY, SMOOTH, CHILL) get "a noise that is more
+// inline with the sunnybeatz feel the heat song", which SoundCloud files as
+// deep house: a round four-on-the-floor kick, an open hat on the off-beat,
+// and a warm minor-ninth chord stab through a low-pass that opens and
+// closes. At 122 beats a minute, in A minor.
+
+const HOUSE_BEAT = 60 / 122;
+
+function kick(t, gain = 0.4) {
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(120, t);
+  o.frequency.exponentialRampToValueAtTime(45, t + 0.12);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain, t + 0.005);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+  o.connect(g).connect(master);
+  o.start(t);
+  o.stop(t + 0.3);
+}
+
+// The open hat, soft: under the low-pass it is a breath on the off-beat.
+function hat(t, gain = 0.07) {
+  const n = Math.floor(ctx.sampleRate * 0.14);
+  const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i += 1) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (n / 4));
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const f = ctx.createBiquadFilter();
+  f.type = 'highpass';
+  f.frequency.value = 1400;
+  const g = ctx.createGain();
+  g.gain.value = gain;
+  src.connect(f).connect(g).connect(master);
+  src.start(t);
+}
+
+// A chord stab: detuned pairs through a resonant low-pass that sweeps open
+// and shut, which is most of the deep house sound. Triangles, not the saws a
+// house record would use: no square or sawtooth wave plays here, since Sam
+// found the first sounds too tinny (DECISIONS.md, 2026-10-05).
+function stab(t, freqs, len, { gain = 0.05, open = 1600 } = {}) {
+  const f = ctx.createBiquadFilter();
+  f.type = 'lowpass';
+  f.Q.value = 4;
+  f.frequency.setValueAtTime(300, t);
+  f.frequency.exponentialRampToValueAtTime(open, t + len * 0.25);
+  f.frequency.exponentialRampToValueAtTime(350, t + len);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain, t + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+  f.connect(g).connect(master);
+  for (const fr of freqs) {
+    for (const detune of [-7, 7]) {
+      const o = ctx.createOscillator();
+      o.type = 'triangle';
+      o.frequency.value = fr;
+      o.detune.value = detune;
+      o.connect(f);
+      o.start(t);
+      o.stop(t + len + 0.05);
+    }
+  }
+}
+
+// Am9, Dm9 and Fmaj7, voiced low and close.
+const AM9 = [220, 261.63, 329.63, 392, 493.88];
+const DM9 = [146.83, 174.61, 220, 261.63, 329.63];
+const FMAJ7 = [174.61, 220, 261.63, 329.63];
+
+Object.assign(PHRASES, {
+  // A bar of the groove: kick on each beat, hats between, two stabs, and a
+  // last chord that rings with the filter wide.
+  groovy(t) {
+    const b = HOUSE_BEAT;
+    for (let i = 0; i < 4; i += 1) {
+      kick(t + i * b, 0.32);
+      hat(t + i * b + b / 2);
+    }
+    stab(t + b * 0.5, AM9, b * 0.9, { gain: 0.045 });
+    stab(t + b * 1.5, AM9, b * 0.9, { gain: 0.045 });
+    stab(t + b * 2.5, DM9, b * 0.9, { gain: 0.045 });
+    stab(t + b * 3, AM9, b * 2.2, { gain: 0.05, open: 2000 });
+    bass(t, 110, b * 0.8);
+    bass(t + b * 2, 73.42, b * 0.8);
+  },
+  funky(t) {
+    const b = HOUSE_BEAT;
+    for (let i = 0; i < 2; i += 1) {
+      kick(t + i * b, 0.3);
+      hat(t + i * b + b / 2);
+    }
+    stab(t + b * 0.5, DM9, b * 0.8, { gain: 0.045 });
+    stab(t + b * 1.5, AM9, b * 1.4, { gain: 0.045 });
+    bass(t, 110, b * 0.7);
+  },
+  smooth(t) {
+    const b = HOUSE_BEAT;
+    kick(t, 0.28);
+    hat(t + b / 2);
+    stab(t + b / 2, FMAJ7, b * 1.4, { gain: 0.045, open: 1300 });
+  },
+  chill(t) {
+    const b = HOUSE_BEAT;
+    hat(t + b / 4, 0.05);
+    stab(t, DM9, b * 1.6, { gain: 0.04, open: 900 });
+  },
+});
+
+// --- a voice for a missed cup (Sam, 2026-10-06) ---------------------------
+//
+// "a man sadly saying OH NO, and the variation is he says DARN like a
+// cowboy". There is no recording: the browser's own speech voice says the
+// line from the copy file, slow and low for the sad one, slower and lower
+// still, drawn out, for the cowboy. Only voices the browser keeps on this
+// machine are used, so nothing leaves the page. With no such voice, the old
+// wah-wah plays instead.
+
+const MAN = /\b(fred|ralph|daniel|alex|aaron|arthur|albert|tom|david|mark|george|james|male)\b/i;
+
+function speechVoice() {
+  if (!('speechSynthesis' in window)) return null;
+  const local = window.speechSynthesis.getVoices().filter((v) => v.localService && /^en/i.test(v.lang));
+  return local.find((v) => MAN.test(v.name)) ?? local[0] ?? null;
+}
+
+const VOICES = { miss: { pitch: 0.7, rate: 0.75 }, darn: { pitch: 0.45, rate: 0.6 } };
+
+function speak(text, how) {
+  const v = speechVoice();
+  if (!v) return false;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.voice = v;
+    u.lang = v.lang;
+    u.pitch = how.pitch;
+    u.rate = how.rate;
+    u.volume = Math.min(1, volume * 1.2);
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Voices load late in some browsers; asking once early lets them arrive.
+if ('speechSynthesis' in window) {
+  try { window.speechSynthesis.getVoices(); } catch { /* no speech here */ }
+}
+
+// A twang under the cowboy: a plucked low string that bends down.
+function twang(t) {
+  note(t, 98, 0.5, { type: 'triangle', gain: 0.12, slide: 0.85 });
+  note(t, 196, 0.35, { type: 'sine', gain: 0.04, slide: 0.85 });
+}
+
+// A cup judged: the lid, then the phrase its judgement earned, which core
+// chose (the word, or its flair). `said` is the line a voice says, from the
+// copy file, for the words that have one.
+export function judged(word, said = null) {
   if (!ctx || ctx.state === 'closed' || volume <= 0) return;
   // Now, not a moment ahead: the lid is closing on screen this frame.
   const t = ctx.currentTime;
   thunk(t);
+  if (VOICES[word] && said) {
+    if (word === 'darn') twang(t + 0.08);
+    if (speak(said, VOICES[word])) return;
+    PHRASES.miss(t + 0.08);
+    return;
+  }
   (PHRASES[word] ?? PHRASES.ok)(t + 0.08);
 }
 
