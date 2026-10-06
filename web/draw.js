@@ -417,27 +417,21 @@ export class Stage {
       const h = 15 * u;
       let x = cx - half;
       const total = c.shares.reduce((a, s) => a + s[1], 0) || 1;
+      const segments = [];
       g.fillStyle = p.paper;
       g.fillRect(x - 0.6 * u, y - 0.6 * u, half * 2 + 1.2 * u, h + 1.2 * u);
       for (const [f, share] of c.shares) {
         const w = (share / total) * half * 2;
-        const have = c.counts[f] ?? 0;
-        const part = Math.min(1, have / Math.max(share, 1));
-        g.fillStyle = p.cup;
+        // Each share is a band of its flavor's fill and pattern, as the first
+        // bars were (Sam, 2026-10-05: "the old style of colored line with
+        // indicator fills per section ... was better").
+        g.fillStyle = this.fill(f);
         g.fillRect(x, y, w, h);
-        if (part > 0) {
-          g.fillStyle = this.fill(f);
-          g.fillRect(x, y, w * part, h);
-          this.patternInBox(f, x, y, w * part, h);
-        }
-        // Past its share: a heavy notch at the segment's end.
-        if (have > share) {
-          g.fillStyle = p.line;
-          g.fillRect(x + w - 2.2 * u, y - 2 * u, 2.2 * u, h + 4 * u);
-        }
+        this.patternInBox(f, x, y, w, h);
         g.strokeStyle = p.line;
         g.lineWidth = Math.max(2, 0.9 * u);
         g.strokeRect(x, y, w, h);
+        segments.push([f, share, x, w]);
         // The short code, centered, in dark letters edged with paper so it
         // reads on any fill without hiding how full the segment is.
         g.font = `800 ${Math.round(Math.min(7.5 * u, w * 0.42))}px system-ui, sans-serif`;
@@ -449,6 +443,28 @@ export class Stage {
         g.fillStyle = p.line;
         g.fillText(this.codes[f], x + w / 2, y + h / 2 + 2.6 * u);
         x += w;
+      }
+      // The indicator for each share: how much of that flavor the cup holds,
+      // as a heavy marker across its band, edged in paper so it shows on the
+      // darkest fill, with a pointer above and below. Bigger than the first
+      // bars' (Sam: "make the indicator bar per section even bigger").
+      for (const [f, share, sx, w] of segments) {
+        const have = Math.min(c.counts[f] ?? 0, share);
+        const mx = sx + (have / Math.max(share, 1)) * w;
+        const mw = 2.6 * u;
+        const over = 1.8 * u;
+        g.fillStyle = p.paper;
+        g.fillRect(mx - mw / 2 - 0.7 * u, y - over - 0.7 * u, mw + 1.4 * u, h + 2 * over + 1.4 * u);
+        g.fillStyle = p.line;
+        g.fillRect(mx - mw / 2, y - over, mw, h + 2 * over);
+        for (const [tipY, dir] of [[y - over, -1], [y + h + over, 1]]) {
+          g.beginPath();
+          g.moveTo(mx - 2.2 * u, tipY);
+          g.lineTo(mx + 2.2 * u, tipY);
+          g.lineTo(mx, tipY + dir * 1.4 * u);
+          g.closePath();
+          g.fill();
+        }
       }
       // Settings' switch: each flavor's short code on its slush in the cup,
       // at the middle of that flavor's units, which core worked out.
