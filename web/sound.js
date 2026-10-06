@@ -19,7 +19,10 @@ export function wake() {
     master.gain.value = volume;
     master.connect(ctx.destination);
   }
-  if (ctx.state === 'suspended') ctx.resume();
+  // A browser with no sound device (CI's headless Firefox) leaves the
+  // context suspended, and the resume is refused when the page goes; that
+  // refusal is expected and is not an error of the game's.
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
 }
 
 // Leaving the page with sound still scheduled made Firefox report
