@@ -1,5 +1,5 @@
 {
-  "_about": "Cup sizes (D9). Inside half-width and height in whole cm; capacity is the units an order's shares divide, and is measured in M1.0 as the units that fill the cup to its rim. Capacities are multiples of 12 so that every share in data/missions.json is whole (every_share_is_a_whole_number_of_units).",
-  "regular": { "inner_half": 21, "inner_height": 36, "capacity": 120 },
-  "small": { "inner_half": 15, "inner_height": 27, "capacity": 60 }
+  "_about": "Cup sizes (D9). Inside half-width and height in whole cm; capacity is the units an order's shares divide, and is measured in M1.0 as the units that fill the cup to its rim. Capacities are multiples of 12 so that every share in data/missions.json is whole (every_share_is_a_whole_number_of_units). `flare` makes a cup a flower pot (Sam, 2026-10-06): each side leans out by that many cm from halfway up to the rim, and in as much to the floor, so the cup holds what it held with straight sides.",
+  "regular": { "inner_half": 21, "inner_height": 36, "flare": 6, "capacity": 120 },
+  "small": { "inner_half": 15, "inner_height": 27, "flare": 4, "capacity": 60 }
 }

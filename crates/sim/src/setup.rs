@@ -168,6 +168,9 @@ pub struct CupSpec {
     /// Half the inside width, and the inside height, in cm.
     pub inner_half: Fx,
     pub inner_height: Fx,
+    /// How much wider each side is at the rim than halfway up, and narrower
+    /// at the floor: the flower pot's lean.
+    pub flare: Fx,
     /// Units the order's shares divide (D9); measured in M1.0.
     pub capacity: u32,
 }

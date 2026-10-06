@@ -125,14 +125,12 @@ fn a_filled_cup_comes_to_rest() {
 /// against a wall counts as inside.
 fn cup_of(w: &World, u: &Unit) -> Option<usize> {
     let ls = w.lines[0].as_ref().unwrap();
-    let half = w.line(0).cup.inner_half;
-    ls.cups.iter().position(|c| !c.judged && (u.p.x - c.x).abs() < half && u.p.y < w.rim(0) - u.r)
+    ls.cups.iter().position(|c| !c.judged && (u.p.x - c.x).abs() < w.half_at(0, c, u.p.y) && u.p.y < w.rim(0) - u.r)
 }
 
 fn outside_below_rim(w: &World, u: &Unit) -> bool {
     let ls = w.lines[0].as_ref().unwrap();
-    let half = w.line(0).cup.inner_half + sim::balance::WALL_HALF * 2;
-    u.p.y < w.rim(0) - u.r * 2 && ls.cups.iter().all(|c| (u.p.x - c.x).abs() > half)
+    u.p.y < w.rim(0) - u.r * 2 && ls.cups.iter().all(|c| (u.p.x - c.x).abs() > w.half_at(0, c, u.p.y) + sim::balance::WALL_HALF * 2)
 }
 
 #[test]
@@ -206,4 +204,37 @@ fn heavy_slush_sinks_through_lighter_slush() {
     };
     let (r, le) = (mean(rasp), mean(lemon));
     assert!(r + 2.0 < le, "raspberry poured last sits at {r:.1} cm on average and lemon at {le:.1}: it did not sink");
+}
+
+#[test]
+fn a_full_cup_is_narrow_at_its_floor_and_wide_at_its_rim() {
+    // The cups are flower pots (Sam, 2026-10-06): slush at rest in a full cup
+    // stays inside the narrow floor near the bottom and spreads past it near
+    // the rim, because the walls lean out and hold it there.
+    let mut w = World::new(standing(1, sim::balance::DEFAULT_TUNING));
+    let cap = w.line(0).cup.capacity;
+    while w.lines[0].as_ref().unwrap().emitted + 15 < cap {
+        w.step([Input(Input::SPOUT[0]), Input::NONE]);
+    }
+    for _ in 0..300 {
+        w.step([Input::NONE; 2]);
+    }
+    let cup = w.line(0).cup;
+    let floor_half = cup.inner_half - cup.flare;
+    let ls = w.lines[0].as_ref().unwrap();
+    let c = ls.cups.iter().find(|c| w.units.iter().any(|u| w.inside(u, c))).expect("a cup holds slush");
+    let floor = w.cup_floor(0, c);
+    let widest = |lo: i32, hi: i32| {
+        w.units
+            .iter()
+            .filter(|u| w.inside(u, c) && u.p.y >= floor + Fx::int(lo) && u.p.y < floor + Fx::int(hi))
+            .map(|u| (u.p.x - c.x).abs() + u.r)
+            .fold(Fx(0), Fx::max)
+    };
+    let (low, high) = (widest(0, 6), widest(24, 36));
+    // Six cm up, the cup is a little wider than its floor.
+    let low_half = w.half_at(0, c, floor + Fx::int(6));
+    assert!(low_half < floor_half + Fx::int(3));
+    assert!(low <= low_half + Fx::ratio(1, 4), "slush near the floor reaches {:.1} cm from the middle, past the cup's {:.1} there", low.0 as f64 / 4096.0, low_half.0 as f64 / 4096.0);
+    assert!(high >= floor_half + Fx::int(4), "slush near the rim reaches only {:.1} cm from the middle; the floor is {:.1}", high.0 as f64 / 4096.0, floor_half.0 as f64 / 4096.0);
 }

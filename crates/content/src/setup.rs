@@ -16,6 +16,7 @@ pub const BLENDS_JSON: &str = include_str!("../../../data/blends.json");
 pub struct CupDef {
     pub inner_half: i32,
     pub inner_height: i32,
+    pub flare: i32,
     pub capacity: u32,
 }
 
@@ -108,7 +109,7 @@ pub fn line(spouts: &[&str], cup: &str, belt: &str, orders: Vec<Order>) -> Line 
     let xs = &d.spout_x[&spouts.len().to_string()];
     Line {
         belt: Belt { speed: Fx::ratio(d.belts[belt] as i64, sim::balance::TICKS_PER_SECOND as i64), schedule: Vec::new() },
-        cup: CupSpec { inner_half: Fx::int(c.inner_half), inner_height: Fx::int(c.inner_height), capacity: c.capacity },
+        cup: CupSpec { inner_half: Fx::int(c.inner_half), inner_height: Fx::int(c.inner_height), flare: Fx::int(c.flare), capacity: c.capacity },
         spouts: spouts
             .iter()
             .zip(xs)

@@ -34,4 +34,5 @@ pub use world::World;
 /// 5: the waste tray keeps where each wasted unit fell (Sam, 2026-10-05).
 /// 6: rows of cups, cups that bob, heavy slush, layered orders and the jet
 /// (Sam, 2026-10-06).
-pub const SIM_VERSION: u32 = 6;
+/// 7: cups are flower pots, their walls leaning out (Sam, 2026-10-06).
+pub const SIM_VERSION: u32 = 7;

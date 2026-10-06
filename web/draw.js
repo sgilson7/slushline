@@ -356,7 +356,8 @@ export class Stage {
     const rimY = this.sy(L.rim);
     const u = this.scale;
     g.fillStyle = p.machine;
-    g.fillRect(lidX - this.len(L.inner_half) - 3 * u, rimY - 14 * u, this.len(L.inner_half) * 2 + 6 * u, 5 * u);
+    const rimHalf = this.len(L.inner_half + L.flare);
+    g.fillRect(lidX - rimHalf - 3 * u, rimY - 14 * u, rimHalf * 2 + 6 * u, 5 * u);
     g.fillStyle = p.lid;
     g.fillRect(lidX - 1.2 * u, rimY - 9 * u, 2.4 * u, 5 * u);
     // Spouts: the machine above, the nozzle, and the handle as core placed
@@ -402,7 +403,10 @@ export class Stage {
     for (const c of L.cups) {
       const cx = this.sx(c.x);
       if (cx < -80 || cx > this.c.width + 80) continue;
-      const half = this.len(L.inner_half);
+      // A flower pot (Sam, 2026-10-06), as core shaped it: narrow at the
+      // floor, wide at the rim, each wall a straight capsule between.
+      const low = this.len(L.inner_half - L.flare);
+      const half = this.len(L.inner_half + L.flare);
       const wall = this.len(L.wall_half) * 2;
       const floorY = this.sy(c.floor);
       const cupRim = this.sy(c.rim);
@@ -415,11 +419,23 @@ export class Stage {
         g.fillRect(cx - 5 * u, beltY - 1.2 * u, 10 * u, 1.2 * u);
       }
       g.fillStyle = p.cup;
-      g.fillRect(cx - half, cupRim, half * 2, floorY - cupRim);
-      g.fillStyle = p.line;
-      g.fillRect(cx - half - wall, cupRim, wall, floorY - cupRim + wall);
-      g.fillRect(cx + half, cupRim, wall, floorY - cupRim + wall);
-      g.fillRect(cx - half - wall, floorY, half * 2 + wall * 2, wall);
+      g.beginPath();
+      g.moveTo(cx - low, floorY);
+      g.lineTo(cx + low, floorY);
+      g.lineTo(cx + half, cupRim);
+      g.lineTo(cx - half, cupRim);
+      g.closePath();
+      g.fill();
+      g.strokeStyle = p.line;
+      g.lineWidth = wall;
+      g.lineCap = 'round';
+      g.lineJoin = 'round';
+      g.beginPath();
+      g.moveTo(cx - half - wall / 2, cupRim);
+      g.lineTo(cx - low - wall / 2, floorY + wall / 2);
+      g.lineTo(cx + low + wall / 2, floorY + wall / 2);
+      g.lineTo(cx + half + wall / 2, cupRim);
+      g.stroke();
       if (c.judged) {
         g.fillStyle = p.lid;
         g.fillRect(cx - half - wall - 2, cupRim - 6, half * 2 + wall * 2 + 4, 6);

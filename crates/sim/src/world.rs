@@ -360,11 +360,17 @@ impl World {
         for c in ls.cups.iter() {
             let d = (x - c.x).abs();
             let rim = self.cup_rim(seat, c);
-            if c.judged && d < line.cup.inner_half + balance::WALL_HALF * 2 {
+            let floor = self.cup_floor(seat, c);
+            let (low, high) = (line.cup.inner_half - line.cup.flare, line.cup.inner_half + line.cup.flare);
+            if c.judged && d < high + balance::WALL_HALF * 2 {
                 top = top.max(rim + balance::WALL_HALF);
-            } else if d < line.cup.inner_half {
-                top = top.max(self.cup_floor(seat, c));
-            } else if d < line.cup.inner_half + balance::WALL_HALF * 2 {
+            } else if d < low {
+                top = top.max(floor);
+            } else if d < high {
+                // Over the flared wall, inside the rim: the wall's inside
+                // face at the height where the cup is that wide.
+                top = top.max(floor + (d - low) * line.cup.inner_height / (line.cup.flare * 2));
+            } else if d < high + balance::WALL_HALF * 2 {
                 top = top.max(rim + balance::WALL_HALF);
             }
         }
@@ -408,26 +414,33 @@ impl World {
     // --- the cups' walls (D9) ---------------------------------------------
 
     /// The cup a unit is near, and which side of each of its two walls the
-    /// unit is on. A wall is a vertical capsule from the belt to the rim; in
-    /// the wall's own frame a unit whose path crossed the wall's line at or
-    /// below the rim stays on the side it started, and one that crossed above
-    /// the rim went over. This is the swept contact, exact because the walls
-    /// are axis-aligned: no speed passes a unit through a wall.
+    /// unit is on. A wall is a straight capsule from the cup's bottom to the
+    /// rim, leaning out (the cups are flower pots); in the wall's own frame a
+    /// unit whose path crossed the wall's line at or below the rim stays on
+    /// the side it started, and one that crossed above the rim went over.
+    /// This is the swept contact, exact because each wall is a straight line
+    /// and a unit's path is one: no speed passes a unit through a wall.
     fn sides(&self) -> Vec<Sides> {
         let mut out = vec![Sides::default(); self.units.len()];
         for (k, u) in self.units.iter().enumerate() {
             let seat = u.line as usize;
             let line = self.line(seat);
             let ls = self.lines[seat].as_ref().unwrap();
-            let reach = line.cup.inner_half + balance::WALL_HALF * 2 + balance::R_FULL * 3;
+            let reach = line.cup.inner_half + line.cup.flare + balance::WALL_HALF * 2 + balance::R_FULL * 3;
             let Some(ci) = ls.cups.iter().position(|c| (u.p.x - c.x).abs() <= reach || (u.q.x - c.prev_x).abs() <= reach) else {
                 continue;
             };
             let c = &ls.cups[ci];
             let rim = self.cup_rim(seat, c);
-            let side_of = |wall_now: Fx, wall_then: Fx| -> i32 {
-                let a = u.q.x - wall_then;
-                let b = u.p.x - wall_now;
+            let cup = line.cup;
+            let (floor_now, floor_then) = (c.base + balance::WALL_HALF * 2, c.prev_base + balance::WALL_HALF * 2);
+            // How far a wall's center line is from the cup's middle at height
+            // `y`, for a cup whose floor is at `floor`.
+            let off = |y: Fx, floor: Fx| half_at(cup, floor, y) + balance::WALL_HALF;
+            // `dir` is -1 for the left wall and 1 for the right.
+            let side_of = |dir: i32| -> i32 {
+                let a = u.q.x - (c.prev_x + off(u.q.y, floor_then) * dir);
+                let b = u.p.x - (c.x + off(u.p.y, floor_now) * dir);
                 let s0 = if a.raw() != 0 { a.signum() } else if b.raw() != 0 { b.signum() } else { 1 };
                 if b.signum() == s0 || b.raw() == 0 {
                     return s0;
@@ -437,11 +450,10 @@ impl World {
                 let y = u.q.y + (u.p.y - u.q.y) * f;
                 if y <= rim + balance::WALL_HALF { s0 } else { -s0 }
             };
-            let off = line.cup.inner_half + balance::WALL_HALF;
             out[k] = Sides {
                 cup: Some(ci as u16),
-                left: side_of(c.x - off, c.prev_x - off),
-                right: side_of(c.x + off, c.prev_x + off),
+                left: side_of(-1),
+                right: side_of(1),
                 // A raised cup has open space under it: only a unit that was
                 // above its floor last tick is held up by it.
                 above: u.q.y + u.r >= c.prev_base + balance::WALL_HALF * 2 - balance::R_FULL,
@@ -465,6 +477,10 @@ impl World {
     pub fn cup_rim(&self, seat: usize, c: &Cup) -> Fx {
         self.cup_floor(seat, c) + self.line(seat).cup.inner_height
     }
+    /// Half cup `c`'s inside width at height `y`.
+    pub fn half_at(&self, seat: usize, c: &Cup, y: Fx) -> Fx {
+        half_at(self.line(seat).cup, self.cup_floor(seat, c), y)
+    }
 
     fn walls(&mut self, sides: &[Sides], t: &Tuning, touched: &mut [bool]) {
         let w = balance::WALL_HALF;
@@ -474,20 +490,32 @@ impl World {
             let seat = self.units[k].line as usize;
             let c = self.lines[seat].as_ref().unwrap().cups[ci as usize].clone();
             let (rim, floor) = (self.cup_rim(seat, &c), self.cup_floor(seat, &c));
-            let half = self.line(seat).cup.inner_half;
+            let cup = self.line(seat).cup;
             let moved = V2::new(c.x - c.prev_x, c.base - c.prev_base);
+            // A wall leans, so the gap across it, measured level, is longer
+            // than the gap square to it by the secant of its lean, and it
+            // pushes square to its face. A level push gave a leaning wall no
+            // hold, so slush beside it fell and was shoved in every tick and
+            // the pile never came to rest (SECOND-ORDER-M8).
+            let sec = V2::new(cup.flare * 2, cup.inner_height).len() / cup.inner_height;
+            let lean = cup.flare * 2 / cup.inner_height;
+            let (low, high) = (cup.inner_half - cup.flare, cup.inner_half + cup.flare);
             let u = &mut self.units[k];
-            for (wx, side) in [(c.x - half - w, s.left), (c.x + half + w, s.right)] {
+            let half = half_at(cup, floor, u.p.y);
+            for (dir, side) in [(-1, s.left), (1, s.right)] {
+                let wx = c.x + (half + w) * dir;
                 let reach = u.r + w;
                 // Below a raised cup's bottom there is no wall.
                 if u.p.y + u.r < c.base {
                     continue;
                 }
                 if u.p.y <= rim {
-                    let gap = (u.p.x - wx) * side;
+                    let gap = (u.p.x - wx) * side / sec;
                     if gap < reach {
                         let push = reach - gap;
-                        u.p.x = wx + reach * side;
+                        // The face's normal toward the unit's side.
+                        let n = V2::new(ONE / sec, -(lean * dir) / sec) * Fx::int(side);
+                        u.p += n * push;
                         // The walls are slick: no slope rule against them, so
                         // swelling slush rises up a cup's sides rather than
                         // sticking to them (M1.0: with the slope rule here the
@@ -497,6 +525,7 @@ impl World {
                     }
                 } else {
                     // The rounded rim: a circle at the wall's top.
+                    let wx = c.x + (high + w) * dir;
                     let d = u.p - V2::new(wx, rim);
                     let rr = reach.raw() as i64;
                     if d.len_sq_raw() < rr * rr {
@@ -509,9 +538,9 @@ impl World {
                     }
                 }
             }
-            // The floor, between the walls. Nothing reaches the underside: the
-            // belt is there.
-            let (xl, xr) = (c.x - half - w * 2, c.x + half + w * 2);
+            // The floor, between the walls where they meet it. Nothing
+            // reaches the underside: the belt is there.
+            let (xl, xr) = (c.x - low - w * 2, c.x + low + w * 2);
             if s.above && u.p.x > xl && u.p.x < xr {
                 let top = floor + u.r;
                 if u.p.y < top {
@@ -520,7 +549,9 @@ impl World {
                     slush::rub(u, moved, V2::new(Fx(0), ONE), push, t);
                     touched[k] = true;
                 }
-                // A judged cup is closed: its lid is a floor at the rim.
+            }
+            // A judged cup is closed: its lid is a floor across the rim.
+            if s.above && (u.p.x - c.x).abs() < high + w * 2 {
                 if c.judged && u.p.y > rim - u.r {
                     let top = rim + w + u.r;
                     if u.p.y < top {
@@ -536,8 +567,7 @@ impl World {
     /// Is the unit inside cup `c`'s walls, below the rim?
     pub fn inside(&self, u: &Unit, c: &Cup) -> bool {
         let seat = u.line as usize;
-        let half = self.line(seat).cup.inner_half;
-        (u.p.x - c.x).abs() < half && u.p.y < self.cup_rim(seat, c) && u.p.y > self.cup_floor(seat, c)
+        (u.p.x - c.x).abs() < self.half_at(seat, c, u.p.y) && u.p.y < self.cup_rim(seat, c) && u.p.y > self.cup_floor(seat, c)
     }
 
     // --- waste and the lid ------------------------------------------------
@@ -551,7 +581,8 @@ impl World {
             let seat = u.line as usize;
             let line = self.line(seat);
             let ls = self.lines[seat].as_ref().unwrap();
-            let in_cup_span = ls.cups.iter().any(|c| (u.p.x - c.x).abs() < line.cup.inner_half + balance::WALL_HALF * 2);
+            // A cup stands on the belt by its bottom, the narrow end.
+            let in_cup_span = ls.cups.iter().any(|c| (u.p.x - c.x).abs() < line.cup.inner_half - line.cup.flare + balance::WALL_HALF * 2);
             let on_belt = u.p.y - u.r <= line.belt_y && !in_cup_span;
             let gone = u.p.y - u.r <= Fx(0) || u.p.x > line.end_x || u.p.x < -line.end_x;
             if on_belt || gone {
@@ -584,7 +615,7 @@ impl World {
                 let (mut judged, mut scraped) = (0u32, 0u32);
                 let units = std::mem::take(&mut self.units);
                 let mut keep = Vec::with_capacity(units.len());
-                let span = line.cup.inner_half + balance::WALL_HALF * 2;
+                let span = line.cup.inner_half + line.cup.flare + balance::WALL_HALF * 2;
                 for u in units {
                     if u.line as usize == seat && self.inside(&u, &c) {
                         counts[u.flavor as usize] += 1;
@@ -671,4 +702,14 @@ mod tests {
         assert_eq!(Handle::closed().opening(), Fx(0));
         assert_eq!(Handle::full().opening(), ONE);
     }
+}
+
+/// Half a cup's inside width at height `y`, for a cup whose floor is at
+/// `floor`. The cups are flower pots (Sam, 2026-10-06: "the cups should be
+/// more slurpee shaped, like a flower pot shape"): narrowest at the floor,
+/// widest at the rim, straight between, and as wide as `inner_half` halfway
+/// up, so a cup holds what it held with straight sides.
+pub fn half_at(cup: crate::setup::CupSpec, floor: Fx, y: Fx) -> Fx {
+    let h = (y - floor).clamp(Fx(0), cup.inner_height);
+    cup.inner_half - cup.flare + cup.flare * 2 * h / cup.inner_height
 }
