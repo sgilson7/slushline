@@ -22,6 +22,18 @@ export function wake() {
   if (ctx.state === 'suspended') ctx.resume();
 }
 
+// Leaving the page with sound still scheduled made Firefox report
+// "InvalidStateError: Navigated away from page" (CI, run 37398597927), so
+// the context is closed before the page goes.
+window.addEventListener('pagehide', () => {
+  if (ctx) {
+    const c = ctx;
+    ctx = null;
+    master = null;
+    c.close().catch(() => {});
+  }
+});
+
 export function setVolume(v) {
   volume = Math.max(0, Math.min(1, v));
   if (master) master.gain.value = volume;
@@ -106,7 +118,7 @@ const PHRASES = {
 
 // A cup judged: the lid, then the phrase its judgement earned.
 export function judged(word) {
-  if (!ctx || volume <= 0) return;
+  if (!ctx || ctx.state === 'closed' || volume <= 0) return;
   const t = ctx.currentTime + 0.01;
   thunk(t);
   (PHRASES[word] ?? PHRASES.ok)(t + 0.12);
