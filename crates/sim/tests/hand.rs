@@ -232,3 +232,26 @@ fn a_field_pushes_only_its_own_line_s_slush() {
     }
     assert_eq!(w.units[0].p.x, start.x, "line 0's field moved line 1's slush");
 }
+
+#[test]
+fn every_wasted_unit_lands_in_the_tray_under_where_it_fell() {
+    // The tray holds exactly what was wasted, by flavor, under the place it
+    // fell: H5's run, with the tray counted at every tick.
+    let l = line(&["cola"], "regular", "steady", vec![order(&[("cola", 1)]), order(&[("cola", 1)])]);
+    let mut w = World::new(setup_of(3, sim::balance::DEFAULT_TUNING, l));
+    let spout = w.line(0).spouts[0].x.trunc();
+    for t in 0..2_400u32 {
+        let hold = (40..320).contains(&t);
+        w.step([Input(if hold { Input::SPOUT[0] } else { 0 }), Input::NONE]);
+        let ls = w.lines[0].as_ref().unwrap();
+        let in_tray: usize = ls.tray.iter().map(Vec::len).sum();
+        assert_eq!(in_tray as u32, ls.wasted, "tick {}", w.tick);
+    }
+    let ls = w.lines[0].as_ref().unwrap();
+    assert!(ls.wasted > 20, "the run wasted {}", ls.wasted);
+    // Most of it fell near the spout, within a cup's width either way.
+    let near: usize = ls.tray.iter().enumerate()
+        .filter(|(b, _)| ((*b as i32) * sim::balance::TRAY_BIN - spout).abs() <= 48)
+        .map(|(_, v)| v.len()).sum();
+    assert!(near * 2 > ls.wasted as usize, "{near} of {} wasted units are under the spout", ls.wasted);
+}

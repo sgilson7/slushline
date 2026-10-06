@@ -161,24 +161,20 @@ function missions() { return JSON.parse(core.path_json(save)); }
 // requirements are met is core's (path_json); the page lays them out.
 const SVG = 'http://www.w3.org/2000/svg';
 
+// Which view of the missions: the tree or the lanes. Remembered in this
+// browser only, as a convenience.
+function missionView() {
+  try { const v = localStorage.getItem('slushline.view'); if (v === 'tree' || v === 'chart') return v; } catch { /* storage off */ }
+  return 'tree';
+}
+
 function path(pickId = null) {
+  const view = missionView();
+  const chart = view === 'chart';
   const ms = missions();
   const byId = new Map(ms.map((m) => [m.id, m]));
-  const rows = [];
-  for (const m of ms) (rows[m.level] ||= []).push(m);
-  // Within a row, by where the requirements sit in the rows above, which
-  // keeps the lines from crossing more than they must.
-  const place = new Map();
-  rows.forEach((row, l) => {
-    if (!row) return;
-    if (l > 0) {
-      const at = (m) => m.requires.reduce((a, r) => a + (place.get(r.from) ?? 0.5), 0) / Math.max(1, m.requires.length);
-      row.sort((a, b) => at(a) - at(b));
-    }
-    row.forEach((m, i) => place.set(m.id, (i + 0.5) / row.length));
-  });
   const cardBox = el('section', { id: 'mission-card' });
-  const tree = el('div', { id: 'tree' });
+  const tree = el('div', { id: 'tree', class: chart ? 'chart' : 'rows' });
   const wires = document.createElementNS(SVG, 'svg');
   wires.setAttribute('class', 'wires');
   wires.setAttribute('aria-hidden', 'true');
@@ -191,10 +187,62 @@ function path(pickId = null) {
     buttons.set(m.id, b);
     return b;
   };
-  const tierLabel = (l) => el('p', { class: 'tier-label' }, l === 0 ? t('missions.tier.start') : l === 1 ? t('missions.tier.one') : t('missions.tier.many', { n: l }));
-  rows.forEach((row, l) => {
-    if (row) tree.append(el('div', { class: 'level' }, tierLabel(l), el('div', { class: 'tier' }, ...row.map(node))));
-  });
+  const tierLabel = (l) => (l === 0 ? t('missions.tier.start') : l === 1 ? t('missions.tier.one') : t('missions.tier.many', { n: l }));
+  const depth = Math.max(...ms.map((m) => m.level)) + 1;
+  if (chart) {
+    // The lanes (Sam, 2026-10-05: "a hasse diagram with seperate lanes /
+    // paths of missions"): a column for each chapter, a row for each number
+    // of requirements, and only the Hasse diagram's lines, which core chose.
+    const lanes = JSON.parse(core.chapters_json());
+    tree.style.gridTemplateColumns = `7.5em repeat(${lanes.length}, minmax(0, 1fr))`;
+    tree.style.gridTemplateRows = `auto repeat(${depth}, minmax(64px, auto))`;
+    lanes.forEach((lane, i) => {
+      const bg = el('div', { class: `lane lane-${i % 2}` });
+      bg.style.gridColumn = String(i + 2);
+      bg.style.gridRow = `1 / span ${depth + 1}`;
+      tree.append(bg);
+      const head = el('h4', { class: 'lane-name' }, lane.name);
+      head.style.gridColumn = String(i + 2);
+      head.style.gridRow = '1';
+      tree.append(head);
+    });
+    for (let l = 0; l < depth; l += 1) {
+      const label = el('p', { class: 'tier-label' }, tierLabel(l));
+      label.style.gridColumn = '1';
+      label.style.gridRow = String(l + 2);
+      tree.append(label);
+    }
+    const cells = new Map();
+    for (const m of ms) {
+      const key = `${m.chapter}:${m.level}`;
+      if (!cells.has(key)) {
+        const cell = el('div', { class: 'cell' });
+        cell.style.gridColumn = String(lanes.findIndex((x) => x.id === m.chapter) + 2);
+        cell.style.gridRow = String(m.level + 2);
+        cells.set(key, cell);
+        tree.append(cell);
+      }
+      cells.get(key).append(node(m));
+    }
+  } else {
+    // The tree, after Vagrancy's road: within a row, by where the
+    // requirements sit in the rows above, which keeps lines from crossing
+    // more than they must.
+    const rows = [];
+    for (const m of ms) (rows[m.level] ||= []).push(m);
+    const place = new Map();
+    rows.forEach((row, l) => {
+      if (!row) return;
+      if (l > 0) {
+        const at = (m) => m.requires.reduce((a, r) => a + (place.get(r.from) ?? 0.5), 0) / Math.max(1, m.requires.length);
+        row.sort((a, b) => at(a) - at(b));
+      }
+      row.forEach((m, i) => place.set(m.id, (i + 0.5) / row.length));
+    });
+    rows.forEach((row, l) => {
+      if (row) tree.append(el('div', { class: 'level' }, el('p', { class: 'tier-label' }, tierLabel(l)), el('div', { class: 'tier' }, ...row.map(node))));
+    });
+  }
   const paths = [];
   function wire() {
     wires.replaceChildren();
@@ -202,19 +250,22 @@ function path(pickId = null) {
     const box = tree.getBoundingClientRect();
     wires.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
     for (const m of ms) {
-      for (const r of m.requires) {
-        const a = buttons.get(r.from).getBoundingClientRect();
+      const froms = chart ? m.hasse : m.requires.map((r) => r.from);
+      for (const from of froms) {
+        const met = m.requires.find((r) => r.from === from)?.met;
+        const a = buttons.get(from).getBoundingClientRect();
         const c = buttons.get(m.id).getBoundingClientRect();
         const x1 = a.left - box.left + a.width / 2, y1 = a.bottom - box.top;
         const x2 = c.left - box.left + c.width / 2, y2 = c.top - box.top;
         const k = (y2 - y1) / 2;
         const line = document.createElementNS(SVG, 'path');
         line.setAttribute('d', `M ${x1} ${y1} C ${x1} ${y1 + k}, ${x2} ${y2 - k}, ${x2} ${y2}`);
-        line.setAttribute('class', r.met ? 'met' : 'unmet');
+        line.setAttribute('class', met ? 'met' : 'unmet');
         wires.append(line);
-        paths.push({ from: r.from, to: m.id, line });
+        paths.push({ from, to: m.id, line });
       }
     }
+    tree.dataset.lines = String(paths.length);
   }
   function light(id) {
     for (const p of paths) p.line.classList.toggle('hot', id !== null && (p.to === id || p.from === id));
@@ -223,7 +274,11 @@ function path(pickId = null) {
     for (const [k, b] of buttons) { b.classList.toggle('picked', k === id); b.setAttribute('aria-pressed', String(k === id)); }
     fillCard(cardBox, byId.get(id));
   }
-  screen(el('h2', {}, t('menu.missions.label')), cardBox, tree, el('div', { class: 'controls' }, back()));
+  const pickView = (v) => { try { localStorage.setItem('slushline.view', v); } catch { /* storage off */ } path(pickId); };
+  const switcher = el('div', { class: 'controls view-switch' },
+    button(t('missions.view.tree.label'), () => pickView('tree'), { id: 'view-tree', class: chart ? 'quiet' : '', 'aria-pressed': String(!chart) }),
+    button(t('missions.view.chart.label'), () => pickView('chart'), { id: 'view-chart', class: chart ? '' : 'quiet', 'aria-pressed': String(chart) }));
+  screen(el('h2', {}, t('menu.missions.label')), cardBox, switcher, tree, el('div', { class: 'controls' }, back()));
   const first = pickId ?? (ms.find((m) => m.open && !m.passed) ?? ms[0]).id;
   pick(first);
   wire();
@@ -588,6 +643,9 @@ async function main() {
   stage.showCodes = options().short_codes;
   sound.setVolume(options().sound_volume / 100);
   keys.listen((code) => run && Object.values(bindings()).includes(code));
+  // Any key a player presses lets the browser start sound, so the first
+  // lid is not lost to a context still waking up.
+  window.addEventListener('keydown', () => sound.wake(), { passive: true });
   // Hooks for the gate (testing/drive.py). They read core; they decide nothing.
   window.slushline = {
     scriptChecksum: (ticks) => core.script_checksum(ticks),

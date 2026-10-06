@@ -75,12 +75,24 @@ pub fn path_json(save_json: &str) -> String {
                 .iter()
                 .map(|r| json!({ "from": r.mission(), "met": save.met(r), "sentence": r.sentence() }))
                 .collect::<Vec<_>>());
+            card["hasse"] = json!(content::missions::hasse(&ms, m));
             // What a pass here would open next, for the result's button.
             let mut after = save.clone();
             after.record(&m.id, sim::balance::MAX_SCORE, true, 0);
             card["opens"] = json!(ms.iter().filter(|n| !save.open(n) && after.open(n)).map(|n| n.id.clone()).collect::<Vec<_>>());
             card
         })
+        .collect();
+    serde_json::to_string(&list).unwrap()
+}
+
+/// The chart's lanes: each chapter's id and its name, in order.
+#[wasm_bindgen]
+pub fn chapters_json() -> String {
+    let ms = content::missions::missions();
+    let list: Vec<serde_json::Value> = content::missions::chapters(&ms)
+        .iter()
+        .map(|c| json!({ "id": c, "name": content::copy::fill(&format!("chapters.{c}.name"), &json!({})) }))
         .collect();
     serde_json::to_string(&list).unwrap()
 }

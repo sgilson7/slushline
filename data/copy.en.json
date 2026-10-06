@@ -425,7 +425,16 @@
     "needs": "To open this mission, meet each of these.",
     "needs_review": "new",
     "met": "Met",
-    "unmet": "Not met yet"
+    "unmet": "Not met yet",
+    "view": {
+      "tree": {
+        "label": "Show the tree"
+      },
+      "chart": {
+        "label": "Show the lanes"
+      },
+      "review": "new"
+    }
   },
   "conditions": {
     "rail": {
@@ -771,5 +780,29 @@
     "ok": "OK",
     "miss": "MISS",
     "review": "new (Sam, 2026-10-05). These words are said for effect at Sam's request, the one exception to TONE.md rule 9."
+  },
+  "chapters": {
+    "pouring": {
+      "name": "Pouring"
+    },
+    "orders": {
+      "name": "Orders"
+    },
+    "three": {
+      "name": "A third spout"
+    },
+    "fields": {
+      "name": "Fields"
+    },
+    "blends": {
+      "name": "Blends"
+    },
+    "complications": {
+      "name": "The rail"
+    },
+    "belts": {
+      "name": "Two lines"
+    },
+    "review": "new"
   }
 }

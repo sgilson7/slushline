@@ -1,20 +1,20 @@
 {
-  "_about": "The word that pops up when the lid scores a cup (Sam, 2026-10-05: a Dance Dance Revolution style \"NICE\" or \"EXCELLENT\"). The first row whose `at` the cup's score reaches gives the word; its text is judge.<word> in the copy file, and the sound it makes is chosen by the same word. Rows run from the highest mark down and the last is at 0. `streak` is the reward for a run of the top word (Sam, 2026-10-05: three of the highest tier in a row): it plays every `length` cups in a row that earn `word`.",
+  "_about": "The word that pops up when the lid scores a cup (Sam, 2026-10-05: a Dance Dance Revolution style \"NICE\" or \"EXCELLENT\"). The first row whose `at` the cup's score reaches gives the word; its text is judge.<word> in the copy file, and the sound it makes is chosen by the same word. Rows run from the highest mark down and the last is at 0. `streak` is the reward for a run of the top word (Sam, 2026-10-05: three of the highest tier in a row): it plays every `length` cups in a row that earn `word`. Lowered on 2026-10-05 at Sam's request (\"make the excellent easier to get\"): from 95, 85, 70 and 50.",
   "judgements": [
     {
-      "at": 95,
+      "at": 88,
       "word": "excellent"
     },
     {
-      "at": 85,
+      "at": 78,
       "word": "great"
     },
     {
-      "at": 70,
+      "at": 65,
       "word": "nice"
     },
     {
-      "at": 50,
+      "at": 45,
       "word": "ok"
     },
     {

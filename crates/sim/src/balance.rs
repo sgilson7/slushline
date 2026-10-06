@@ -114,3 +114,9 @@ pub const HANDLE_PIVOT: (i32, i32) = (0, 16);
 pub const BELT_MIN: Fx = Fx::ratio(1, 4);
 pub const BELT_MAX: Fx = Fx::int(2);
 pub const BELT_STEP: Fx = Fx::ratio(1, 120);
+
+/// The waste tray under the belt (Sam, 2026-10-05: "a visual indication of
+/// all the waste kept below the belt like the waste caught below the grate
+/// of a slurpee machine"): waste is kept by where it fell, in bins this
+/// many cm wide along the line.
+pub const TRAY_BIN: i32 = 12;

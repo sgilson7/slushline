@@ -92,6 +92,19 @@ pub struct LineState {
     pub emitted: u32,
     pub judged: u32,
     pub wasted: u32,
+    /// Every unit wasted, by where it fell: for each bin of
+    /// `balance::TRAY_BIN` cm along the line, the flavors in the order they
+    /// landed. What the tray under the belt shows.
+    pub tray: Vec<Vec<u8>>,
+}
+
+impl LineState {
+    /// Put a wasted unit in the tray bin under where it fell.
+    fn catch(&mut self, x: Fx, flavor: u8) {
+        let n = self.tray.len() as i32;
+        let bin = (x.trunc().div_euclid(balance::TRAY_BIN)).clamp(0, n - 1);
+        self.tray[bin as usize].push(flavor);
+    }
 }
 
 /// What happened this tick, for the page to draw and later to sound.
@@ -140,6 +153,7 @@ impl World {
             emitted: 0,
             judged: 0,
             wasted: 0,
+            tray: vec![Vec::new(); (l.end_x.trunc() / balance::TRAY_BIN + 1).max(1) as usize],
         }));
         World { rng: Rng::new(setup.seed), setup, tick: 0, units: Vec::new(), lines, events: Vec::new() }
     }
@@ -471,7 +485,9 @@ impl World {
             let gone = u.p.y - u.r <= Fx(0) || u.p.x > line.end_x || u.p.x < -line.end_x;
             if on_belt || gone {
                 self.events.push(Event::Waste { line: u.line, x: u.p.x, y: u.p.y });
-                self.lines[seat].as_mut().unwrap().wasted += 1;
+                let ls = self.lines[seat].as_mut().unwrap();
+                ls.wasted += 1;
+                ls.catch(u.p.x, u.flavor);
             } else {
                 keep.push(u);
             }
@@ -503,6 +519,7 @@ impl World {
                     } else if u.line as usize == seat && (u.p.x - c.x).abs() < span && u.p.y >= self.rim(seat) {
                         scraped += 1;
                         self.events.push(Event::Waste { line: seat as u8, x: u.p.x, y: u.p.y });
+                        self.lines[seat].as_mut().unwrap().catch(u.p.x, u.flavor);
                     } else {
                         keep.push(u);
                     }

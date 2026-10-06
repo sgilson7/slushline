@@ -4,7 +4,7 @@
 [hidden] { display: none !important; }
 html, body { margin: 0; background: var(--paper); color: var(--line); }
 body { font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
-#app { max-width: 1240px; margin: 0 auto; padding: 16px; }
+#app { max-width: min(1900px, 100%); margin: 0 auto; padding: 16px; }
 #masthead h1 { margin: 0 0 8px; font-size: 1.6rem; font-weight: 650; letter-spacing: 0.01em; }
 #status, #loading-error { margin: 8px 0; }
 #foot { display: flex; justify-content: space-between; gap: 16px; margin-top: 24px; color: var(--muted); font-size: 0.9rem; }
@@ -103,3 +103,17 @@ section.how p { max-width: 720px; margin: 0; }
 .needs .unmet { color: var(--muted); }
 .hud-line { display: inline-flex; gap: 14px; margin-right: 18px; }
 @media (max-width: 600px) { #tree .node { width: 112px; font-size: 0.8em; } }
+
+/* The lanes: a column per chapter, a row per number of requirements. */
+.view-switch { margin: 0 0 12px; }
+#tree.chart { display: grid; gap: 8px 6px; }
+#tree.chart .lane { z-index: 0; border-radius: 8px; }
+#tree.chart .lane-0 { background: var(--panel); }
+#tree.chart .lane-1 { background: transparent; }
+#tree.chart .lane-name { z-index: 1; margin: 6px 0 2px; text-align: center; color: var(--line); }
+#tree.chart .tier-label { z-index: 1; align-self: center; text-align: right; margin: 0; padding-right: 6px; }
+#tree.chart .cell { z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; pointer-events: none; }
+#tree.chart .node { width: 100%; max-width: 150px; font-size: 0.82rem; }
+@media (max-width: 700px) { #tree.chart .node { font-size: 0.7rem; padding: 4px 2px; } #tree.chart { grid-template-columns: 0 repeat(7, minmax(0, 1fr)) !important; } #tree.chart .tier-label { display: none; } }
+#tree.chart .wires { z-index: 1; }
+#tree.chart .cell, #tree.chart .lane-name, #tree.chart .tier-label { z-index: 2; }

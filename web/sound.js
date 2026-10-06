@@ -14,14 +14,28 @@ export function wake() {
   if (!ctx) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
-    ctx = new AC();
+    // The lowest latency the browser offers, so a lid is heard when it is
+    // seen (Sam, 2026-10-05: "the sound of the cups finishing also desyncs
+    // easily").
+    ctx = new AC({ latencyHint: 'interactive' });
+    // Everything passes a gentle low-pass and a soft compressor: no sound
+    // reaches the ear above about 2 kHz at full strength, and a run of
+    // lids never stacks into a loud one ("slightly too tinny all around, it
+    // hurts the ears after a while").
+    const soften = ctx.createBiquadFilter();
+    soften.type = 'lowpass';
+    soften.frequency.value = 2200;
+    soften.Q.value = 0.5;
+    const squeeze = ctx.createDynamicsCompressor();
+    squeeze.threshold.value = -20;
+    squeeze.knee.value = 12;
+    squeeze.ratio.value = 3;
+    squeeze.attack.value = 0.01;
+    squeeze.release.value = 0.2;
     master = ctx.createGain();
-    master.gain.value = volume;
-    master.connect(ctx.destination);
+    master.gain.value = volume * 0.6;
+    master.connect(soften).connect(squeeze).connect(ctx.destination);
   }
-  // A browser with no sound device (CI's headless Firefox) leaves the
-  // context suspended, and the resume is refused when the page goes; that
-  // refusal is expected and is not an error of the game's.
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
 }
 
@@ -39,12 +53,12 @@ window.addEventListener('pagehide', () => {
 
 export function setVolume(v) {
   volume = Math.max(0, Math.min(1, v));
-  if (master) master.gain.value = volume;
+  if (master) master.gain.value = volume * 0.6;
 }
 
 // One note: an oscillator with a quick attack and a decay, optionally
 // sliding in pitch, which is most of what makes a toy sound like a toy.
-function note(t, freq, len, { type = 'square', gain = 0.18, slide = 1, vibrato = 0 } = {}) {
+function note(t, freq, len, { type = 'sine', gain = 0.18, slide = 1, vibrato = 0 } = {}) {
   const o = ctx.createOscillator();
   const g = ctx.createGain();
   o.type = type;
@@ -67,7 +81,14 @@ function note(t, freq, len, { type = 'square', gain = 0.18, slide = 1, vibrato =
   o.stop(t + len + 0.02);
 }
 
-// The lid coming down: a short low thump of filtered noise and a falling tone.
+// A soft mallet: a sine with a quiet second partial, struck and let ring.
+// Warmer than the square and triangle waves the first sounds used.
+function mallet(t, freq, len, gain = 0.2) {
+  note(t, freq, len, { type: 'sine', gain });
+  note(t, freq * 2, len * 0.5, { type: 'sine', gain: gain * 0.18 });
+}
+
+// The lid coming down: a soft low thump of filtered noise and a falling tone.
 function thunk(t) {
   const n = Math.floor(ctx.sampleRate * 0.12);
   const buf = ctx.createBuffer(1, n, ctx.sampleRate);
@@ -77,54 +98,57 @@ function thunk(t) {
   src.buffer = buf;
   const f = ctx.createBiquadFilter();
   f.type = 'lowpass';
-  f.frequency.value = 900;
+  f.frequency.value = 500;
   const g = ctx.createGain();
-  g.gain.value = 0.5;
+  g.gain.value = 0.35;
   src.connect(f).connect(g).connect(master);
   src.start(t);
-  note(t, 180, 0.12, { type: 'triangle', gain: 0.3, slide: 0.5 });
+  note(t, 140, 0.14, { type: 'sine', gain: 0.3, slide: 0.55 });
 }
 
-// A sparkle: a few quick high pings, like the twinkle a stamp makes.
+// A sparkle: a few soft pings, no higher than the C two octaves above
+// middle C.
 function sparkle(t, base) {
-  [0, 0.05, 0.1, 0.16].forEach((dt, i) => note(t + dt, base * [2, 2.5, 3, 4][i], 0.09, { type: 'sine', gain: 0.08 }));
+  [0, 0.06, 0.12].forEach((dt, i) => note(t + dt, base * [1, 1.25, 1.5][i], 0.14, { type: 'sine', gain: 0.05 }));
 }
 
-// Notes of C major, so every phrase is in one key.
-const C5 = 523.25, D5 = 587.33, E5 = 659.25, G5 = 783.99, A5 = 880, C6 = 1046.5, E6 = 1318.5, G4 = 392, E4 = 329.63;
+// Notes of C major, an octave lower than the first sounds, so every phrase
+// sits in one warm range.
+const C4 = 261.63, D4 = 293.66, E4 = 329.63, G4 = 392, A4 = 440, C5 = 523.25, E5 = 659.25, G3 = 196, E3 = 164.81;
 
 const PHRASES = {
   excellent(t) {
-    [C5, E5, G5, C6, E6].forEach((f, i) => note(t + i * 0.07, f, 0.16, { type: i % 2 ? 'triangle' : 'square', gain: 0.14 }));
-    note(t + 0.38, C6, 0.45, { type: 'triangle', gain: 0.16, vibrato: 12 });
-    sparkle(t + 0.4, C6);
+    [C4, E4, G4, C5, E5].forEach((f, i) => mallet(t + i * 0.075, f, 0.32, 0.17));
+    note(t + 0.4, C5, 0.6, { type: 'sine', gain: 0.12, vibrato: 5 });
+    sparkle(t + 0.42, C5 * 2);
   },
   great(t) {
-    [C5, E5, G5, C6].forEach((f, i) => note(t + i * 0.08, f, 0.16, { type: 'square', gain: 0.13 }));
-    note(t + 0.34, G5, 0.3, { type: 'triangle', gain: 0.14, vibrato: 8 });
-    sparkle(t + 0.34, G5);
+    [C4, E4, G4, C5].forEach((f, i) => mallet(t + i * 0.085, f, 0.3, 0.16));
+    note(t + 0.36, G4, 0.45, { type: 'sine', gain: 0.11, vibrato: 4 });
   },
   nice(t) {
-    note(t, E5, 0.12, { type: 'square', gain: 0.13 });
-    note(t + 0.1, A5, 0.25, { type: 'triangle', gain: 0.15, slide: 1.06 });
+    mallet(t, E4, 0.25, 0.17);
+    mallet(t + 0.11, A4, 0.4, 0.17);
   },
   ok(t) {
-    note(t, D5, 0.1, { type: 'triangle', gain: 0.14 });
-    note(t + 0.11, G5, 0.18, { type: 'triangle', gain: 0.12 });
+    mallet(t, D4, 0.22, 0.15);
+    mallet(t + 0.12, G4, 0.3, 0.13);
   },
-  // A slide down, wah-wah: the cup missed, and it is still a toy.
+  // A soft slide down, wah-wah: the cup missed, and it is still a toy.
   miss(t) {
-    note(t, G4, 0.28, { type: 'sawtooth', gain: 0.07, slide: 0.94, vibrato: 6 });
-    note(t + 0.3, E4, 0.5, { type: 'sawtooth', gain: 0.07, slide: 0.8, vibrato: 9 });
+    note(t, G3, 0.3, { type: 'sine', gain: 0.14, slide: 0.94, vibrato: 4 });
+    note(t, G3 * 2, 0.3, { type: 'sine', gain: 0.03, slide: 0.94 });
+    note(t + 0.32, E3, 0.55, { type: 'sine', gain: 0.14, slide: 0.8, vibrato: 6 });
   },
 };
 
 // A cup judged: the lid, then the phrase its judgement earned.
 export function judged(word) {
   if (!ctx || ctx.state === 'closed' || volume <= 0) return;
-  const t = ctx.currentTime + 0.01;
+  // Now, not a moment ahead: the lid is closing on screen this frame.
+  const t = ctx.currentTime;
   thunk(t);
-  (PHRASES[word] ?? PHRASES.ok)(t + 0.12);
+  (PHRASES[word] ?? PHRASES.ok)(t + 0.08);
 }
 
 // --- the groove: three of the top word in a row (Sam, 2026-10-05) --------
@@ -145,17 +169,17 @@ function snap(t) {
   src.buffer = buf;
   const f = ctx.createBiquadFilter();
   f.type = 'bandpass';
-  f.frequency.value = 2400;
-  f.Q.value = 1.2;
+  f.frequency.value = 1500;
+  f.Q.value = 1;
   const g = ctx.createGain();
-  g.gain.value = 0.22;
+  g.gain.value = 0.14;
   src.connect(f).connect(g).connect(master);
   src.start(t);
 }
 
 function keys(t, freqs, len) {
   for (const fr of freqs) {
-    for (const [mult, gain] of [[1, 0.05], [2.001, 0.012], [3.998, 0.004]]) {
+    for (const [mult, gain] of [[1, 0.05], [2.001, 0.008]]) {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
       const trem = ctx.createOscillator();
@@ -200,11 +224,11 @@ function pour(t, len) {
   f.type = 'bandpass';
   f.Q.value = 3;
   f.frequency.setValueAtTime(500, t);
-  f.frequency.exponentialRampToValueAtTime(1800, t + len * 0.5);
+  f.frequency.exponentialRampToValueAtTime(1100, t + len * 0.5);
   f.frequency.exponentialRampToValueAtTime(700, t + len);
   const g = ctx.createGain();
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(0.16, t + len * 0.35);
+  g.gain.exponentialRampToValueAtTime(0.11, t + len * 0.35);
   g.gain.exponentialRampToValueAtTime(0.0001, t + len);
   src.connect(f).connect(g).connect(master);
   src.start(t);
@@ -242,7 +266,7 @@ export function groove() {
   }
   pour(t + beat * 0.5, beat * 6);
   bubble(t + 8 * beat - 0.12);
-  note(t + 8 * beat, 1046.5, 1.4, { type: 'sine', gain: 0.12, vibrato: 4 });
-  note(t + 8 * beat, 1567.98, 1.2, { type: 'sine', gain: 0.05 });
+  note(t + 8 * beat, 523.25, 1.4, { type: 'sine', gain: 0.12, vibrato: 4 });
+  note(t + 8 * beat, 783.99, 1.2, { type: 'sine', gain: 0.05 });
   return 8 * beat + 1.2;
 }

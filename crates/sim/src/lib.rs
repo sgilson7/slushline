@@ -31,4 +31,5 @@ pub use world::World;
 /// out of a cup (SECOND-ORDER-M2).
 /// 3: the belt keys and the throttle (Sam, 2026-10-05).
 /// 4: force fields on a line (Sam, 2026-10-05).
-pub const SIM_VERSION: u32 = 4;
+/// 5: the waste tray keeps where each wasted unit fell (Sam, 2026-10-05).
+pub const SIM_VERSION: u32 = 5;

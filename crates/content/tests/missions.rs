@@ -455,12 +455,13 @@ fn the_tree_gets_no_easier_going_down_within_a_chapter() {
 fn every_score_earns_one_judgement_and_each_word_has_its_text() {
     // Sam, 2026-10-05: a DDR-style word for every judged cup.
     let words: Vec<String> = (0..=100).map(content::missions::judgement).collect();
+    // Sam, 2026-10-05: "make the excellent easier to get" (it was 95).
     assert_eq!(words[100], "excellent");
-    assert_eq!(words[95], "excellent");
-    assert_eq!(words[94], "great");
-    assert_eq!(words[70], "nice");
-    assert_eq!(words[50], "ok");
-    assert_eq!(words[0], "miss");
+    assert_eq!(words[88], "excellent");
+    assert_eq!(words[87], "great");
+    assert_eq!(words[65], "nice");
+    assert_eq!(words[45], "ok");
+    assert_eq!(words[44], "miss");
     // A higher score never earns a lower word.
     let order = ["miss", "ok", "nice", "great", "excellent"];
     let rank = |w: &str| order.iter().position(|o| *o == w).unwrap();
@@ -484,7 +485,7 @@ fn three_excellent_cups_in_a_row_play_the_groove_and_a_lesser_cup_breaks_the_run
         ls.results.push(CupResult { cup: n, counts: vec![0; 3], score: s });
     };
     let mut seen = Vec::new();
-    for score in [100, 96, 99, 95, 80, 97, 98, 100, 100, 100, 100] {
+    for score in [100, 96, 99, 88, 80, 97, 98, 100, 100, 100, 100] {
         push(&mut w, score);
         seen.push(content::missions::streak(&w, 0));
     }
@@ -516,4 +517,42 @@ fn every_field_stays_above_the_cups() {
         }
     }
     assert!(fields >= 8, "only {fields} fields checked");
+}
+
+#[test]
+fn the_chart_s_lines_are_the_hasse_diagram_and_open_the_same_missions() {
+    // Leaving out a requirement implied through another must not change
+    // what can reach what, and must leave out something.
+    let ms = missions();
+    let (mut all, mut kept) = (0, 0);
+    for m in &ms {
+        let h = content::missions::hasse(&ms, m);
+        all += m.requires.len();
+        kept += h.len();
+        assert!(h.iter().all(|a| m.requires.iter().any(|r| r.mission() == a)), "{}: a chart line to a mission it does not require", m.id);
+        // Everything it requires is still reached through the kept lines.
+        let mut reach: Vec<String> = h.clone();
+        let mut i = 0;
+        while i < reach.len() {
+            let x = ms.iter().find(|n| n.id == reach[i]).unwrap();
+            for a in content::missions::hasse(&ms, x) {
+                if !reach.contains(&a) {
+                    reach.push(a);
+                }
+            }
+            i += 1;
+        }
+        for r in &m.requires {
+            assert!(reach.iter().any(|x| x == r.mission()), "{}: {} is no longer reached in the chart", m.id, r.mission());
+        }
+    }
+    // Measured: the chart keeps 39 of the tree's 75 lines.
+    assert!(kept * 10 <= all * 6, "the chart keeps {kept} of {all} lines, which is not fewer by much");
+    // A case by hand: Half and half requires Two spouts and The tail, and
+    // neither leads to the other, so both lines stay; Two to one requires
+    // Half and half and Two spouts, and Half and half already leads to Two
+    // spouts, so only the line from Half and half is drawn.
+    let get = |id: &str| ms.iter().find(|m| m.id == id).unwrap();
+    assert_eq!(content::missions::hasse(&ms, get("m_half")), vec!["m_two_spouts", "m_tail"]);
+    assert_eq!(content::missions::hasse(&ms, get("m_two_one")), vec!["m_half", "m_third"]);
 }

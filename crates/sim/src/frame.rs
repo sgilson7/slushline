@@ -39,6 +39,10 @@ pub struct LineView {
     /// The line's fields, as the page draws them: which way each pushes
     /// now, worked out here.
     pub fields: Vec<FieldView>,
+    /// The waste tray: for each bin along the line, the flavors wasted
+    /// there in the order they landed; and the bin's width, raw.
+    pub tray: Vec<Vec<u8>>,
+    pub tray_bin: i32,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
@@ -149,6 +153,8 @@ pub fn frame(w: &World) -> Frame {
                     }
                 })
                 .collect(),
+            tray: ls.tray.clone(),
+            tray_bin: crate::fx::Fx::int(balance::TRAY_BIN).0,
         });
     }
     Frame { tick: w.tick, done: w.done(), lines, events: w.events.clone() }

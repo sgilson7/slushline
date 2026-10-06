@@ -344,6 +344,29 @@ ALL_PASSED = {"format": "slushline.save", "version": 2, "best": {i: 90 for i in 
 
 
 @check
+def the_lanes_draw_fewer_lines_than_the_tree(page, name):
+    # Sam, 2026-10-05: "a chart view that has less lines and is in a hasse
+    # diagram with seperate lanes". Both views, from the switch.
+    page.click("#menu-missions")
+    page.click("#view-tree")
+    page.wait_for_function("document.querySelector('#tree.rows') && Number(document.querySelector('#tree').dataset.lines) > 0")
+    tree = int(page.get_attribute("#tree", "data-lines"))
+    page.click("#view-chart")
+    page.wait_for_function("document.querySelector('#tree.chart') && Number(document.querySelector('#tree').dataset.lines) > 0")
+    chart = int(page.get_attribute("#tree", "data-lines"))
+    lanes = page.locator("#tree .lane-name").count()
+    problems = lines_not_in_copy(page, "the lanes")
+    page.click("#view-tree")
+    page.click("#back-to-menu")
+    if not (0 < chart < tree) or lanes < 5:
+        problems.append(f"the tree drew {tree} lines, the lanes {chart} in {lanes} lanes")
+    if problems:
+        return [f"{name}: {p}" for p in problems]
+    print(f"ok: {name}: the tree draws {tree} lines and the lanes {chart}, in {lanes} lanes")
+    return []
+
+
+@check
 def a_mission_with_two_lines_plays_with_the_lower_line_on_its_own_keys(page, name):
     # Sam, 2026-10-05: levels with more than one belt. The lower line's
     # spouts answer J, K, L and ;, the upper line's A, S, D and F, and the

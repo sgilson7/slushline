@@ -89,7 +89,7 @@ fn main() {
                     w.step(i);
                 }
                 let o = content::missions::outcome(&m, &w);
-                println!("{:22} ticks {:5} scores {:?} avg {:3} waste {:2}% passed {} cause {:?}", m.id, w.tick, o.scores, o.average, o.waste_pct, o.passed, o.cause);
+                println!("{:22} scores {:?} avg {:3} best run of excellent {}", m.id, o.scores, o.average, o.best_streak);
             }
         }
         Some("golden") => golden(),

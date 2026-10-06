@@ -20,7 +20,7 @@ pub const CONDITIONS_JSON: &str = include_str!("../../../data/conditions.json");
 
 /// How far above the lower line the upper one sits when a mission has two,
 /// in cm.
-pub const UPPER_LINE_RISE: i32 = 170;
+pub const UPPER_LINE_RISE: i32 = 215;
 
 /// One thing a player must have done before a mission opens.
 #[derive(Deserialize, Serialize, Clone, Debug, PartialEq, Eq)]
@@ -487,4 +487,46 @@ pub fn streak(w: &World, seat: usize) -> (u32, bool) {
     let Some(ls) = w.lines[seat].as_ref() else { return (0, false) };
     let run = ls.results.iter().rev().take_while(|r| judgement(r.score.score) == word).count() as u32;
     (run, run > 0 && run % length == 0)
+}
+
+/// Every mission a mission's requirements reach, transitively.
+pub fn ancestors(ms: &[Mission], id: &str) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    let mut todo = vec![id.to_string()];
+    while let Some(x) = todo.pop() {
+        let Some(m) = ms.iter().find(|m| m.id == x) else { continue };
+        for r in &m.requires {
+            if !out.iter().any(|o| o == r.mission()) {
+                out.push(r.mission().to_string());
+                todo.push(r.mission().to_string());
+            }
+        }
+    }
+    out
+}
+
+/// The requirements of a mission that the chart draws a line for: the
+/// Hasse diagram's (Sam, 2026-10-05: "a chart view that has less lines and
+/// is in a hasse diagram"). A requirement on A is left out when another
+/// requirement of the same mission already leads back to A, because the
+/// chart shows that path through the other mission. What opens a mission is
+/// unchanged; only the drawing is thinner.
+pub fn hasse(ms: &[Mission], m: &Mission) -> Vec<String> {
+    let named: Vec<&str> = m.requires.iter().map(|r| r.mission()).collect();
+    named
+        .iter()
+        .filter(|&&a| !named.iter().any(|&b| b != a && ancestors(ms, b).iter().any(|x| x == a)))
+        .map(|a| a.to_string())
+        .collect()
+}
+
+/// The chapters in the order the file first names them: the chart's lanes.
+pub fn chapters(ms: &[Mission]) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for m in ms {
+        if !out.contains(&m.chapter) {
+            out.push(m.chapter.clone());
+        }
+    }
+    out
 }

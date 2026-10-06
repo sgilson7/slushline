@@ -7,7 +7,7 @@
 const VIEW_LEFT = -10;
 const VIEW_WIDTH = 480;
 // The lowest centimeter shown: a little below the belt, which is at 50.
-const VIEW_BOTTOM = 22;
+const VIEW_BOTTOM = -5;
 
 export class Stage {
   constructor(canvas, numbers, palette, flavors) {
@@ -27,6 +27,14 @@ export class Stage {
   // below the lowest belt to a little above the highest handle. A mission
   // with two lines is a taller picture, not a smaller one.
   fit(frame) {
+    // Wide as the page lets it be, at the screen's own pixel density, so a
+    // bigger window is a bigger line (Sam, 2026-10-05: "generally
+    // everything should be larger").
+    const css = this.c.clientWidth;
+    if (css > 0) {
+      const w = Math.max(900, Math.min(2800, Math.round(css * (window.devicePixelRatio || 1))));
+      if (Math.abs(this.c.width - w) > 2) this.c.width = w;
+    }
     let top = 0;
     for (const L of frame.lines) for (const sp of L.spouts) top = Math.max(top, sp.tip[1] / this.one);
     const h = Math.round((top + 18 - VIEW_BOTTOM) * this.scale);
@@ -206,7 +214,68 @@ export class Stage {
     }
   }
 
+  // The waste tray (Sam, 2026-10-05): under the belt, a grate, and under the
+  // grate the slush that missed, piled in the bins core kept it in, in the
+  // order it landed, each unit in its flavor's fill and pattern.
+  drawTray(L) {
+    const g = this.g;
+    const p = this.pal;
+    const one = this.one;
+    const top = L.belt_y - 30 * one;      // the grate
+    const floor = L.belt_y - 52 * one;    // the tray's bottom
+    const x0 = this.sx(0), x1 = this.sx(L.end_x);
+    const yTop = this.sy(top), yFloor = this.sy(floor);
+    g.fillStyle = p.machine;
+    g.fillRect(x0, yTop, x1 - x0, yFloor - yTop);
+    const r = 1.3;
+    const perRow = Math.floor(L.tray_bin / one / (2 * r));
+    const rowH = 2 * r * 0.88;
+    // Lay the waste out as mounds: units are taken a turn from each bin at a
+    // time, roughly the order they fell, and one that would sit a whole row
+    // above a neighbor rolls down to it. How many fell where is core's; this
+    // only arranges them so a pile looks like a pile.
+    const n = L.tray.length;
+    const filled = new Array(n).fill(0);
+    const rows = Math.floor((top - floor) / one / rowH);
+    const at = [];
+    const longest = Math.max(0, ...L.tray.map((b) => b.length));
+    for (let k = 0; k < longest; k += 1) {
+      for (let b0 = 0; b0 < n; b0 += 1) {
+        const f = L.tray[b0][k];
+        if (f === undefined) continue;
+        let b = b0;
+        for (let step = 0; step < n; step += 1) {
+          const l = b > 0 ? filled[b - 1] : Infinity;
+          const r2 = b < n - 1 ? filled[b + 1] : Infinity;
+          const low = l <= r2 ? b - 1 : b + 1;
+          if (Math.min(l, r2) + perRow <= filled[b]) b = low; else break;
+        }
+        const slot = filled[b];
+        filled[b] += 1;
+        const row = Math.floor(slot / perRow);
+        if (row >= rows) continue;
+        const col = slot % perRow;
+        const x = b * L.tray_bin / one + r + col * 2 * r + (row % 2 ? r * 0.5 : 0);
+        const y = floor / one + r + row * rowH;
+        at.push([this.sx(x * one), this.sy(y * one), this.len(r * one), f]);
+      }
+    }
+    g.fillStyle = p.line;
+    for (const [x, y, rr] of at) { g.beginPath(); g.arc(x, y, rr + 0.8, 0, Math.PI * 2); g.fill(); }
+    for (const [x, y, rr, f] of at) { g.fillStyle = this.fill(f); g.beginPath(); g.arc(x, y, rr, 0, Math.PI * 2); g.fill(); }
+    for (const [x, y, rr, f] of at) this.patternInCircle(f, x, y, rr);
+    g.strokeStyle = p.line;
+    g.lineWidth = 1.5;
+    g.strokeRect(x0, yTop, x1 - x0, yFloor - yTop);
+    // The grate: a bar with slots, the way the drip grate on a machine looks.
+    g.fillStyle = p.belt_mark;
+    g.fillRect(x0, yTop - 4, x1 - x0, 5);
+    g.fillStyle = p.paper;
+    for (let x = x0 + 4; x < x1 - 6; x += 10) g.fillRect(x, yTop - 3, 6, 3);
+  }
+
   drawLine(L, keyNames) {
+    this.drawTray(L);
     const g = this.g;
     const p = this.pal;
     // The belt, with marks that move with it.
@@ -228,38 +297,42 @@ export class Stage {
     // The lid's press, over the belt where cups are judged.
     const lidX = this.sx(L.lid_x);
     const rimY = this.sy(L.rim);
+    const u = this.scale;
     g.fillStyle = p.machine;
-    g.fillRect(lidX - this.len(L.inner_half) - 8, rimY - 34, this.len(L.inner_half) * 2 + 16, 14);
+    g.fillRect(lidX - this.len(L.inner_half) - 3 * u, rimY - 14 * u, this.len(L.inner_half) * 2 + 6 * u, 5 * u);
     g.fillStyle = p.lid;
-    g.fillRect(lidX - 3, rimY - 22, 6, 12);
-    // Spouts: the machine above, the nozzle, and the handle as core placed it.
+    g.fillRect(lidX - 1.2 * u, rimY - 9 * u, 2.4 * u, 5 * u);
+    // Spouts: the machine above, the nozzle, and the handle as core placed
+    // it, sized in centimeters so they grow with the canvas.
     L.spouts.forEach((s, i) => {
       const x = this.sx(s.x);
       const y = this.sy(s.y);
       g.fillStyle = p.machine;
-      g.fillRect(x - 18, y - 40, 36, 34);
+      g.fillRect(x - 9 * u, y - 15 * u, 18 * u, 13 * u);
       g.strokeStyle = p.line;
-      g.lineWidth = 1.5;
-      g.strokeRect(x - 18, y - 40, 36, 34);
+      g.lineWidth = Math.max(1.5, 0.7 * u);
+      g.strokeRect(x - 9 * u, y - 15 * u, 18 * u, 13 * u);
       // The nozzle, filled with the flavors it pours, in their cycle.
       const pours = s.pours;
-      const w = 12 / pours.length;
+      const nw = 9 * u;
+      const w = nw / pours.length;
       pours.forEach((f, k) => {
         g.fillStyle = this.fill(f);
-        g.fillRect(x - 6 + k * w, y - 6, w, 8);
-        this.patternInBox(f, x - 6 + k * w, y - 6, w, 8);
+        g.fillRect(x - nw / 2 + k * w, y - 2 * u, w, 5 * u);
+        this.patternInBox(f, x - nw / 2 + k * w, y - 2 * u, w, 5 * u);
       });
-      g.strokeRect(x - 6, y - 6, 12, 8);
+      g.lineWidth = Math.max(1.5, 0.8 * u);
+      g.strokeRect(x - nw / 2, y - 2 * u, nw, 5 * u);
       // The short codes and the key, on the machine.
       g.fillStyle = p.line;
-      g.font = '600 12px system-ui, sans-serif';
+      g.font = `700 ${Math.round(5.2 * u)}px system-ui, sans-serif`;
       g.textAlign = 'center';
-      g.fillText(pours.map((f) => this.codes[f]).filter((c, k, a) => a.indexOf(c) === k).join('+'), x, y - 24);
-      g.font = '700 13px system-ui, sans-serif';
-      g.fillText(keyNames[i] ?? '', x, y - 10);
+      g.fillText(pours.map((f) => this.codes[f]).filter((c, k, a) => a.indexOf(c) === k).join('+'), x, y - 9.4 * u);
+      g.font = `800 ${Math.round(5.6 * u)}px system-ui, sans-serif`;
+      g.fillText(keyNames[i] ?? '', x, y - 3.6 * u);
       // The handle: a stick from its pivot, opening toward the belt's end.
       g.strokeStyle = p.line;
-      g.lineWidth = 4;
+      g.lineWidth = 2.2 * u;
       g.lineCap = 'round';
       g.beginPath();
       g.moveTo(this.sx(s.pivot[0]), this.sy(s.pivot[1]));
@@ -267,7 +340,7 @@ export class Stage {
       g.stroke();
       g.fillStyle = p.focus;
       g.beginPath();
-      g.arc(this.sx(s.tip[0]), this.sy(s.tip[1]), 5, 0, Math.PI * 2);
+      g.arc(this.sx(s.tip[0]), this.sy(s.tip[1]), 2.8 * u, 0, Math.PI * 2);
       g.fill();
     });
     // Cups.
@@ -307,7 +380,7 @@ export class Stage {
     const g = this.g;
     const at = [];
     for (let k = 0; k < u.length; k += 5) {
-      at.push([this.sx(u[k + 1]), this.sy(u[k + 2]), this.len(u[k + 3]), u[k + 4] & 255]);
+      at.push([this.sx(u[k + 1]), this.sy(u[k + 2]), this.len(u[k + 3]) * 1.12, u[k + 4] & 255]);
     }
     g.fillStyle = this.pal.line;
     for (const [x, y, r] of at) {
@@ -330,33 +403,51 @@ export class Stage {
   drawBars(L) {
     const g = this.g;
     const p = this.pal;
-    const rimY = this.sy(L.rim);
+    const u = this.scale;
     for (const c of L.cups) {
       if (c.judged) continue;
       const cx = this.sx(c.x);
       if (cx < -80 || cx > this.c.width + 80) continue;
-      const half = this.len(L.inner_half) + 2;
-      const y = this.sy(L.belt_y) + this.len(6 * this.one) + 6;
-      const h = 12;
+      // The fill gauge (Sam, 2026-10-05: "the fill bar below the cup being
+      // quite large and quite visible"): wider than the cup, a segment for
+      // each share, each filling from its left in its flavor's fill and
+      // pattern as that flavor reaches its share, with its short code on it.
+      const half = this.len(L.inner_half) + this.len(L.wall_half) * 2 + 3 * u;
+      const y = this.sy(L.belt_y) + this.len(6 * this.one) + 3 * u;
+      const h = 15 * u;
       let x = cx - half;
       const total = c.shares.reduce((a, s) => a + s[1], 0) || 1;
+      g.fillStyle = p.paper;
+      g.fillRect(x - 0.6 * u, y - 0.6 * u, half * 2 + 1.2 * u, h + 1.2 * u);
       for (const [f, share] of c.shares) {
         const w = (share / total) * half * 2;
-        g.fillStyle = this.fill(f);
+        const have = c.counts[f] ?? 0;
+        const part = Math.min(1, have / Math.max(share, 1));
+        g.fillStyle = p.cup;
         g.fillRect(x, y, w, h);
-        this.patternInBox(f, x, y, w, h);
+        if (part > 0) {
+          g.fillStyle = this.fill(f);
+          g.fillRect(x, y, w * part, h);
+          this.patternInBox(f, x, y, w * part, h);
+        }
+        // Past its share: a heavy notch at the segment's end.
+        if (have > share) {
+          g.fillStyle = p.line;
+          g.fillRect(x + w - 2.2 * u, y - 2 * u, 2.2 * u, h + 4 * u);
+        }
         g.strokeStyle = p.line;
-        g.lineWidth = 1;
+        g.lineWidth = Math.max(2, 0.9 * u);
         g.strokeRect(x, y, w, h);
-        // How much of this flavor's share is in the cup: a tick mark.
-        const have = Math.min(c.counts[f] ?? 0, share * 2);
-        const mx = x + Math.min(1, have / Math.max(share, 1)) * w;
+        // The short code, centered, in dark letters edged with paper so it
+        // reads on any fill without hiding how full the segment is.
+        g.font = `800 ${Math.round(Math.min(7.5 * u, w * 0.42))}px system-ui, sans-serif`;
+        g.textAlign = 'center';
+        g.lineJoin = 'round';
+        g.strokeStyle = p.paper;
+        g.lineWidth = 1.1 * u;
+        g.strokeText(this.codes[f], x + w / 2, y + h / 2 + 2.6 * u);
         g.fillStyle = p.line;
-        g.fillRect(mx - 1.5, y - 5, 3, h + 10);
-        g.fillStyle = p.line;
-        g.font = '600 10px system-ui, sans-serif';
-        g.textAlign = 'left';
-        g.fillText(this.codes[f], x + 2, y + h + 11);
+        g.fillText(this.codes[f], x + w / 2, y + h / 2 + 2.6 * u);
         x += w;
       }
       // Settings' switch: each flavor's short code on its slush in the cup,
