@@ -1,6 +1,6 @@
 # Handoff
 
-Written for a reader with none of the last session's context. This one is for v0.4.0 (2026-10-06): a pour sound and a blurred store behind the line (`SECOND-ORDER-M7`), then flower-pot cups (SIM_VERSION 7) and the fix for a lag the store caused (`SECOND-ORDER-M8`). Nothing Sam has asked for is unstarted; section 7 lists what waits on him.
+Written for a reader with none of the last session's context. This one is for v0.4.0 (2026-10-06, build `3bf187c1`, live gate walked in three engines): a pour sound and a blurred store behind the line (`SECOND-ORDER-M7`), then flower-pot cups (SIM_VERSION 7) and the fix for a lag the store caused (`SECOND-ORDER-M8`). Nothing Sam has asked for is unstarted; section 7 lists what waits on him.
 
 ## 1. What this is
 
