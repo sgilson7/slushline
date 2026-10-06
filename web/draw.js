@@ -425,9 +425,20 @@ export class Stage {
         // Each share is a band of its flavor's fill and pattern, as the first
         // bars were (Sam, 2026-10-05: "the old style of colored line with
         // indicator fills per section ... was better").
-        g.fillStyle = this.fill(f);
+        // Sam, 2026-10-05: the band starts as a grayed-down tone of its
+        // flavor and fills, up to the marker, into the flavor itself.
+        const part = Math.min(1, (c.counts[f] ?? 0) / Math.max(share, 1));
+        g.fillStyle = this.pal.flavors[this.flavors[f].id].dim;
         g.fillRect(x, y, w, h);
+        g.save();
+        g.globalAlpha = 0.35;
         this.patternInBox(f, x, y, w, h);
+        g.restore();
+        if (part > 0) {
+          g.fillStyle = this.fill(f);
+          g.fillRect(x, y, w * part, h);
+          this.patternInBox(f, x, y, w * part, h);
+        }
         g.strokeStyle = p.line;
         g.lineWidth = Math.max(2, 0.9 * u);
         g.strokeRect(x, y, w, h);

@@ -92,3 +92,22 @@ fn simulating_a_deficiency_changes_hue_and_keeps_gray_as_gray() {
         assert!((g - 0.216).abs() < 0.01, "{d:?} moves a gray to {g:.3}");
     }
 }
+
+#[test]
+fn each_flavor_s_dim_tone_is_grayer_than_its_fill_and_differs_from_it() {
+    // The gauge's unfilled part (Sam, 2026-10-05): a grayed-down tone of the
+    // flavor that fills up into the flavor itself. It has to read as "not
+    // yet" beside the fill, so it is less saturated and not the same color.
+    let pal = content::look::palette();
+    let sat = |c: [u8; 3]| {
+        let (mx, mn) = (*c.iter().max().unwrap() as f64, *c.iter().min().unwrap() as f64);
+        if mx == 0.0 { 0.0 } else { (mx - mn) / mx }
+    };
+    for f in flavors() {
+        let full = rgb(&fill(&f.id));
+        let dim = rgb(pal["flavors"][&f.id]["dim"].as_str().unwrap_or_else(|| panic!("{} has no dim tone", f.id)));
+        assert_ne!(full, dim, "{}", f.id);
+        assert!(sat(dim) < sat(full) || sat(full) < 0.1, "{}: the dim tone is no grayer than the fill", f.id);
+        assert!((luminance(full) - luminance(dim)).abs() > 0.05, "{}: the dim tone and the fill are too close in brightness to tell apart in gray", f.id);
+    }
+}

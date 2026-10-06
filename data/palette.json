@@ -1,5 +1,5 @@
 {
-  "_about": "The only place a color is written (D17). Flavors carry a pattern and a brightness as well as a hue (PLANNING-BRIEF 0.5); crates/content/tests/look.rs checks every pair. packaging/package-web.sh turns the top-level values into CSS variables.",
+  "_about": "The only place a color is written (D17). Flavors carry a pattern and a brightness as well as a hue (PLANNING-BRIEF 0.5); crates/content/tests/look.rs checks every pair. packaging/package-web.sh turns the top-level values into CSS variables. Each flavor's `dim` is its fill with most of the saturation gone and pulled toward the paper: the unfilled part of its band in the gauge under a cup (Sam, 2026-10-05).",
   "paper": "#EFE8D8",
   "panel": "#E4DBC6",
   "line": "#2B2A28",
@@ -14,13 +14,16 @@
   "pattern_ink_on_dark": "#EFE8D8",
   "flavors": {
     "cola": {
-      "fill": "#2B2A28"
+      "fill": "#2B2A28",
+      "dim": "#767574"
     },
     "cherry": {
-      "fill": "#D55E00"
+      "fill": "#D55E00",
+      "dim": "#AF9682"
     },
     "lemon": {
-      "fill": "#F0E442"
+      "fill": "#F0E442",
+      "dim": "#C1BFA4"
     }
   },
   "judge_top": "#FFF3B0",
