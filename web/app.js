@@ -5,6 +5,7 @@ import init, * as core from './pkg/slushline_wasm.js';
 import { Stage } from './draw.js';
 import * as keys from './keys.js';
 import { download, pick } from './files.js';
+import * as sound from './sound.js';
 
 const BUILD = '__BUILD__';
 const STORE = 'slushline.save';
@@ -60,6 +61,7 @@ function keep(json) {
   save = json;
   try { localStorage.setItem(STORE, json); } catch { /* storage refused */ }
   stage.showCodes = options().short_codes;
+  sound.setVolume(options().sound_volume / 100);
 }
 
 function restore() {
@@ -177,6 +179,7 @@ function card(id) {
 function seed() { return (Date.now() % 1000000) >>> 0; }
 
 function startMission(id) {
+  sound.wake();
   const game = core.Game.mission(id, seed(), tuning());
   begin({ game, kind: id });
 }
@@ -202,6 +205,8 @@ function begin(r) {
 function stopRun() {
   if (run?.raf) cancelAnimationFrame(run.raf);
   run = null;
+  const j = $('judge');
+  if (j) j.hidden = true;
 }
 
 function loop(now) {
@@ -224,6 +229,7 @@ function loop(now) {
   if (steps) {
     draw();
     hudLive();
+    for (const j of JSON.parse(run.game.take_judged())) judge(j.word);
   }
   const over = run.game.is_replay() ? run.game.replay_done() : run.game.done();
   if (over && !run.finished && run.mission) {
@@ -238,6 +244,22 @@ function draw() {
   run.frame = JSON.parse(run.game.frame());
   stage.draw(run.frame, run.game.units(), keyNames());
   document.body.dataset.tick = String(run.game.tick());
+}
+
+// A judged cup: the lid's sound and a big word over the line, after Dance
+// Dance Revolution (Sam, 2026-10-05). The word and the phrase are the ones
+// core chose for the score; the page only performs them.
+function judge(word) {
+  sound.judged(word);
+  const j = $('judge');
+  const fresh = j.cloneNode(false);
+  fresh.className = `judge-${word}`;
+  fresh.textContent = t(`judge.${word}`);
+  fresh.hidden = false;
+  fresh.dataset.word = word;
+  j.replaceWith(fresh);
+  clearTimeout(judge.timer);
+  judge.timer = setTimeout(() => { $('judge').hidden = true; }, 1300);
 }
 
 // The HUD: the keys and spouts once, then the live numbers core worked out.
@@ -304,6 +326,7 @@ function results() {
 // --- replays -----------------------------------------------------------
 
 async function loadReplay() {
+  sound.wake();
   const f = await pick('.replay,application/octet-stream');
   if (!f) return;
   let game;
@@ -338,6 +361,8 @@ function settings(message = null) {
     el('span', {}, actionLabel(action)), ' ',
     button(keys.keyName(b[action]), () => waitForKey(action), { id: `bind-${action}`, class: 'quiet key', 'data-value': '1' }),
   ));
+  const vol = el('input', { type: 'range', id: 'sound-volume', min: '0', max: '100', step: '5', value: String(options().sound_volume) });
+  vol.addEventListener('change', () => { keep(core.save_set_volume(save, Number(vol.value))); sound.wake(); sound.judged('great'); });
   const short = el('input', { type: 'checkbox', id: 'short-codes', checked: options().short_codes });
   short.addEventListener('change', () => keep(core.save_set_short_codes(save, short.checked)));
   screen(
@@ -345,7 +370,8 @@ function settings(message = null) {
     el('section', {},
       el('h3', {}, t('settings.look.title')),
       el('label', { for: 'short-codes', class: 'switch' }, short, ' ', t('settings.look.short.label')),
-      el('p', {}, t('settings.look.short.desc'))),
+      el('p', {}, t('settings.look.short.desc')),
+      el('label', { for: 'sound-volume', class: 'switch' }, t('settings.sound.volume.label'), ' ', vol)),
     el('section', {},
       el('h3', {}, t('settings.keys.title')),
       el('p', {}, t('settings.keys.desc')),
@@ -428,6 +454,7 @@ async function main() {
   stage.codes = FLAVORS.map((f) => t(`flavors.${f.id}.short`));
   restore();
   stage.showCodes = options().short_codes;
+  sound.setVolume(options().sound_volume / 100);
   keys.listen((code) => run && Object.values(bindings()).includes(code));
   // Hooks for the gate (testing/drive.py). They read core; they decide nothing.
   window.slushline = {
@@ -458,7 +485,9 @@ async function main() {
       if (!run) return;
       run.game.autoplay(ticks);
       draw();
+      for (const j of JSON.parse(run.game.take_judged())) judge(j.word);
     },
+    judgement: () => { const j = $('judge'); return j && !j.hidden ? [j.dataset.word, j.textContent] : null; },
   };
   $('status').hidden = true;
   menu();

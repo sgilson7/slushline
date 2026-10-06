@@ -219,6 +219,19 @@ def a_mission_plays_to_a_result_and_round_trips_through_a_replay_file(page, name
     if not (faster > 100 and slower < 100):
         problems.append(f"the belt keys left the belt at {faster} and then {slower} percent")
     problems += lines_not_in_copy(page, "the mission")
+    # The first cup's lid: its sound and its word (Sam, 2026-10-05). Step
+    # until a lid closes, then check the word is the copy string for the
+    # judgement core chose.
+    seen = None
+    for _ in range(250):
+        page.evaluate("window.slushline.autoplay(40)")
+        seen = page.evaluate("window.slushline.judgement()")
+        if seen:
+            break
+    if not seen:
+        problems.append("no judgement word appeared when a lid closed")
+    elif seen[1] != COPY["judge"][seen[0]]:
+        problems.append(f"the judgement word reads {seen[1]!r}, not judge.{seen[0]}")
     page.evaluate("window.slushline.autoplay(10000)")
     page.wait_for_selector(".verdict", timeout=20000)
     problems += lines_not_in_copy(page, "the result")
@@ -244,7 +257,7 @@ def a_mission_plays_to_a_result_and_round_trips_through_a_replay_file(page, name
         problems.append(f"the replay's result reads {page.inner_text('.verdict')!r}, the run's read {verdict!r}")
     if problems:
         return [f"{name}: {p}" for p in problems]
-    print(f"ok: {name}: the belt ran at {faster} % after the faster key and {slower} % after the slower; the first mission played to {verdict!r} ({final}); its replay ({size} bytes) loaded after a reload, ends on {got}, and shows the same result")
+    print(f"ok: {name}: the first lid showed {seen[1] if seen else None!r}; the belt ran at {faster} % after the faster key and {slower} % after the slower; the first mission played to {verdict!r} ({final}); its replay ({size} bytes) loaded after a reload, ends on {got}, and shows the same result")
     page.click("#to-missions")
     page.click("#back-to-menu")
     return []

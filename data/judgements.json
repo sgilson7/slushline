@@ -1,0 +1,10 @@
+{
+  "_about": "The word that pops up when the lid scores a cup (Sam, 2026-10-05: a Dance Dance Revolution style \"NICE\" or \"EXCELLENT\"). The first row whose `at` the cup's score reaches gives the word; its text is judge.<word> in the copy file, and the sound it makes is chosen by the same word. Rows run from the highest mark down and the last is at 0.",
+  "judgements": [
+    { "at": 95, "word": "excellent" },
+    { "at": 85, "word": "great" },
+    { "at": 70, "word": "nice" },
+    { "at": 50, "word": "ok" },
+    { "at": 0, "word": "miss" }
+  ]
+}

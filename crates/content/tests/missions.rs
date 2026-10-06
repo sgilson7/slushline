@@ -389,3 +389,23 @@ fn the_path_gets_no_easier_within_a_chapter() {
     }
     assert!(steps >= 5, "only {steps} steps within chapters were checked");
 }
+
+#[test]
+fn every_score_earns_one_judgement_and_each_word_has_its_text() {
+    // Sam, 2026-10-05: a DDR-style word for every judged cup.
+    let words: Vec<String> = (0..=100).map(content::missions::judgement).collect();
+    assert_eq!(words[100], "excellent");
+    assert_eq!(words[95], "excellent");
+    assert_eq!(words[94], "great");
+    assert_eq!(words[70], "nice");
+    assert_eq!(words[50], "ok");
+    assert_eq!(words[0], "miss");
+    // A higher score never earns a lower word.
+    let order = ["miss", "ok", "nice", "great", "excellent"];
+    let rank = |w: &str| order.iter().position(|o| *o == w).unwrap();
+    assert!(words.windows(2).all(|p| rank(&p[0]) <= rank(&p[1])));
+    let copy = content::copy::copy();
+    for w in order {
+        assert!(copy["judge"][w].is_string(), "judge.{w} has no text");
+    }
+}

@@ -18,6 +18,10 @@ Why things are the way they are, one paragraph each. The full argument for D1 to
   - The spouts move to A, S, D, F (one hand) and the belt is on ← and → (the other), all rebindable. A save from before the belt keys loads, keeping its bindings and taking the belt keys' defaults.
   - New strings, marked review: `settings.keys.actions.belt_slower`, `.belt_faster`, `hud.belt`, `hud.belt_keys`, `how.belt.*`.
   - This replaces the brief's rule that no key changes the belt; `CLAUDE.md` says so.
+- **2026-10-05:** "whenever a cup reaches the end to get submitted, there needs to be a satisfying noise ala kid pix or zoombinis, and there needs to be a dance dance revolution type NICE or EXCELLENT that appears in large stylized DDR font whenver a cup gets evaluated". The agent decided:
+  - **The sound is synthesized** in `web/sound.js` from oscillators and noise when core reports a judged cup: a lid-thunk, then a toy-like phrase chosen by the judgement (a rising arpeggio with a sparkle for EXCELLENT and GREAT, two notes for NICE and OK, a wah-wah slide down for MISS). Nothing is copied from either game, and no audio file ships, so `LICENSES.md` is unchanged. A volume slider (`settings.sound.volume.label`, carried from Vagrancy) is kept in the save (`options.sound_volume`; old saves get 70).
+  - **The word is chosen by core** from the cup's score (`data/judgements.json`: 95 EXCELLENT, 85 GREAT, 70 NICE, 50 OK, below MISS) and drawn by the page in a heavy italic system face, skewed, with a gradient fill, a thick edge and a pop-in; reduced motion fades it instead. A web font would be a request off the site, which the gate forbids.
+  - **`TONE.md` rule 9 gains its one exception** for `judge.*`, at Sam's request.
 - **Questions 6 to 12** were taken at the brief's recommendation by the agent, for Sam to overrule (PLAN.md §8).
 
 ## The build

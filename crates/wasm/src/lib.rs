@@ -119,6 +119,13 @@ pub fn save_reset_keys(save_json: &str) -> String {
 }
 
 #[wasm_bindgen]
+pub fn save_set_volume(save_json: &str, volume: u32) -> String {
+    let mut s = content::save::Save::load(save_json.as_bytes()).unwrap_or_default();
+    s.options.sound_volume = volume.min(100);
+    s.to_json()
+}
+
+#[wasm_bindgen]
 pub fn save_set_short_codes(save_json: &str, on: bool) -> String {
     let mut s = content::save::Save::load(save_json.as_bytes()).unwrap_or_default();
     s.options.short_codes = on;
@@ -134,18 +141,21 @@ pub struct Game {
     mission: String,
     /// The timer pilot, made the first time the gate asks it to play.
     pilot: Option<pilot::Pilot>,
+    /// Lids that closed since the page last asked, so a lid is heard and
+    /// seen even when several ticks pass between two drawn frames.
+    judged: Vec<serde_json::Value>,
 }
 
 #[wasm_bindgen]
 impl Game {
     /// One spout over one standing cup (M1's pour).
     pub fn standing(seed: u32, tuning: u8) -> Game {
-        Game { rec: Some(Recording::new(content::setup::standing(seed as u64, tuning))), play: None, mission: String::new(), pilot: None }
+        Game { rec: Some(Recording::new(content::setup::standing(seed as u64, tuning))), play: None, mission: String::new(), pilot: None, judged: Vec::new() }
     }
     /// A mission from the path, or `None` if there is no such mission.
     pub fn mission(id: &str, seed: u32, tuning: u8) -> Option<Game> {
         let m = content::missions::mission(id)?;
-        Some(Game { rec: Some(Recording::new(m.setup(seed as u64, tuning))), play: None, mission: id.to_string(), pilot: None })
+        Some(Game { rec: Some(Recording::new(m.setup(seed as u64, tuning))), play: None, mission: id.to_string(), pilot: None, judged: Vec::new() })
     }
     /// A replay file, or the copy key and values of the sentence that refuses it.
     pub fn load_replay(bytes: &[u8]) -> Result<Game, String> {
@@ -158,7 +168,7 @@ impl Game {
                     .find(|m| m.setup(r.setup.seed, r.setup.tuning) == r.setup)
                     .map(|m| m.id)
                     .unwrap_or_default();
-                Game { rec: None, play: Some(Playback::new(r)), mission, pilot: None }
+                Game { rec: None, play: Some(Playback::new(r)), mission, pilot: None, judged: Vec::new() }
             })
             .map_err(|e| content::messages::replay_error(e).to_string())
     }
@@ -170,6 +180,20 @@ impl Game {
             }
             _ => {}
         }
+        self.collect();
+    }
+    fn collect(&mut self) {
+        let events = self.world().events.clone();
+        for e in events {
+            if let sim::world::Event::Judged { cup, score, .. } = e {
+                self.judged.push(json!({ "cup": cup, "score": score, "word": content::missions::judgement(score) }));
+            }
+        }
+    }
+    /// The lids that closed since the last call: cup, score and the word
+    /// its score earns.
+    pub fn take_judged(&mut self) -> String {
+        serde_json::to_string(&std::mem::take(&mut self.judged)).unwrap()
     }
     fn world(&self) -> &sim::World {
         match (&self.rec, &self.play) {
@@ -216,6 +240,11 @@ impl Game {
             }
             let i = p.input(&r.world, 0);
             r.step([i, Input::NONE]);
+            for e in r.world.events.clone() {
+                if let sim::world::Event::Judged { cup, score, .. } = e {
+                    self.judged.push(json!({ "cup": cup, "score": score, "word": content::missions::judgement(score) }));
+                }
+            }
         }
     }
     pub fn mission_id(&self) -> String {

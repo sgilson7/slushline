@@ -478,6 +478,11 @@
     },
     "motion": {
       "label": "Reduce motion"
+    },
+    "sound": {
+      "volume": {
+        "label": "Sound effects volume"
+      }
     }
   },
   "replay": {
@@ -591,5 +596,13 @@
     "K03_K12": "Each line's orders are read the same way.",
     "K04_K12": "Each line asks for the same pours as one line did.",
     "review": "new"
+  },
+  "judge": {
+    "excellent": "EXCELLENT",
+    "great": "GREAT",
+    "nice": "NICE",
+    "ok": "OK",
+    "miss": "MISS",
+    "review": "new (Sam, 2026-10-05). These words are said for effect at Sam's request, the one exception to TONE.md rule 9."
   }
 }

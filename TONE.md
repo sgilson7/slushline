@@ -50,6 +50,8 @@ The rules come from three places. Sam's *Writing and Voice Guide* supplies the v
 
 *Check:* `tests/copy.rs` holds the word lists below. A reviewer reads for the rest.
 
+*Exception:* the judgement words under `judge.*` (EXCELLENT, GREAT, NICE, OK, MISS) are said for effect, at Sam's request on 2026-10-05: "a dance dance revolution type NICE or EXCELLENT … whenever a cup gets evaluated". They are the only strings this rule allows that, and each sits beside the score and the sentence that say what happened.
+
 **10. A flavor is named, and never pointed at by its color.** A string says "cola" or "the cola spout". It does not say "the dark one". Where a string helps a player find a flavor, it gives the pattern. No result is described with a color word.
 
 *Check:* `tests/copy.rs` fails on a color word in any string.

@@ -13,8 +13,18 @@
   "pattern_ink": "#2B2A28",
   "pattern_ink_on_dark": "#EFE8D8",
   "flavors": {
-    "cola": { "fill": "#2B2A28" },
-    "cherry": { "fill": "#D55E00" },
-    "lemon": { "fill": "#F0E442" }
-  }
+    "cola": {
+      "fill": "#2B2A28"
+    },
+    "cherry": {
+      "fill": "#D55E00"
+    },
+    "lemon": {
+      "fill": "#F0E442"
+    }
+  },
+  "judge_top": "#FFF3B0",
+  "judge_bottom": "#E69F00",
+  "judge_edge": "#2B2A28",
+  "judge_glow": "#56B4E9"
 }

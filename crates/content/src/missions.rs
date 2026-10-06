@@ -312,3 +312,18 @@ pub fn fingerprint(pilot_version: u32) -> String {
     }
     format!("{:016x}", sim::world::fnv1a(&bytes))
 }
+
+pub const JUDGEMENTS_JSON: &str = include_str!("../../../data/judgements.json");
+
+/// The word the lid's score earns (`data/judgements.json`): the first row,
+/// from the top, whose mark the score reaches. The copy key is
+/// `judge.<word>`.
+pub fn judgement(score: u32) -> String {
+    let v: Value = serde_json::from_str(JUDGEMENTS_JSON).expect("data/judgements.json is valid");
+    for row in v["judgements"].as_array().unwrap() {
+        if score >= row["at"].as_u64().unwrap() as u32 {
+            return row["word"].as_str().unwrap().to_string();
+        }
+    }
+    unreachable!("the last judgement is at 0")
+}

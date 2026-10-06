@@ -26,11 +26,25 @@ pub struct Save {
     pub options: Options,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Options {
     /// Draw each flavor's short code on its slush in the cups (0.5).
     pub short_codes: bool,
+    /// Sound effects, 0 to 100. A save from before sound has none, and gets
+    /// the default.
+    #[serde(default = "default_volume")]
+    pub sound_volume: u32,
+}
+
+fn default_volume() -> u32 {
+    70
+}
+
+impl Default for Options {
+    fn default() -> Options {
+        Options { short_codes: false, sound_volume: default_volume() }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -94,6 +108,7 @@ impl Save {
         let actions: Vec<&str> = sim::Input::ACTIONS.iter().map(|a| a.0).collect();
         let consistent = s.best.keys().all(|k| ids.contains(k))
             && s.best.values().all(|&b| b <= sim::balance::MAX_SCORE)
+            && s.options.sound_volume <= 100
             && s.passed.iter().all(|k| ids.contains(k))
             && s.keys.keys().all(|k| actions.contains(&k.as_str()))
             && actions.iter().all(|a| s.keys.contains_key(*a))
