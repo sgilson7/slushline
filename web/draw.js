@@ -74,7 +74,7 @@ export class Stage {
     }
   }
 
-  patternInBox(f, x, y, w, h) {
+  patternInBox(f, x, y, w, h, step = 7) {
     const g = this.g;
     const kind = this.flavors[f].pattern;
     g.save();
@@ -83,8 +83,8 @@ export class Stage {
     g.clip();
     if (kind === 'stripes') {
       g.strokeStyle = this.ink(f);
-      g.lineWidth = 2;
-      for (let k = -h; k < w + h; k += 7) {
+      g.lineWidth = Math.max(2, step * 0.3);
+      for (let k = -h; k < w + h; k += step) {
         g.beginPath();
         g.moveTo(x + k, y + h);
         g.lineTo(x + k + h, y);
@@ -92,10 +92,10 @@ export class Stage {
       }
     } else if (kind === 'dots') {
       g.fillStyle = this.ink(f);
-      for (let yy = y + 3; yy < y + h; yy += 7) {
-        for (let xx = x + 3 + ((yy - y) % 14 ? 3 : 0); xx < x + w; xx += 7) {
+      for (let yy = y + step / 2; yy < y + h; yy += step) {
+        for (let xx = x + step / 2 + (Math.round((yy - y) / step) % 2 ? step / 2 : 0); xx < x + w; xx += step) {
           g.beginPath();
-          g.arc(xx, yy, 1.4, 0, Math.PI * 2);
+          g.arc(xx, yy, Math.max(1.4, step * 0.2), 0, Math.PI * 2);
           g.fill();
         }
       }
@@ -114,6 +114,7 @@ export class Stage {
     for (const line of frame.lines) this.drawFields(line);
     for (const line of frame.lines) this.drawLine(line, line.seat === 1 ? lowerKeyNames : keyNames);
     this.drawUnits(units);
+    for (const line of frame.lines) this.drawNozzles(line);
     for (const line of frame.lines) this.drawBars(line);
   }
 
@@ -274,6 +275,33 @@ export class Stage {
     for (let x = x0 + 4; x < x1 - 6; x += 10) g.fillRect(x, yTop - 3, 6, 3);
   }
 
+  // Each spout's nozzle: a tube below the machine, striped with the flavors
+  // it pours in their cycle, long and wide enough that its pattern reads
+  // (Sam, 2026-10-05: "the nozzle should be longer so you can see the
+  // pattern more easily"). Drawn over the slush, so new slush comes out of
+  // its mouth.
+  drawNozzles(L) {
+    const g = this.g;
+    const u = this.scale;
+    for (const s of L.spouts) {
+      const x = this.sx(s.x);
+      const y = this.sy(s.y);
+      const nw = 11 * u, top = y - 2.5 * u, nh = 17 * u;
+      const w = nw / s.pours.length;
+      s.pours.forEach((f, k) => {
+        g.fillStyle = this.fill(f);
+        g.fillRect(x - nw / 2 + k * w, top, w, nh);
+        this.patternInBox(f, x - nw / 2 + k * w, top, w, nh, 2.2 * u);
+      });
+      g.strokeStyle = this.pal.line;
+      g.lineWidth = Math.max(1.5, 0.8 * u);
+      g.strokeRect(x - nw / 2, top, nw, nh);
+      // The mouth: a darker lip at the bottom.
+      g.fillStyle = this.pal.line;
+      g.fillRect(x - nw / 2 - 0.6 * u, top + nh - 1.2 * u, nw + 1.2 * u, 1.2 * u);
+    }
+  }
+
   drawLine(L, keyNames) {
     this.drawTray(L);
     const g = this.g;
@@ -312,17 +340,7 @@ export class Stage {
       g.strokeStyle = p.line;
       g.lineWidth = Math.max(1.5, 0.7 * u);
       g.strokeRect(x - 9 * u, y - 15 * u, 18 * u, 13 * u);
-      // The nozzle, filled with the flavors it pours, in their cycle.
       const pours = s.pours;
-      const nw = 9 * u;
-      const w = nw / pours.length;
-      pours.forEach((f, k) => {
-        g.fillStyle = this.fill(f);
-        g.fillRect(x - nw / 2 + k * w, y - 2 * u, w, 5 * u);
-        this.patternInBox(f, x - nw / 2 + k * w, y - 2 * u, w, 5 * u);
-      });
-      g.lineWidth = Math.max(1.5, 0.8 * u);
-      g.strokeRect(x - nw / 2, y - 2 * u, nw, 5 * u);
       // The short codes and the key, on the machine.
       g.fillStyle = p.line;
       g.font = `700 ${Math.round(5.2 * u)}px system-ui, sans-serif`;
@@ -443,16 +461,6 @@ export class Stage {
         g.lineWidth = Math.max(2, 0.9 * u);
         g.strokeRect(x, y, w, h);
         segments.push([f, share, x, w]);
-        // The short code, centered, in dark letters edged with paper so it
-        // reads on any fill without hiding how full the segment is.
-        g.font = `800 ${Math.round(Math.min(7.5 * u, w * 0.42))}px system-ui, sans-serif`;
-        g.textAlign = 'center';
-        g.lineJoin = 'round';
-        g.strokeStyle = p.paper;
-        g.lineWidth = 1.1 * u;
-        g.strokeText(this.codes[f], x + w / 2, y + h / 2 + 2.6 * u);
-        g.fillStyle = p.line;
-        g.fillText(this.codes[f], x + w / 2, y + h / 2 + 2.6 * u);
         x += w;
       }
       // The indicator for each share: how much of that flavor the cup holds,
@@ -476,6 +484,22 @@ export class Stage {
           g.closePath();
           g.fill();
         }
+      }
+      // The codes last, so a marker never cuts through one.
+      for (const [f, , sx, w] of segments) {
+        // The short code, centered and large, its letters set against what
+        // they sit on: light letters edged dark on a dark band (cola), dark
+        // letters edged light on the others (Sam, 2026-10-05: "it should be
+        // easier to read the CO on cola").
+        const dark = this.flavors[f].id === 'cola';
+        g.font = `900 ${Math.round(Math.min(8.5 * u, w * 0.46))}px system-ui, sans-serif`;
+        g.textAlign = 'center';
+        g.lineJoin = 'round';
+        g.strokeStyle = dark ? p.line : p.paper;
+        g.lineWidth = 1.4 * u;
+        g.strokeText(this.codes[f], sx + w / 2, y + h / 2 + 3 * u);
+        g.fillStyle = dark ? p.paper : p.line;
+        g.fillText(this.codes[f], sx + w / 2, y + h / 2 + 3 * u);
       }
       // Settings' switch: each flavor's short code on its slush in the cup,
       // at the middle of that flavor's units, which core worked out.
