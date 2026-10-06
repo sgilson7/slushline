@@ -26,5 +26,7 @@
   "judge_top": "#FFF3B0",
   "judge_bottom": "#E69F00",
   "judge_edge": "#2B2A28",
-  "judge_glow": "#56B4E9"
+  "judge_glow": "#56B4E9",
+  "field": "#56B4E9",
+  "field_ink": "#3E4A89"
 }

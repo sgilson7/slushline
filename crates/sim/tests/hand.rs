@@ -178,3 +178,57 @@ fn a_mission_s_score_is_the_floored_average_of_its_cups() {
     assert_eq!(sim::score::average(&[100, 50, 91]), 80);
     assert_eq!(sim::score::average(&[]), 0);
 }
+
+/// H9 — a field bends the stream (Sam, 2026-10-05). Plates covering the
+/// whole world push +2 cm/tick² across; speed first, as H1: the sideways
+/// speed after n ticks is 2n and the unit has moved n(n + 1), 110 at n = 10.
+/// With the push reversing every 5 ticks it moves 2+4+6+8+10+8+6+4+2+0 = 50
+/// in 10 ticks, and twice that, 100, in 20, when the push has turned back.
+/// A charge of strength 4 and radius 20 pushes a still unit 10 away from it
+/// by 4·(20 − 10)/20 = 2 in the first tick, pulls it in by 2 with strength
+/// −4, and does nothing outside the radius.
+#[test]
+fn h9_a_field_bends_the_stream_by_the_hand_computed_amount() {
+    use sim::setup::Field;
+    let everywhere = |flip| Field::Plates { x0: Fx::int(-10_000), x1: Fx::int(10_000), y0: Fx::int(-10_000), y1: Fx::int(10_000), accel: V2::cm(2, 0), flip };
+    for (flip, ticks, want) in [(None, 10, 110), (Some(5), 10, 50), (Some(5), 20, 100)] {
+        let mut w = h1_world();
+        w.setup.lines[0].as_mut().unwrap().fields = vec![everywhere(flip)];
+        let start = V2::cm(-200, 4000);
+        drop_unit(&mut w, start, 1);
+        for _ in 0..ticks {
+            w.step([Input::NONE; 2]);
+        }
+        assert_eq!((w.units[0].p.x - start.x).trunc(), want, "flip {flip:?} after {ticks}");
+        assert_eq!((start.y - w.units[0].p.y).trunc(), ticks * (2 * ticks + 3), "the field does not change the fall");
+    }
+    for (strength, offset, want) in [(4, 10, 2), (-4, 10, -2), (4, 25, 0)] {
+        let mut s = standing(1, sim::balance::DEFAULT_TUNING);
+        s.physics = Physics { gravity: Fx(0), cap: Fx::int(100_000), drag: Fx(0) };
+        let at = V2::cm(-300, 3000);
+        s.lines[0].as_mut().unwrap().fields = vec![Field::Charge { at, strength: Fx::int(strength), radius: Fx::int(20) }];
+        let mut w = World::new(s);
+        drop_unit(&mut w, V2::new(at.x + Fx::int(offset), at.y), 0);
+        w.step([Input::NONE; 2]);
+        assert_eq!(w.units[0].p.x - (at.x + Fx::int(offset)), Fx::int(want), "strength {strength} at {offset}");
+    }
+}
+
+#[test]
+fn a_field_pushes_only_its_own_line_s_slush() {
+    use sim::setup::Field;
+    let mut w = h1_world();
+    let mut lower = w.setup.lines[0].clone().unwrap();
+    lower.fields.clear();
+    w.setup.lines[0].as_mut().unwrap().fields =
+        vec![Field::Plates { x0: Fx::int(-10_000), x1: Fx::int(10_000), y0: Fx::int(-10_000), y1: Fx::int(10_000), accel: V2::cm(2, 0), flip: None }];
+    w.setup.lines[1] = Some(lower);
+    let mut w = World::new(w.setup.clone());
+    let start = V2::cm(-200, 4000);
+    drop_unit(&mut w, start, 1);
+    w.units[0].line = 1;
+    for _ in 0..10 {
+        w.step([Input::NONE; 2]);
+    }
+    assert_eq!(w.units[0].p.x, start.x, "line 0's field moved line 1's slush");
+}

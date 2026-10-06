@@ -197,7 +197,9 @@ def a_mission_plays_to_a_result_and_round_trips_through_a_replay_file(page, name
     page.wait_for_function("document.body.dataset.ready === '1'")
     page.click("#menu-missions")
     problems = lines_not_in_copy(page, "the path")
+    problems += lines_not_in_copy(page, "the tree")
     page.click("#mission-m_first_pour")
+    page.click("#open-mission")
     problems += lines_not_in_copy(page, "the mission card")
     page.click("#start-mission")
     page.wait_for_function("window.slushline.tick() > 5")
@@ -272,7 +274,7 @@ def a_mission_plays_to_a_result_and_round_trips_through_a_replay_file(page, name
 @check
 def the_save_keeps_a_pass_and_round_trips_through_a_file(page, name):
     page.click("#menu-missions")
-    opened = page.locator("#mission-m_tail").count()
+    opened = page.locator("#mission-m_tail:not(.locked)").count()
     if not opened:
         return [f"{name}: passing the first mission did not open the second"]
     page.click("#back-to-menu")
@@ -285,7 +287,7 @@ def the_save_keeps_a_pass_and_round_trips_through_a_file(page, name):
     page.reload(wait_until="load")
     page.wait_for_function("document.body.dataset.ready === '1'")
     page.click("#menu-missions")
-    if page.locator("#mission-m_tail").count():
+    if page.locator("#mission-m_tail:not(.locked)").count():
         return [f"{name}: a cleared browser still opened the second mission"]
     page.click("#back-to-menu")
     page.click("#menu-settings")
@@ -299,7 +301,7 @@ def the_save_keeps_a_pass_and_round_trips_through_a_file(page, name):
     problems = lines_not_in_copy(page, "settings")
     page.click("#back-to-menu")
     page.click("#menu-missions")
-    if not page.locator("#mission-m_tail").count():
+    if not page.locator("#mission-m_tail:not(.locked)").count():
         problems.append("the loaded save did not open the second mission")
     page.click("#back-to-menu")
     if problems:
@@ -333,6 +335,50 @@ def two_actions_cannot_share_a_key_in_settings(page, name):
     return []
 
 
+MISSION_IDS = [m["id"] for m in json.loads((ROOT / "data" / "missions.json").read_text())["missions"]]
+ALL_PASSED = {"format": "slushline.save", "version": 2, "best": {i: 90 for i in MISSION_IDS}, "passed": MISSION_IDS,
+              "clean": {i: 5 for i in MISSION_IDS},
+              "keys": {"spout_1": "KeyA", "spout_2": "KeyS", "spout_3": "KeyD", "spout_4": "KeyF", "belt_slower": "ArrowLeft",
+                       "belt_faster": "ArrowRight", "lower_1": "KeyJ", "lower_2": "KeyK", "lower_3": "KeyL", "lower_4": "Semicolon"},
+              "options": {"short_codes": False, "sound_volume": 70}}
+
+
+@check
+def a_mission_with_two_lines_plays_with_the_lower_line_on_its_own_keys(page, name):
+    # Sam, 2026-10-05: levels with more than one belt. The lower line's
+    # spouts answer J, K, L and ;, the upper line's A, S, D and F, and the
+    # mission plays to one result over both lines.
+    page.evaluate(f"localStorage.setItem('slushline.save', {json.dumps(json.dumps(ALL_PASSED))})")
+    page.reload(wait_until="load")
+    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.click("#menu-missions")
+    page.click("#mission-m_two_lines")
+    page.click("#open-mission")
+    problems = lines_not_in_copy(page, "a two-line card")
+    page.click("#start-mission")
+    page.wait_for_function("window.slushline.tick() > 2")
+    page.keyboard.down("j")
+    page.wait_for_timeout(400)
+    lower, upper = page.evaluate("[window.slushline.frame().lines[1].spouts[0].opening, window.slushline.frame().lines[0].spouts[0].opening]")
+    page.keyboard.up("j")
+    if not (lower > 0 and upper == 0):
+        problems.append(f"J opened the lower line's first spout to {lower} and the upper one's to {upper}")
+    problems += lines_not_in_copy(page, "a two-line mission")
+    for _ in range(300):
+        page.evaluate("window.slushline.autoplay(60)")
+        if page.locator(".verdict").count():
+            break
+    page.wait_for_selector(".verdict", timeout=20000)
+    verdict = page.inner_text(".verdict")
+    problems += lines_not_in_copy(page, "a two-line result")
+    page.click("#to-missions")
+    page.click("#back-to-menu")
+    if problems:
+        return [f"{name}: {p}" for p in problems]
+    print(f"ok: {name}: J pulled only the lower line's handle; the mission over two lines played to {verdict!r}")
+    return []
+
+
 def srgb_lum(rgb):
     def lin(c):
         c = c / 255
@@ -346,13 +392,12 @@ def every_flavor_differs_in_gray_on_the_rendered_page(page, name):
     # PLANNING-BRIEF 0.5: render a mixed cup, reduce the canvas to gray, and
     # check that each pair of flavors still differs. Each unit is sampled away
     # from its pattern mark.
-    page.evaluate("""localStorage.setItem('slushline.save', JSON.stringify({format:'slushline.save',version:1,best:{},
-        passed:['m_first_pour','m_tail','m_two_spouts','m_half','m_two_one','m_third'],
-        keys:{spout_1:'KeyA',spout_2:'KeyS',spout_3:'KeyD',spout_4:'KeyF',belt_slower:'ArrowLeft',belt_faster:'ArrowRight'},options:{short_codes:false}}))""")
+    page.evaluate(f"localStorage.setItem('slushline.save', {json.dumps(json.dumps(ALL_PASSED))})")
     page.reload(wait_until="load")
     page.wait_for_function("document.body.dataset.ready === '1'")
     page.click("#menu-missions")
     page.click("#mission-m_three")
+    page.click("#open-mission")
     page.click("#start-mission")
     page.wait_for_function("window.slushline.tick() > 2")
     page.evaluate("window.slushline.autoplay(1150)")

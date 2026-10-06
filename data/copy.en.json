@@ -300,7 +300,8 @@
     "delay": "Input delay: {delay_ms} ms",
     "belt": "Belt: {belt_pct} percent of its speed",
     "belt_keys": "Hold {key.belt_slower} to slow the belt and {key.belt_faster} to speed it up.",
-    "review": "new: belt and belt_keys"
+    "review": "new: belt and belt_keys",
+    "keys_lower": "Your keys for the lower line, in spout order: {keys_lower}."
   },
   "missions": {
     "order": {
@@ -362,8 +363,69 @@
       "m_two_lines": {
         "name": "Two lines",
         "try": "Run the upper line with {keys_upper} and the lower line with {keys_lower}. Watch whichever cup is closest to a spout, since that one needs you next."
+      },
+      "m_push": {
+        "name": "A push along the belt",
+        "try": "Start each pour a little later than usual, because the field carries the slush past the spout before it lands.",
+        "review": "new"
+      },
+      "m_push_back": {
+        "name": "A push against the belt",
+        "try": "Watch where the lemon lands, not where its spout is, because the field pushes it back toward the cup that is coming.",
+        "review": "new"
+      },
+      "m_charge": {
+        "name": "A charge that pushes",
+        "try": "Let the cup get a little past the cherry spout before you pour, because the charge pushes the cherry along the belt as it falls.",
+        "review": "new"
+      },
+      "m_attract": {
+        "name": "A charge that pulls",
+        "try": "Pour the cherry a little early, because the charge pulls it back toward the start of the belt as it falls.",
+        "review": "new"
+      },
+      "m_alternating": {
+        "name": "Plates that turn",
+        "try": "Watch the arrows under the cola spout and pour when they point toward the cup, because the push turns while you wait.",
+        "review": "new"
+      },
+      "m_field_blend": {
+        "name": "A blend through the fields",
+        "try": "Pour the blend for half of each cup and the lemon for the rest, and time each pour to the turning plates under its spout.",
+        "review": "new"
+      },
+      "m_two_speeds": {
+        "name": "Two belts, two speeds",
+        "try": "Keep an eye on the lower line, because its belt runs faster and its cups reach the spouts sooner.",
+        "review": "new"
+      },
+      "m_two_lines_blend": {
+        "name": "A blend above, a rail below",
+        "try": "Fill the upper cups from the blend and the cola spout, and time the lower line's lemon to its sliding spout.",
+        "review": "new"
+      },
+      "m_storm": {
+        "name": "The storm",
+        "try": "Take each line one cup at a time, and use the belt keys to slow both belts when the fields make a pour hard to aim.",
+        "review": "new"
       }
-    }
+    },
+    "req": {
+      "pass": "Pass {mission}.",
+      "mark": "Average at least {avg} of {max_score} on {mission}.",
+      "clean": "Pass {mission} with waste under {waste_limit_pct} percent.",
+      "review": "new"
+    },
+    "tier": {
+      "start": "Open from the start",
+      "one": "Opens when one requirement is met",
+      "many": "Opens when {n} requirements are met",
+      "review": "new"
+    },
+    "needs": "To open this mission, meet each of these.",
+    "needs_review": "new",
+    "met": "Met",
+    "unmet": "Not met yet"
   },
   "conditions": {
     "rail": {
@@ -377,6 +439,36 @@
     "jet": {
       "name": "A rocket nozzle",
       "desc": "One spout fires a straight jet with no fall time, and the jet pushes what it hits."
+    },
+    "push_down": {
+      "name": "Plates that push along the belt",
+      "desc": "A field under one spout pushes its falling slush along the belt, so the slush lands past the spout.",
+      "review": "new"
+    },
+    "push_back": {
+      "name": "Plates that push against the belt",
+      "desc": "A field under one spout pushes its falling slush back against the belt, so the slush lands before the spout.",
+      "review": "new"
+    },
+    "alternating": {
+      "name": "Plates that turn",
+      "desc": "A field under one spout pushes its slush one way and then the other, and keeps turning.",
+      "review": "new"
+    },
+    "alternating_second": {
+      "name": "Plates that turn",
+      "desc": "A field under one spout pushes its slush one way and then the other, and keeps turning.",
+      "review": "new"
+    },
+    "repeller": {
+      "name": "A charge that pushes",
+      "desc": "A charge beside one spout pushes its slush away as the slush falls.",
+      "review": "new"
+    },
+    "attractor": {
+      "name": "A charge that pulls",
+      "desc": "A charge beside one spout pulls its slush toward it as the slush falls.",
+      "review": "new"
     }
   },
   "results": {
@@ -447,7 +539,8 @@
         "spout": "Pull the handle on spout {n}",
         "belt_slower": "Slow the belt down",
         "belt_faster": "Speed the belt up",
-        "review": "new: belt_slower and belt_faster (Sam, 2026-10-05)"
+        "review": "new: belt_slower and belt_faster (Sam, 2026-10-05)",
+        "lower": "Pull the handle on spout {n} of the lower line"
       },
       "solo": {
         "heading": "Keys for missions and online matches"
@@ -457,6 +550,10 @@
       "conflict": "{key} is already used for {action}. Choose a different key, or change that binding first.",
       "reset": {
         "label": "Restore the default keys"
+      },
+      "lower": {
+        "heading": "Keys for the lower line, when a mission has two",
+        "review": "new"
       }
     },
     "save": {
@@ -574,15 +671,67 @@
       "when": "Two belts run at once.",
       "then": "Watch whichever cup is closest to a spout, since that one needs you next.",
       "review": "new"
+    },
+    "K13": {
+      "name": "Aiming through a field",
+      "when": "A field pushes the slush along the belt as it falls.",
+      "then": "Pour later than usual, because the slush lands past its spout.",
+      "review": "new"
+    },
+    "K14": {
+      "name": "A field against the belt",
+      "when": "A field pushes the slush back against the belt.",
+      "then": "Pour earlier, because the slush lands before its spout.",
+      "review": "new"
+    },
+    "K15": {
+      "name": "A charge that pushes",
+      "when": "A charge sits beside a spout.",
+      "then": "Expect the stream to bend away from the charge, and aim where it bends to.",
+      "review": "new"
+    },
+    "K16": {
+      "name": "A charge that pulls",
+      "when": "A charge pulls a stream toward it.",
+      "then": "Expect the stream to bend toward the charge, and pour so it bends into the cup.",
+      "review": "new"
+    },
+    "K17": {
+      "name": "A field that turns",
+      "when": "A field's push changes direction while you wait.",
+      "then": "Pour when the push points toward the cup, and hold off when it points away.",
+      "review": "new"
+    },
+    "K18": {
+      "name": "A blend through the fields",
+      "when": "A blend and a field are on one line.",
+      "then": "Aim the blend's part of the cup and the single flavor's part through their own fields.",
+      "review": "new"
+    },
+    "K19": {
+      "name": "Two belts at two speeds",
+      "when": "The lower belt runs faster than the upper one.",
+      "then": "Serve the line whose next cup reaches its spout first.",
+      "review": "new"
+    },
+    "K20": {
+      "name": "A blend above, a rail below",
+      "when": "Each line has its own complication.",
+      "then": "Treat each line as the mission you learned it in, and switch between them cup by cup.",
+      "review": "new"
+    },
+    "K21": {
+      "name": "Everything at once",
+      "when": "Two lines carry fields, blends and a rail.",
+      "then": "Slow the belts when a pour is hard to aim, and speed them up between cups.",
+      "review": "new"
     }
   },
   "kc_edge": {
     "K01_K02": "The tail is the same handle, let go before the cup looks full.",
-    "K02_K03": "Reading the order decides which pours need their tail judged.",
     "K03_K04": "An order with two flavors is read the same way, and asks for two pours.",
     "K04_K05": "Unequal shares are two pours of different lengths.",
     "K03_K06": "Reading the order tells you which spouts to let a cup pass.",
-    "K04_K06": "A cup with two flavors passes the third spout untouched.",
     "K05_K07": "A third share is one more unequal pour.",
     "K06_K07": "With a third spout, each pour stops where its share ends.",
     "K04_K08": "A blend fills two flavors of an order in one pour.",
@@ -595,7 +744,25 @@
     "K10_K11": "The sliding spout pours the rest.",
     "K03_K12": "Each line's orders are read the same way.",
     "K04_K12": "Each line asks for the same pours as one line did.",
-    "review": "new"
+    "review": "new",
+    "K01_K03": "Reading the order decides which handle to hold.",
+    "K01_K13": "A pour through a field is the same handle, timed to where the slush lands.",
+    "K05_K16": "The order's shares are unequal, so one pour is longer.",
+    "K16_K17": "A field that turns is a push whose side changes.",
+    "K10_K17": "A field that turns is timed as a moving spout is.",
+    "K17_K18": "The fields are the same, with a blend poured through one.",
+    "K11_K18": "The blend fills its part of the cup as before.",
+    "K10_K19": "Timing a cup that moves is what a faster belt asks for.",
+    "K11_K20": "The blend and the rail are the ones met before.",
+    "K18_K21": "The fields return on two lines.",
+    "K13_K15": "A charge bends a stream from one side, as the plates did from below.",
+    "K03_K15": "Each cup's order says which spout's charge matters.",
+    "K15_K14": "Plates that push against the belt bend the stream the other way, all the way down.",
+    "K06_K14": "A cup can still pass a spout its order does not name.",
+    "K14_K16": "A charge that pulls bends the stream back, as the plates against the belt did.",
+    "K12_K20": "Two lines again, each with something met before.",
+    "K20_K19": "Two lines again, now with belts at different speeds.",
+    "K19_K21": "The two belts return, with fields on them."
   },
   "judge": {
     "excellent": "EXCELLENT",

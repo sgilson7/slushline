@@ -1,11 +1,15 @@
 {
-  "_about": "Default key bindings, as KeyboardEvent.code values (PLANNING-BRIEF 0.1, revised by Sam on 2026-10-05: the spouts on one hand and the belt's throttle on the other). The action names are sim::Input::ACTIONS; the page reads the bits from there. A player's own bindings live in the save file.",
+  "_about": "Default key bindings, as KeyboardEvent.code values (PLANNING-BRIEF 0.1, revised by Sam on 2026-10-05: the spouts on one hand and the belt's throttle on the other). The action names are sim::Input::ACTIONS; the page reads the bits from there. A player's own bindings live in the save file. lower_1 to lower_4 pull the lower line's spouts when a mission has two lines (PLANNING-BRIEF 0.1: J, K, L and semicolon).",
   "solo": {
     "spout_1": "KeyA",
     "spout_2": "KeyS",
     "spout_3": "KeyD",
     "spout_4": "KeyF",
     "belt_slower": "ArrowLeft",
-    "belt_faster": "ArrowRight"
+    "belt_faster": "ArrowRight",
+    "lower_1": "KeyJ",
+    "lower_2": "KeyK",
+    "lower_3": "KeyL",
+    "lower_4": "Semicolon"
   }
 }

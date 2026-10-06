@@ -30,4 +30,5 @@ pub use world::World;
 /// 2: contacts are inelastic (`slush::inelastic`); slush no longer splashes
 /// out of a cup (SECOND-ORDER-M2).
 /// 3: the belt keys and the throttle (Sam, 2026-10-05).
-pub const SIM_VERSION: u32 = 3;
+/// 4: force fields on a line (Sam, 2026-10-05).
+pub const SIM_VERSION: u32 = 4;

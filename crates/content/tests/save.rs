@@ -7,8 +7,8 @@ use content::save::{Save, SaveError};
 #[test]
 fn a_save_round_trips() {
     let mut s = Save::default();
-    s.record("m_first_pour", 84, true);
-    s.record("m_tail", 51, false);
+    s.record("m_first_pour", 84, true, 9);
+    s.record("m_tail", 51, false, 40);
     s.options.short_codes = true;
     s.rebind("spout_1", "KeyA").unwrap();
     let back = Save::load(s.to_json().as_bytes()).expect("its own save loads");
@@ -25,8 +25,8 @@ fn a_file_that_is_not_a_save_is_refused() {
 #[test]
 fn a_save_from_a_newer_version_is_refused() {
     let mut v: serde_json::Value = serde_json::from_str(&Save::default().to_json()).unwrap();
-    v["version"] = 2.into();
-    assert_eq!(Save::load(v.to_string().as_bytes()), Err(SaveError::Newer { theirs: 2, ours: 1 }));
+    v["version"] = 3.into();
+    assert_eq!(Save::load(v.to_string().as_bytes()), Err(SaveError::Newer { theirs: 3, ours: 2 }));
 }
 
 #[test]
@@ -64,11 +64,12 @@ fn two_actions_cannot_share_a_key() {
 #[test]
 fn a_pass_opens_the_next_mission_and_a_worse_run_keeps_the_best() {
     let ms = missions();
+    let tail = ms.iter().find(|m| m.id == "m_tail").unwrap();
     let mut s = Save::default();
-    assert!(s.open(&ms[0]) && !s.open(&ms[1]));
-    s.record(&ms[0].id, 70, true);
-    assert!(s.open(&ms[1]));
-    s.record(&ms[0].id, 40, false);
+    assert!(s.open(&ms[0]) && !s.open(tail));
+    s.record(&ms[0].id, 70, true, 12);
+    assert!(s.open(tail));
+    s.record(&ms[0].id, 40, false, 50);
     assert_eq!(s.best[&ms[0].id], 70);
     assert_eq!(s.passed, vec![ms[0].id.clone()]);
 }
@@ -83,4 +84,34 @@ fn a_save_from_before_the_belt_keys_loads_with_their_defaults() {
     assert_eq!(s.keys["spout_1"], "KeyD", "its own bindings are kept");
     assert_eq!(s.keys["belt_slower"], "ArrowLeft");
     assert_eq!(s.keys["belt_faster"], "ArrowRight");
+    assert_eq!((s.keys["lower_1"].as_str(), s.keys["lower_2"].as_str()), ("KeyL", "Semicolon"), "J and K are taken, so the next free keys stand in");
+}
+
+#[test]
+fn each_kind_of_requirement_is_met_by_what_it_asks_and_nothing_less() {
+    use content::missions::Requirement::*;
+    let mut s = Save::default();
+    let mark = Mark { mission: "m_first_pour".into(), average: 75 };
+    let clean = Clean { mission: "m_tail".into(), waste_pct: 15 };
+    s.record("m_first_pour", 74, true, 5);
+    assert!(s.met(&Pass("m_first_pour".into())) && !s.met(&mark), "74 is not a mark of 75");
+    s.record("m_first_pour", 75, false, 50);
+    assert!(s.met(&mark), "a failed run's average still counts toward a mark");
+    s.record("m_tail", 90, false, 3);
+    assert!(!s.met(&clean), "a clean run that did not pass does not count");
+    s.record("m_tail", 80, true, 15);
+    assert!(!s.met(&clean), "15 percent is not under 15");
+    s.record("m_tail", 70, true, 14);
+    assert!(s.met(&clean));
+}
+
+#[test]
+fn a_version_1_save_loads_as_version_2() {
+    let old = r#"{"format": "slushline.save", "version": 1, "best": {"m_first_pour": 80},
+        "passed": ["m_first_pour"], "options": {"short_codes": false},
+        "keys": {"spout_1": "KeyA", "spout_2": "KeyS", "spout_3": "KeyD", "spout_4": "KeyF", "belt_slower": "ArrowLeft", "belt_faster": "ArrowRight"}}"#;
+    let s = Save::load(old.as_bytes()).expect("a version 1 save loads");
+    assert_eq!(s.version, 2);
+    assert!(s.clean.is_empty());
+    assert_eq!(s.keys["lower_1"], "KeyJ", "the lower line's keys take their defaults");
 }

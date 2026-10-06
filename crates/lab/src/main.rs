@@ -47,12 +47,46 @@ fn main() {
             xs.sort();
             println!("held {held} ticks; waste offsets from nearest cup center (cm): {:?}", xs);
         }
+        Some("fields") => {
+            // Where one unit from each spout lands with and without its
+            // line's fields, over the first few seconds.
+            for m in content::missions::missions().into_iter().filter(|m| m.lines.iter().any(|l| !l.conditions.is_empty())) {
+                for (seat, spec) in m.lines.iter().enumerate() {
+                    if spec.conditions.iter().all(|c| c == "rail") { continue; }
+                    let s = m.setup(1, 1);
+                    let line = s.lines[seat].clone().unwrap();
+                    for i in 0..line.spouts.len() {
+                        let mut offs = Vec::new();
+                        for t0 in [0u32, 150, 300] {
+                            let drop = |fields: bool| {
+                                let ph = s.physics;
+                                let (mut p, mut v) = (V2::new(line.spouts[i].x, line.spouts[i].y), V2::new(Fx(0), -sim::balance::SPOUT_SPEED));
+                                let target = line.belt_y + Fx::int(14);
+                                let mut t = 0;
+                                while p.y > target && t < 300 {
+                                    v -= v * ph.drag; v.y -= ph.gravity;
+                                    if fields { v += line.field_accel(p, t0 + t); }
+                                    if v.len() > ph.cap { v = v.with_len(ph.cap); }
+                                    p += v; t += 1;
+                                }
+                                p.x
+                            };
+                            offs.push(((drop(true) - drop(false)).0 as f64 / 4096.0).round() as i32);
+                        }
+                        if offs.iter().any(|&o| o != 0) {
+                            println!("{:20} line {seat} spout {} ({}): lands {:?} cm from where it would without the field, released at ticks 0, 150, 300", m.id, i + 1, spec.spouts[i], offs);
+                        }
+                    }
+                }
+            }
+        }
         Some("play") => {
             for m in content::missions::missions() {
                 let mut w = World::new(m.setup(1, sim::balance::DEFAULT_TUNING));
-                let mut p = pilot::Pilot::new(pilot::Kind::Timer);
+                let mut p = [pilot::Pilot::new(pilot::Kind::Timer), pilot::Pilot::new(pilot::Kind::Timer)];
                 while !w.done() && w.tick < 20_000 {
-                    pilot::drive(&mut w, &mut p);
+                    let i = [p[0].input(&w, 0), p[1].input(&w, 1)];
+                    w.step(i);
                 }
                 let o = content::missions::outcome(&m, &w);
                 println!("{:22} ticks {:5} scores {:?} avg {:3} waste {:2}% passed {} cause {:?}", m.id, w.tick, o.scores, o.average, o.waste_pct, o.passed, o.cause);
@@ -275,9 +309,13 @@ fn ladder(runs: u64) {
                 let mut passes = 0;
                 for seed in 0..runs {
                     let mut w = World::new(m.setup(seed, sim::balance::DEFAULT_TUNING));
-                    let mut p = pilot::Pilot::new(pilot::Kind::Yardstick { seed: seed + 1, error: pilot::YARDSTICK_ERROR });
+                    let mut p = [
+                        pilot::Pilot::new(pilot::Kind::Yardstick { seed: seed + 1, error: pilot::YARDSTICK_ERROR }),
+                        pilot::Pilot::new(pilot::Kind::Yardstick { seed: seed + 1001, error: pilot::YARDSTICK_ERROR }),
+                    ];
                     while !w.done() && w.tick < 30_000 {
-                        pilot::drive(&mut w, &mut p);
+                        let i = [p[0].input(&w, 0), p[1].input(&w, 1)];
+                        w.step(i);
                     }
                     let o = content::missions::outcome(&m, &w);
                     avgs.push(o.average as f64);

@@ -1,10 +1,10 @@
 # Handoff
 
-Written for a reader with none of this session's context, and rewritten at every deploy gate. This one is for the MVP (gate 5, 2026-10-05).
+Written for a reader with none of this session's context, and rewritten at every deploy gate. This one is for the build after the MVP (2026-10-05): two lines, fields, and a tree of 21 missions.
 
 ## 1. What this is
 
-Slushline is a browser game at https://sgilson7.github.io/slushline/: a belt carries cups under slush spouts, and holding a spout's key pulls its handle, which opens its valve. Everything that pours is integer physics in `crates/sim`: units of slush that fall, hold a slope, thicken, swell after they land and spill over rims, and a handle driven by a servo against a return spring, so a spout does not close the instant its key is let go. At the end of the belt a lid scores each cup by one rule (`sim::score`): a unit counts while its flavor is under its share. Eleven missions form one path (`data/missions.json`), each opened by passing the last, ending with a spout on a rail; progress is a save file the player keeps, and any run downloads as a replay that plays back to the same checksum in Chromium, Firefox and WebKit. `PLANNING-BRIEF.md` is the brief, `PLAN.md` the plan; Sam's answers and the decisions since are in `DECISIONS.md`.
+Slushline is a browser game at https://sgilson7.github.io/slushline/: a belt carries cups under slush spouts, and holding a spout's key pulls its handle, which opens its valve. Everything that pours is integer physics in `crates/sim`: units of slush that fall, hold a slope, thicken, swell after they land and spill over rims, and a handle driven by a servo against a return spring, so a spout does not close the instant its key is let go. At the end of the belt a lid scores each cup by one rule (`sim::score`): a unit counts while its flavor is under its share. Twenty-one missions form a tree after Vagrancy's road (`data/missions.json`): each opens when its requirements (pass, mark, clean) are met. Some missions run two lines at once, and some carry force fields that bend falling slush; progress is a save file the player keeps, and any run downloads as a replay that plays back to the same checksum in Chromium, Firefox and WebKit. `PLANNING-BRIEF.md` is the brief, `PLAN.md` the plan; Sam's answers and the decisions since are in `DECISIONS.md`.
 
 ## 2. Load-bearing rules, and what breaks silently when each is broken
 
@@ -20,7 +20,7 @@ Slushline is a browser game at https://sgilson7.github.io/slushline/: a belt car
 
 | crate | holds |
 |---|---|
-| `sim` | `fx` (12-bit fixed point), `setup` (lines, spouts, rails, orders), `world` (handles, valves, belt, cup walls, waste, lid), `slush` (grid, contacts, slope rule, thickness, swell, inelastic, rest), `score`, `replay`, `frame` |
+| `sim` | `fx` (12-bit fixed point), `setup` (lines, spouts, rails, orders, fields), `world` (handles, valves, belt, cup walls, waste, lid), `slush` (grid, contacts, slope rule, thickness, swell, inelastic, rest), `score`, `replay`, `frame` |
 | `content` | `data/*.json` into setups (`setup`), `missions` (cards, recipes, results, the HUD, the ladder's fingerprint), `save` (v1, rebinding, which missions are open), `look` (luminance, color deficiency), `copy` |
 | `pilot` | idle, timer (plans each spout's pour from the order), yardstick (timer with seeded error) |
 | `wasm` | the shim: `Game`, the path, the save |
@@ -52,4 +52,4 @@ The page is `web/`: `app.js` (screens, the clock, settings), `draw.js`, `keys.js
 
 ## 7. The single next action
 
-Sam plays the deployed path from mission 1 to 11 and files `PLAYTEST-M4.md`, with replays from the result screens in `testing/replays/`: the pace, the tail, whether the swell is visible, the three tunings, and the order of the path (SECOND-ORDER-M4 row 2).
+Sam plays the deployed tree, the fields and the two-line missions, and files `PLAYTEST-M5.md`, with replays from the result screens in `testing/replays/`: the pace, the tail, whether the swell is visible, the three tunings, and the order of the path (SECOND-ORDER-M4 row 2).

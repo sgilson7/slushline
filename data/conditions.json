@@ -1,6 +1,80 @@
 {
-  "_about": "Conditions on a mission (PLANNING-BRIEF 0.7; D13): each is a change to the mission's Setup, applied by content before the world is built. sim does not know which mission it is running. A held condition is designed and not yet built.",
-  "rail": {"spout": 1, "amplitude": 36, "period": 288},
-  "second_line": {"held": "after the MVP (PLAN.md §8 Q5)"},
-  "jet": {"held": "M6"}
+  "_about": "Conditions on a line (PLANNING-BRIEF 0.7; D13): each is a change to the line's Setup, applied by content before the world is built; sim does not know which mission it is running. Fields (Sam, 2026-10-05) are placed relative to a spout: plates fill a box from `x0` to `x1` cm either side of the spout's nozzle and from `from_rim` cm above the cups' rim to `below_spout` cm under the nozzle, pushing by `accel` thousandths of a cm per tick\u00b2 (and reversing every `flip` ticks if given); a charge sits `dx`, `dy` cm from the nozzle with `strength` thousandths of a cm per tick\u00b2 at its center (negative pulls) fading to nothing at `radius` cm. A held condition is designed and not yet built.",
+  "rail": {
+    "spout": 1,
+    "amplitude": 36,
+    "period": 288
+  },
+  "push_down": {
+    "field": "plates",
+    "spout": 0,
+    "x0": -12,
+    "x1": 48,
+    "from_rim": 6,
+    "below_spout": 6,
+    "accel": [
+      110,
+      0
+    ]
+  },
+  "push_back": {
+    "field": "plates",
+    "spout": 1,
+    "x0": -48,
+    "x1": 12,
+    "from_rim": 6,
+    "below_spout": 6,
+    "accel": [
+      -110,
+      0
+    ]
+  },
+  "alternating": {
+    "field": "plates",
+    "spout": 0,
+    "x0": -48,
+    "x1": 48,
+    "from_rim": 6,
+    "below_spout": 6,
+    "accel": [
+      110,
+      0
+    ],
+    "flip": 150
+  },
+  "alternating_second": {
+    "field": "plates",
+    "spout": 1,
+    "x0": -48,
+    "x1": 48,
+    "from_rim": 6,
+    "below_spout": 6,
+    "accel": [
+      110,
+      0
+    ],
+    "flip": 150
+  },
+  "repeller": {
+    "field": "charge",
+    "spout": 1,
+    "dx": -22,
+    "dy": -34,
+    "strength": 520,
+    "radius": 34
+  },
+  "attractor": {
+    "field": "charge",
+    "spout": 0,
+    "dx": -26,
+    "dy": -34,
+    "strength": -520,
+    "radius": 34
+  },
+  "second_line": {
+    "lines": 2
+  },
+  "jet": {
+    "held": "M6"
+  }
 }

@@ -1,57 +1,1205 @@
 {
-  "_about": "The path (PLANNING-BRIEF 0.6; D12). Vagrancy's tutorial shape (id, chapter, teaches, builds_on, requires) plus the line, the orders, the conditions and the pass mark. Order parts are written in the order the sentence names them. Mission 12 is after the MVP (PLAN.md §8 Q5) and is held.",
-  "missions": [
-    {"id": "m_first_pour", "chapter": "pouring", "teaches": ["K01"], "builds_on": [], "requires": [],
-     "line": {"belt": "steady", "cup": "regular", "spouts": ["cola"]},
-     "orders": [{"count": 3, "parts": {"cola": 1}}],
-     "conditions": [], "pass": {"average": 60}},
-    {"id": "m_tail", "chapter": "pouring", "teaches": ["K02"], "builds_on": ["K01_K02"], "requires": [{"pass": "m_first_pour"}],
-     "line": {"belt": "steady", "cup": "small", "spouts": ["cola"]},
-     "orders": [{"count": 5, "parts": {"cola": 1}}],
-     "conditions": [], "pass": {"average": 60, "waste_pct": 35}},
-    {"id": "m_two_spouts", "chapter": "orders", "teaches": ["K03"], "builds_on": ["K02_K03"], "requires": [{"pass": "m_tail"}],
-     "line": {"belt": "steady", "cup": "regular", "spouts": ["cola", "lemon"]},
-     "orders": [{"count": 1, "parts": {"cola": 1}}, {"count": 1, "parts": {"lemon": 1}}, {"count": 1, "parts": {"cola": 1}}, {"count": 1, "parts": {"lemon": 1}}],
-     "conditions": [], "pass": {"average": 60, "waste_pct": 20}},
-    {"id": "m_half", "chapter": "orders", "teaches": ["K04"], "builds_on": ["K03_K04"], "requires": [{"pass": "m_two_spouts"}],
-     "line": {"belt": "steady", "cup": "regular", "spouts": ["cola", "lemon"]},
-     "orders": [{"count": 5, "parts": {"cola": 1, "lemon": 1}}],
-     "conditions": [], "pass": {"average": 60, "waste_pct": 20}},
-    {"id": "m_two_one", "chapter": "orders", "teaches": ["K05"], "builds_on": ["K04_K05"], "requires": [{"pass": "m_half"}],
-     "line": {"belt": "steady", "cup": "regular", "spouts": ["cola", "lemon"]},
-     "orders": [{"count": 5, "parts": {"cola": 2, "lemon": 1}}],
-     "conditions": [], "pass": {"average": 60, "waste_pct": 20}},
-    {"id": "m_third", "chapter": "three", "teaches": ["K06"], "builds_on": ["K03_K06", "K04_K06"], "requires": [{"pass": "m_two_one"}],
-     "line": {"belt": "steady", "cup": "regular", "spouts": ["cola", "cherry", "lemon"]},
-     "orders": [{"count": 1, "parts": {"cola": 1}}, {"count": 1, "parts": {"cherry": 1}}, {"count": 1, "parts": {"lemon": 1}},
-                {"count": 1, "parts": {"cola": 1, "cherry": 1}}, {"count": 1, "parts": {"cherry": 1, "lemon": 1}}, {"count": 1, "parts": {"cola": 1, "lemon": 1}}],
-     "conditions": [], "pass": {"average": 60, "waste_pct": 20}},
-    {"id": "m_three", "chapter": "three", "teaches": ["K07"], "builds_on": ["K05_K07", "K06_K07"], "requires": [{"pass": "m_third"}],
-     "line": {"belt": "steady", "cup": "regular", "spouts": ["cola", "cherry", "lemon"]},
-     "orders": [{"count": 5, "parts": {"cola": 2, "cherry": 1, "lemon": 1}}],
-     "conditions": [], "pass": {"average": 60, "waste_pct": 20}},
-    {"id": "m_cherry_cola", "chapter": "blends", "teaches": ["K08"], "builds_on": ["K04_K08", "K06_K08"], "requires": [{"pass": "m_three"}],
-     "line": {"belt": "steady", "cup": "regular", "spouts": ["cola", "cherry_cola", "lemon"]},
-     "orders": [{"count": 5, "parts": {"cola": 1, "cherry": 1}}],
-     "conditions": [], "pass": {"average": 60, "waste_pct": 20}},
-    {"id": "m_more_cola", "chapter": "blends", "teaches": ["K09"], "builds_on": ["K08_K09", "K05_K09"], "requires": [{"pass": "m_cherry_cola"}],
-     "line": {"belt": "steady", "cup": "regular", "spouts": ["cola", "cherry_cola", "lemon"]},
-     "orders": [{"count": 5, "parts": {"cola": 3, "cherry": 1}}],
-     "conditions": [], "pass": {"average": 60, "waste_pct": 20}},
-    {"id": "m_rail", "chapter": "complications", "teaches": ["K10"], "builds_on": ["K04_K10", "K02_K10"], "requires": [{"pass": "m_more_cola"}],
-     "line": {"belt": "steady", "cup": "regular", "spouts": ["cola", "lemon"]},
-     "orders": [{"count": 5, "parts": {"cola": 1, "lemon": 1}}],
-     "conditions": ["rail"], "pass": {"average": 60, "waste_pct": 20}},
-    {"id": "m_lemon_cherry_cola", "chapter": "complications", "teaches": ["K11"], "builds_on": ["K09_K11", "K10_K11"], "requires": [{"pass": "m_rail"}],
-     "line": {"belt": "steady", "cup": "regular", "spouts": ["cherry_cola", "lemon"]},
-     "orders": [{"count": 5, "parts": {"cola": 1, "cherry": 1, "lemon": 2}}],
-     "conditions": ["rail"], "pass": {"average": 60, "waste_pct": 20}}
-  ],
-  "held": [
-    {"id": "m_two_lines", "chapter": "complications", "teaches": ["K12"], "builds_on": ["K03_K12", "K04_K12"], "requires": [{"pass": "m_lemon_cherry_cola"}],
-     "line": {"belt": "steady", "cup": "regular", "spouts": ["cola", "lemon"]},
-     "orders": [{"count": 2, "parts": {"cola": 1}}, {"count": 2, "parts": {"cola": 1, "lemon": 1}}],
-     "conditions": ["second_line"], "pass": {"average": 60, "waste_pct": 20},
-     "_held": "After the MVP (PLAN.md §8 Q5)."}
-  ]
+ "_about": "The missions, as a tree (Sam, 2026-10-05: \"the tree structure of vagrancy for the missions with different unlock reqs\"). After Vagrancy's data/road.json: a mission opens when every one of its requirements is met, and the row a mission sits in is how many it has; a requirement names only a mission with fewer requirements, so the tree runs downward. Requirements: pass a mission; average at least a mark on it (mark); pass it with waste under a share (clean). A mission has one line or two (Sam: \"levels with multiple conveyer belts\"), each with its belt, cup, spouts, orders and conditions; with two, the first is the upper line. Order parts are written in the order the sentence names them. builds_on lists edges of data/kc_graph.json.",
+ "missions": [
+  {
+   "id": "m_first_pour",
+   "chapter": "pouring",
+   "teaches": [
+    "K01"
+   ],
+   "builds_on": [],
+   "requires": [],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola"
+     ],
+     "orders": [
+      {
+       "count": 3,
+       "parts": {
+        "cola": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60
+   }
+  },
+  {
+   "id": "m_tail",
+   "chapter": "pouring",
+   "teaches": [
+    "K02"
+   ],
+   "builds_on": [
+    "K01_K02"
+   ],
+   "requires": [
+    {
+     "pass": "m_first_pour"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "small",
+     "spouts": [
+      "cola"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 35
+   }
+  },
+  {
+   "id": "m_two_spouts",
+   "chapter": "orders",
+   "teaches": [
+    "K03"
+   ],
+   "builds_on": [
+    "K01_K03"
+   ],
+   "requires": [
+    {
+     "pass": "m_first_pour"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 1,
+       "parts": {
+        "cola": 1
+       }
+      },
+      {
+       "count": 1,
+       "parts": {
+        "lemon": 1
+       }
+      },
+      {
+       "count": 1,
+       "parts": {
+        "cola": 1
+       }
+      },
+      {
+       "count": 1,
+       "parts": {
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 20
+   }
+  },
+  {
+   "id": "m_push",
+   "chapter": "fields",
+   "teaches": [
+    "K13"
+   ],
+   "builds_on": [
+    "K01_K13"
+   ],
+   "requires": [
+    {
+     "mark": {
+      "mission": "m_first_pour",
+      "average": 75
+     }
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola"
+     ],
+     "orders": [
+      {
+       "count": 4,
+       "parts": {
+        "cola": 1
+       }
+      }
+     ],
+     "conditions": [
+      "push_down"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "m_half",
+   "chapter": "orders",
+   "teaches": [
+    "K04"
+   ],
+   "builds_on": [
+    "K03_K04"
+   ],
+   "requires": [
+    {
+     "pass": "m_two_spouts"
+    },
+    {
+     "pass": "m_tail"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 20
+   }
+  },
+  {
+   "id": "m_third",
+   "chapter": "three",
+   "teaches": [
+    "K06"
+   ],
+   "builds_on": [
+    "K03_K06"
+   ],
+   "requires": [
+    {
+     "pass": "m_two_spouts"
+    },
+    {
+     "clean": {
+      "mission": "m_tail",
+      "waste_pct": 15
+     }
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "cherry",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 1,
+       "parts": {
+        "cola": 1
+       }
+      },
+      {
+       "count": 1,
+       "parts": {
+        "cherry": 1
+       }
+      },
+      {
+       "count": 1,
+       "parts": {
+        "lemon": 1
+       }
+      },
+      {
+       "count": 1,
+       "parts": {
+        "cola": 1,
+        "cherry": 1
+       }
+      },
+      {
+       "count": 1,
+       "parts": {
+        "cherry": 1,
+        "lemon": 1
+       }
+      },
+      {
+       "count": 1,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 20
+   }
+  },
+  {
+   "id": "m_charge",
+   "chapter": "fields",
+   "teaches": [
+    "K15"
+   ],
+   "builds_on": [
+    "K13_K15",
+    "K03_K15"
+   ],
+   "requires": [
+    {
+     "pass": "m_push"
+    },
+    {
+     "pass": "m_two_spouts"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "cherry",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "cherry": 1
+       }
+      }
+     ],
+     "conditions": [
+      "repeller"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "m_two_one",
+   "chapter": "orders",
+   "teaches": [
+    "K05"
+   ],
+   "builds_on": [
+    "K04_K05"
+   ],
+   "requires": [
+    {
+     "pass": "m_half"
+    },
+    {
+     "pass": "m_third"
+    },
+    {
+     "mark": {
+      "mission": "m_two_spouts",
+      "average": 80
+     }
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 2,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 20
+   }
+  },
+  {
+   "id": "m_cherry_cola",
+   "chapter": "blends",
+   "teaches": [
+    "K08"
+   ],
+   "builds_on": [
+    "K04_K08",
+    "K06_K08"
+   ],
+   "requires": [
+    {
+     "pass": "m_third"
+    },
+    {
+     "pass": "m_half"
+    },
+    {
+     "pass": "m_tail"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "cherry_cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "cherry": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 20
+   }
+  },
+  {
+   "id": "m_push_back",
+   "chapter": "fields",
+   "teaches": [
+    "K14"
+   ],
+   "builds_on": [
+    "K15_K14",
+    "K06_K14"
+   ],
+   "requires": [
+    {
+     "pass": "m_charge"
+    },
+    {
+     "pass": "m_third"
+    },
+    {
+     "mark": {
+      "mission": "m_push",
+      "average": 75
+     }
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "push_back"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "m_three",
+   "chapter": "three",
+   "teaches": [
+    "K07"
+   ],
+   "builds_on": [
+    "K05_K07",
+    "K06_K07"
+   ],
+   "requires": [
+    {
+     "pass": "m_two_one"
+    },
+    {
+     "pass": "m_third"
+    },
+    {
+     "pass": "m_cherry_cola"
+    },
+    {
+     "clean": {
+      "mission": "m_half",
+      "waste_pct": 15
+     }
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "cherry",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 2,
+        "cherry": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 20
+   }
+  },
+  {
+   "id": "m_more_cola",
+   "chapter": "blends",
+   "teaches": [
+    "K09"
+   ],
+   "builds_on": [
+    "K08_K09",
+    "K05_K09"
+   ],
+   "requires": [
+    {
+     "pass": "m_cherry_cola"
+    },
+    {
+     "pass": "m_two_one"
+    },
+    {
+     "pass": "m_half"
+    },
+    {
+     "mark": {
+      "mission": "m_third",
+      "average": 80
+     }
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "cherry_cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 3,
+        "cherry": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 20
+   }
+  },
+  {
+   "id": "m_attract",
+   "chapter": "fields",
+   "teaches": [
+    "K16"
+   ],
+   "builds_on": [
+    "K14_K16",
+    "K05_K16"
+   ],
+   "requires": [
+    {
+     "pass": "m_push_back"
+    },
+    {
+     "pass": "m_cherry_cola"
+    },
+    {
+     "pass": "m_charge"
+    },
+    {
+     "pass": "m_two_one"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cherry",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cherry": 1,
+        "lemon": 2
+       }
+      }
+     ],
+     "conditions": [
+      "attractor"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "m_rail",
+   "chapter": "complications",
+   "teaches": [
+    "K10"
+   ],
+   "builds_on": [
+    "K04_K10",
+    "K02_K10"
+   ],
+   "requires": [
+    {
+     "pass": "m_two_one"
+    },
+    {
+     "pass": "m_charge"
+    },
+    {
+     "pass": "m_tail"
+    },
+    {
+     "mark": {
+      "mission": "m_half",
+      "average": 75
+     }
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "rail"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 20
+   }
+  },
+  {
+   "id": "m_two_lines",
+   "chapter": "belts",
+   "teaches": [
+    "K12"
+   ],
+   "builds_on": [
+    "K03_K12",
+    "K04_K12"
+   ],
+   "requires": [
+    {
+     "pass": "m_half"
+    },
+    {
+     "pass": "m_two_one"
+    },
+    {
+     "pass": "m_third"
+    },
+    {
+     "pass": "m_push"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 2,
+       "parts": {
+        "cola": 1
+       }
+      },
+      {
+       "count": 1,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": []
+    },
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 2,
+       "parts": {
+        "lemon": 1
+       }
+      },
+      {
+       "count": 1,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 20
+   }
+  },
+  {
+   "id": "m_lemon_cherry_cola",
+   "chapter": "complications",
+   "teaches": [
+    "K11"
+   ],
+   "builds_on": [
+    "K09_K11",
+    "K10_K11"
+   ],
+   "requires": [
+    {
+     "pass": "m_more_cola"
+    },
+    {
+     "pass": "m_rail"
+    },
+    {
+     "pass": "m_three"
+    },
+    {
+     "pass": "m_cherry_cola"
+    },
+    {
+     "mark": {
+      "mission": "m_two_one",
+      "average": 75
+     }
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cherry_cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "cherry": 1,
+        "lemon": 2
+       }
+      }
+     ],
+     "conditions": [
+      "rail"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 20
+   }
+  },
+  {
+   "id": "m_alternating",
+   "chapter": "fields",
+   "teaches": [
+    "K17"
+   ],
+   "builds_on": [
+    "K16_K17",
+    "K10_K17"
+   ],
+   "requires": [
+    {
+     "pass": "m_attract"
+    },
+    {
+     "pass": "m_rail"
+    },
+    {
+     "pass": "m_push_back"
+    },
+    {
+     "pass": "m_three"
+    },
+    {
+     "mark": {
+      "mission": "m_push",
+      "average": 80
+     }
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "alternating"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "m_field_blend",
+   "chapter": "fields",
+   "teaches": [
+    "K18"
+   ],
+   "builds_on": [
+    "K17_K18",
+    "K11_K18"
+   ],
+   "requires": [
+    {
+     "pass": "m_lemon_cherry_cola"
+    },
+    {
+     "pass": "m_alternating"
+    },
+    {
+     "pass": "m_more_cola"
+    },
+    {
+     "pass": "m_attract"
+    },
+    {
+     "pass": "m_charge"
+    },
+    {
+     "mark": {
+      "mission": "m_cherry_cola",
+      "average": 80
+     }
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cherry_cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "cherry": 1,
+        "lemon": 2
+       }
+      }
+     ],
+     "conditions": [
+      "alternating",
+      "alternating_second"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "m_two_lines_blend",
+   "chapter": "belts",
+   "teaches": [
+    "K20"
+   ],
+   "builds_on": [
+    "K12_K20",
+    "K11_K20"
+   ],
+   "requires": [
+    {
+     "pass": "m_two_lines"
+    },
+    {
+     "pass": "m_lemon_cherry_cola"
+    },
+    {
+     "pass": "m_more_cola"
+    },
+    {
+     "pass": "m_rail"
+    },
+    {
+     "mark": {
+      "mission": "m_two_one",
+      "average": 75
+     }
+    },
+    {
+     "clean": {
+      "mission": "m_cherry_cola",
+      "waste_pct": 15
+     }
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "cherry_cola"
+     ],
+     "orders": [
+      {
+       "count": 3,
+       "parts": {
+        "cola": 3,
+        "cherry": 1
+       }
+      }
+     ],
+     "conditions": []
+    },
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 3,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "rail"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 20
+   }
+  },
+  {
+   "id": "m_two_speeds",
+   "chapter": "belts",
+   "teaches": [
+    "K19"
+   ],
+   "builds_on": [
+    "K20_K19",
+    "K10_K19"
+   ],
+   "requires": [
+    {
+     "pass": "m_two_lines_blend"
+    },
+    {
+     "pass": "m_two_lines"
+    },
+    {
+     "pass": "m_rail"
+    },
+    {
+     "pass": "m_more_cola"
+    },
+    {
+     "pass": "m_lemon_cherry_cola"
+    },
+    {
+     "mark": {
+      "mission": "m_three",
+      "average": 75
+     }
+    },
+    {
+     "clean": {
+      "mission": "m_two_one",
+      "waste_pct": 15
+     }
+    }
+   ],
+   "lines": [
+    {
+     "belt": "slow",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 3,
+       "parts": {
+        "cola": 2,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": []
+    },
+    {
+     "belt": "quick",
+     "cup": "regular",
+     "spouts": [
+      "cherry",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 3,
+       "parts": {
+        "cherry": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 20
+   }
+  },
+  {
+   "id": "m_storm",
+   "chapter": "belts",
+   "teaches": [
+    "K21"
+   ],
+   "builds_on": [
+    "K18_K21",
+    "K19_K21"
+   ],
+   "requires": [
+    {
+     "pass": "m_field_blend"
+    },
+    {
+     "pass": "m_two_speeds"
+    },
+    {
+     "pass": "m_two_lines_blend"
+    },
+    {
+     "pass": "m_alternating"
+    },
+    {
+     "pass": "m_three"
+    },
+    {
+     "pass": "m_attract"
+    },
+    {
+     "mark": {
+      "mission": "m_two_lines",
+      "average": 75
+     }
+    },
+    {
+     "clean": {
+      "mission": "m_lemon_cherry_cola",
+      "waste_pct": 15
+     }
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cherry_cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 3,
+       "parts": {
+        "cola": 1,
+        "cherry": 1,
+        "lemon": 2
+       }
+      }
+     ],
+     "conditions": [
+      "alternating_second"
+     ]
+    },
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "cherry",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 3,
+       "parts": {
+        "cola": 2,
+        "cherry": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "repeller"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 20
+   }
+  }
+ ]
 }

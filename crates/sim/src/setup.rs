@@ -6,7 +6,7 @@
 //! second `Line`. Adding a condition on an existing seam is a data change.
 
 use crate::balance;
-use crate::fx::Fx;
+use crate::fx::{Fx, V2};
 use serde::{Deserialize, Serialize};
 
 /// A flavor's number: its place in `data/flavors.json`.
@@ -57,6 +57,63 @@ pub struct Line {
     pub end_x: Fx,
     /// The top of the belt, where a cup's floor sits.
     pub belt_y: Fx,
+    /// Force fields that push the line's falling slush (Sam, 2026-10-05:
+    /// "gravity fields that act almost like voltage fields to deflect the
+    /// slurpee"). Empty on most lines.
+    pub fields: Vec<Field>,
+}
+
+/// A field that pushes slush, as charged plates or a charge push a beam.
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub enum Field {
+    /// A uniform push inside a box, as between two charged plates: every
+    /// unit of the line inside it gains `accel` each tick. With `flip`, the
+    /// push reverses every `flip` ticks, as an alternating voltage does.
+    Plates { x0: Fx, x1: Fx, y0: Fx, y1: Fx, accel: V2, flip: Option<u32> },
+    /// A charge at `at`: inside `radius` it pushes a unit straight away from
+    /// itself (or, with a negative `strength`, pulls it in), by `strength`
+    /// at the center falling linearly to nothing at the radius.
+    Charge { at: V2, strength: Fx, radius: Fx },
+}
+
+impl Field {
+    /// The push this field gives a unit at `p` on `tick`, cm per tick².
+    pub fn accel(&self, p: V2, tick: u32) -> V2 {
+        match *self {
+            Field::Plates { x0, x1, y0, y1, accel, flip } => {
+                if p.x < x0 || p.x > x1 || p.y < y0 || p.y > y1 {
+                    return V2::ZERO;
+                }
+                match flip {
+                    Some(n) if n > 0 && (tick / n) % 2 == 1 => -accel,
+                    _ => accel,
+                }
+            }
+            Field::Charge { at, strength, radius } => {
+                let d = p - at;
+                let r = radius.raw() as i64;
+                let dsq = d.len_sq_raw();
+                if dsq >= r * r || dsq == 0 {
+                    return V2::ZERO;
+                }
+                let dist = d.len();
+                let mag = strength.scale((radius - dist).raw() as i64, radius.raw().max(1) as i64);
+                d.with_len(mag.abs()) * mag.signum()
+            }
+        }
+    }
+
+    /// Whether the field's push is reversed on `tick` (for drawing).
+    pub fn flipped(&self, tick: u32) -> bool {
+        matches!(*self, Field::Plates { flip: Some(n), .. } if n > 0 && (tick / n) % 2 == 1)
+    }
+}
+
+impl Line {
+    /// The sum of every field's push at `p` on `tick`.
+    pub fn field_accel(&self, p: V2, tick: u32) -> V2 {
+        self.fields.iter().fold(V2::ZERO, |a, f| a + f.accel(p, tick))
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]

@@ -10,7 +10,7 @@ import * as grooveArt from './groove.js';
 
 const BUILD = '__BUILD__';
 const STORE = 'slushline.save';
-let COPY, NUM, PAL, FLAVORS, ACTION_BITS;
+let COPY, NUM, PAL, FLAVORS, ACTION_BITS, LOWER_BITS, BELT_BITS;
 let stage = null;
 let run = null;          // the run on screen
 let save = null;         // the save, as core's JSON
@@ -82,6 +82,12 @@ function keyNames() {
   return NUM.actions.map(([action]) => keys.keyName(b[action] ?? ''));
 }
 
+// The lower line's spout keys, when a mission has two lines.
+function lowerKeyNames() {
+  const b = bindings();
+  return NUM.lower_actions.map(([action]) => keys.keyName(b[action] ?? ''));
+}
+
 function keyValues() {
   const n = keyNames();
   const v = {};
@@ -92,7 +98,10 @@ function keyValues() {
 // What Settings calls an action: the spouts by number, the belt by name.
 function actionLabel(action) {
   const spout = action.match(/^spout_(\d)$/);
-  return spout ? t('settings.keys.actions.spout', { n: spout[1] }) : t(`settings.keys.actions.${action}`);
+  if (spout) return t('settings.keys.actions.spout', { n: spout[1] });
+  const lower = action.match(/^lower_(\d)$/);
+  if (lower) return t('settings.keys.actions.lower', { n: lower[1] });
+  return t(`settings.keys.actions.${action}`);
 }
 
 // --- tuning: ?tuning=0|1|2 -------------------------------------------------
@@ -145,33 +154,120 @@ function back() {
 
 function missions() { return JSON.parse(core.path_json(save)); }
 
-function path() {
+// The missions are a tree (Sam, 2026-10-05), after Vagrancy's road: one row
+// per number of requirements, a line from each requirement down to the
+// mission it opens, lit while the pointer is on either end. Picking a
+// mission shows its card above the tree. Which missions are open and which
+// requirements are met is core's (path_json); the page lays them out.
+const SVG = 'http://www.w3.org/2000/svg';
+
+function path(pickId = null) {
   const ms = missions();
+  const byId = new Map(ms.map((m) => [m.id, m]));
+  const rows = [];
+  for (const m of ms) (rows[m.level] ||= []).push(m);
+  // Within a row, by where the requirements sit in the rows above, which
+  // keeps the lines from crossing more than they must.
+  const place = new Map();
+  rows.forEach((row, l) => {
+    if (!row) return;
+    if (l > 0) {
+      const at = (m) => m.requires.reduce((a, r) => a + (place.get(r.from) ?? 0.5), 0) / Math.max(1, m.requires.length);
+      row.sort((a, b) => at(a) - at(b));
+    }
+    row.forEach((m, i) => place.set(m.id, (i + 0.5) / row.length));
+  });
+  const cardBox = el('section', { id: 'mission-card' });
+  const tree = el('div', { id: 'tree' });
+  const wires = document.createElementNS(SVG, 'svg');
+  wires.setAttribute('class', 'wires');
+  wires.setAttribute('aria-hidden', 'true');
+  tree.append(wires);
+  const buttons = new Map();
+  const node = (m) => {
+    const state = m.passed ? 'passed' : m.open ? 'open' : 'locked';
+    const b = el('button', { type: 'button', id: `mission-${m.id}`, class: `node ${state}`, 'aria-pressed': 'false',
+      on: { click: () => pick(m.id), mouseenter: () => light(m.id), focus: () => light(m.id), mouseleave: () => light(null), blur: () => light(null) } }, m.name);
+    buttons.set(m.id, b);
+    return b;
+  };
+  const tierLabel = (l) => el('p', { class: 'tier-label' }, l === 0 ? t('missions.tier.start') : l === 1 ? t('missions.tier.one') : t('missions.tier.many', { n: l }));
+  rows.forEach((row, l) => {
+    if (row) tree.append(el('div', { class: 'level' }, tierLabel(l), el('div', { class: 'tier' }, ...row.map(node))));
+  });
+  const paths = [];
+  function wire() {
+    wires.replaceChildren();
+    paths.length = 0;
+    const box = tree.getBoundingClientRect();
+    wires.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+    for (const m of ms) {
+      for (const r of m.requires) {
+        const a = buttons.get(r.from).getBoundingClientRect();
+        const c = buttons.get(m.id).getBoundingClientRect();
+        const x1 = a.left - box.left + a.width / 2, y1 = a.bottom - box.top;
+        const x2 = c.left - box.left + c.width / 2, y2 = c.top - box.top;
+        const k = (y2 - y1) / 2;
+        const line = document.createElementNS(SVG, 'path');
+        line.setAttribute('d', `M ${x1} ${y1} C ${x1} ${y1 + k}, ${x2} ${y2 - k}, ${x2} ${y2}`);
+        line.setAttribute('class', r.met ? 'met' : 'unmet');
+        wires.append(line);
+        paths.push({ from: r.from, to: m.id, line });
+      }
+    }
+  }
+  function light(id) {
+    for (const p of paths) p.line.classList.toggle('hot', id !== null && (p.to === id || p.from === id));
+  }
+  function pick(id) {
+    for (const [k, b] of buttons) { b.classList.toggle('picked', k === id); b.setAttribute('aria-pressed', String(k === id)); }
+    fillCard(cardBox, byId.get(id));
+  }
+  screen(el('h2', {}, t('menu.missions.label')), cardBox, tree, el('div', { class: 'controls' }, back()));
+  const first = pickId ?? (ms.find((m) => m.open && !m.passed) ?? ms[0]).id;
+  pick(first);
+  wire();
+  new ResizeObserver(() => { if (tree.isConnected) wire(); }).observe(tree);
+}
+
+// The card above the tree: what the mission asks, what opens it, and the
+// button to start it if it is open.
+function fillCard(box, m) {
   const max = NUM.max_score;
-  const rows = ms.map((m) => el('li', { class: m.open ? 'open' : 'locked' },
-    m.open
-      ? button(m.name, () => card(m.id), { id: `mission-${m.id}`, class: m.passed ? 'passed' : '' })
-      : el('span', { class: 'name' }, m.name),
-    m.open ? null : el('p', {}, t('missions.locked', { mission: m.locked_by })),
+  box.replaceChildren(...[
+    el('h3', { id: 'card-name' }, m.name),
+    el('p', {}, m.order),
+    el('p', {}, m.pass),
+    ...m.conditions.map((c) => el('p', { class: 'condition' }, el('strong', {}, c.name), ' ', c.desc)),
     m.best != null ? el('p', {}, t('missions.best', { avg: m.best, max_score: max })) : null,
-  ));
-  screen(el('h2', {}, t('menu.missions.label')), el('ol', { class: 'path' }, ...rows), el('div', { class: 'controls' }, back()));
+    m.requires.length ? el('p', {}, t('missions.needs')) : null,
+    m.requires.length ? el('ul', { class: 'needs' }, ...m.requires.map((r) => el('li', { class: r.met ? 'met' : 'unmet' },
+      el('span', { class: 'mark' }, r.met ? t('missions.met') : t('missions.unmet')), ' ', r.sentence))) : null,
+    m.open ? el('div', { class: 'controls' }, button(t('missions.start.label'), () => card(m.id), { id: 'open-mission' })) : null,
+  ].filter(Boolean));
 }
 
 function card(id) {
   const m = missions().find((x) => x.id === id);
   const kv = keyValues();
+  const upper = keyNames().slice(0, m.spouts[0]).join(', ');
+  const lower = m.lines > 1 ? lowerKeyNames().slice(0, m.spouts[1]).join(', ') : '';
+  const names = (seat) => (seat === 0 ? keyNames() : lowerKeyNames());
+  const lineList = (labels, seat) => el('ul', { class: 'spouts' }, ...labels.map((label, i) => el('li', {}, label, ' ', el('strong', {}, t('spout.key', { key: names(seat)[i] })))));
   screen(
     el('h2', { id: 'card-name' }, m.name),
     el('p', {}, m.order),
     el('p', {}, m.pass),
     ...m.conditions.map((c) => el('p', { class: 'condition' }, el('strong', {}, c.name), ' ', c.desc)),
-    el('p', { class: 'try' }, t(m.try_key, { ...kv, keys_upper: keyNames().slice(0, m.spouts).join(', '), keys_lower: '' })),
-    el('ul', { class: 'spouts' }, ...m.spout_labels.map((label, i) => el('li', {}, label, ' ', el('strong', {}, t('spout.key', { key: keyNames()[i] }))))),
+    el('p', { class: 'try' }, t(m.try_key, { ...kv, keys_upper: upper, keys_lower: lower })),
+    ...m.spout_labels.flatMap((labels, seat) => [
+      m.lines > 1 ? el('h4', {}, t(seat === 0 ? 'lines.upper.name' : 'lines.lower.name')) : null,
+      lineList(labels, seat),
+    ]),
     el('p', {}, t('hud.belt_keys', kv)),
     el('div', { class: 'controls' },
       button(t('missions.start.label'), () => startMission(id), { id: 'start-mission' }),
-      button(t('results.to_missions.label'), () => path(), { class: 'quiet', id: 'to-missions' })),
+      button(t('results.to_missions.label'), () => path(id), { class: 'quiet', id: 'to-missions' })),
   );
 }
 
@@ -189,7 +285,7 @@ function begin(r) {
   stopRun();
   rebinding = null;
   const m = r.game.mission_id() ? missions().find((x) => x.id === r.game.mission_id()) : null;
-  run = { ...r, acc: 0, last: performance.now(), frame: null, mission: m, finished: false };
+  run = { ...r, acc: 0, last: performance.now(), frame: null, mission: m, finished: false, lines: JSON.parse(r.game.frame()).lines.length };
   const s = $('screen');
   s.hidden = false;
   $('stage').hidden = false;
@@ -225,7 +321,11 @@ function loop(now) {
       run.game.step(0, 0);
     } else {
       if (run.game.done()) break;
-      run.game.step(keys.bits(bindings(), ACTION_BITS), 0);
+      // Seat 0 is the only line, or the upper one; seat 1 the lower one,
+      // from its own spout keys, with the same belt keys.
+      const upper = keys.bits(bindings(), ACTION_BITS);
+      const lower = run.lines > 1 ? keys.bits(bindings(), LOWER_BITS) | (upper & BELT_BITS) : 0;
+      run.game.step(upper, lower);
     }
   }
   if (steps) {
@@ -244,7 +344,7 @@ function loop(now) {
 
 function draw() {
   run.frame = JSON.parse(run.game.frame());
-  stage.draw(run.frame, run.game.units(), keyNames());
+  stage.draw(run.frame, run.game.units(), keyNames(), lowerKeyNames());
   document.body.dataset.tick = String(run.game.tick());
 }
 
@@ -279,15 +379,19 @@ function playGroove() {
 // The HUD: the keys and spouts once, then the live numbers core worked out.
 function hudStatic() {
   const f = JSON.parse(run.game.frame());
-  const line = f.lines[0];
-  const names = keyNames();
-  const labels = run.mission ? run.mission.spout_labels : line.spouts.map(() => '');
-  $('hud').replaceChildren(
-    el('div', { id: 'hud-live' }),
-    el('p', { id: 'hud-keys' }, t('hud.keys', { keys_upper: names.slice(0, line.spouts.length).join(', ') })),
-    run.game.is_replay() ? null : el('p', { id: 'hud-belt-keys' }, t('hud.belt_keys', keyValues())),
-    el('ul', { class: 'spouts' }, ...line.spouts.map((s, i) => el('li', {}, labels[i] || null, labels[i] ? ' ' : null, el('strong', {}, t('spout.key', { key: names[i] }))))),
-  );
+  const two = f.lines.length > 1;
+  const labels = run.mission ? run.mission.spout_labels : f.lines.map((L) => L.spouts.map(() => ''));
+  const kids = [el('div', { id: 'hud-live' })];
+  f.lines.forEach((L, seat) => {
+    const names = seat === 0 ? keyNames() : lowerKeyNames();
+    const list = names.slice(0, L.spouts.length).join(', ');
+    kids.push(el('p', { class: 'hud-keys' }, seat === 0 ? t('hud.keys', { keys_upper: list }) : t('hud.keys_lower', { keys_lower: list })));
+    kids.push(el('ul', { class: 'spouts' },
+      two ? el('li', {}, el('strong', {}, t(seat === 0 ? 'lines.upper.name' : 'lines.lower.name'))) : null,
+      ...L.spouts.map((s, i) => el('li', {}, labels[seat]?.[i] || null, labels[seat]?.[i] ? ' ' : null, el('strong', {}, t('spout.key', { key: names[i] }))))));
+  });
+  if (!run.game.is_replay()) kids.push(el('p', { id: 'hud-belt-keys' }, t('hud.belt_keys', keyValues())));
+  $('hud').replaceChildren(...kids);
   hudLive();
 }
 
@@ -296,11 +400,15 @@ function hudLive() {
   const h = JSON.parse(run.game.hud());
   const live = $('hud-live');
   if (!live) return;
-  const parts = [h.cup, h.order, h.score, h.waste, h.belt].filter(Boolean);
-  const text = parts.join('\u0000');
+  const groups = h.lines.map((L) => [L.name, L.cup, L.order].filter(Boolean));
+  const tail = [h.score, h.waste, h.belt].filter(Boolean);
+  const text = JSON.stringify([groups, tail]);
   if (live.dataset.text === text) return;
   live.dataset.text = text;
-  live.replaceChildren(...parts.map((p) => el('span', {}, p)));
+  live.replaceChildren(
+    ...groups.map((g) => el('span', { class: 'hud-line' }, ...g.map((p) => el('span', {}, p)))),
+    ...tail.map((p) => el('span', {}, p)),
+  );
 }
 
 // --- results -------------------------------------------------------------
@@ -310,15 +418,16 @@ function results() {
   const m = run.mission;
   const o = JSON.parse(game.outcome());
   const replay = game.is_replay();
-  if (!replay) keep(core.save_record(save, m.id, o.average, o.passed));
+  if (!replay) keep(core.save_record(save, m.id, o.average, o.passed, o.waste_pct));
   const ms = missions();
-  const next = m.next ? ms.find((x) => x.id === m.next) : null;
+  // The first mission this run has just opened, if any.
+  const next = ms.find((x) => m.opens.includes(x.id) && x.open) ?? null;
   const bytes = game.replay_bytes();
   const name = `slushline-${m.id}-${o.average}.replay`;
   const buttons = [
     o.passed && next?.open && !replay ? button(t('results.next.label'), () => card(next.id), { id: 'next-mission' }) : null,
     replay ? null : button(t('results.again.label'), () => startMission(m.id), { id: 'run-again' }),
-    button(t('results.to_missions.label'), () => path(), { id: 'to-missions', class: 'quiet' }),
+    button(t('results.to_missions.label'), () => path(m.id), { id: 'to-missions', class: 'quiet' }),
     button(t('results.replay.label'), () => download(bytes, name), { id: 'download-replay', class: 'quiet' }),
   ].filter(Boolean);
   const cups = [];
@@ -375,6 +484,10 @@ function settings(message = null) {
     el('span', {}, actionLabel(action)), ' ',
     button(keys.keyName(b[action]), () => waitForKey(action), { id: `bind-${action}`, class: 'quiet key', 'data-value': '1' }),
   ));
+  const lowerRows = NUM.lower_actions.map(([action]) => el('li', {},
+    el('span', {}, actionLabel(action)), ' ',
+    button(keys.keyName(b[action]), () => waitForKey(action), { id: `bind-${action}`, class: 'quiet key', 'data-value': '1' }),
+  ));
   const vol = el('input', { type: 'range', id: 'sound-volume', min: '0', max: '100', step: '5', value: String(options().sound_volume) });
   vol.addEventListener('change', () => { keep(core.save_set_volume(save, Number(vol.value))); sound.wake(); sound.judged('great'); });
   const short = el('input', { type: 'checkbox', id: 'short-codes', checked: options().short_codes });
@@ -391,6 +504,8 @@ function settings(message = null) {
       el('p', {}, t('settings.keys.desc')),
       el('h4', {}, t('settings.keys.solo.heading')),
       el('ul', { class: 'bindings' }, ...rows),
+      el('h4', {}, t('settings.keys.lower.heading')),
+      el('ul', { class: 'bindings' }, ...lowerRows),
       el('p', { id: 'bind-note', role: 'alert', hidden: !message }, message ?? ''),
       button(t('settings.keys.reset.label'), () => { keep(core.save_reset_keys(save)); settings(); }, { id: 'reset-keys', class: 'quiet' })),
     el('section', {},
@@ -464,7 +579,10 @@ async function main() {
   PAL = JSON.parse(core.palette_json());
   FLAVORS = JSON.parse(core.flavors_json()).flavors;
   ACTION_BITS = Object.fromEntries(NUM.actions);
+  LOWER_BITS = Object.fromEntries(NUM.lower_actions);
+  BELT_BITS = ACTION_BITS.belt_slower | ACTION_BITS.belt_faster;
   stage = new Stage($('stage'), NUM, PAL, FLAVORS);
+  stage.onResize = (w, h) => { const gc = $('groove'); gc.width = w; gc.height = h; };
   stage.codes = FLAVORS.map((f) => t(`flavors.${f.id}.short`));
   restore();
   stage.showCodes = options().short_codes;

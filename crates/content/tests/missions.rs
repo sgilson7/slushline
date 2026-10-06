@@ -59,19 +59,21 @@ fn every_order_can_reach_full_marks_from_its_line() {
     let mut checked = 0;
     for m in missions() {
         let s = m.setup(1, 1);
-        let l = s.lines[0].as_ref().unwrap();
-        for o in &m.orders {
-            let got = best(l, &o.order());
-            assert_eq!(got, 100, "{}: the order {:?} tops out at {got} from the spouts {:?}", m.id, o.parts(), m.line.spouts);
-            checked += 1;
+        for (k, spec) in m.lines.iter().enumerate() {
+            let l = s.lines[k].as_ref().unwrap();
+            for o in &spec.orders {
+                let got = best(l, &o.order());
+                assert_eq!(got, 100, "{} line {k}: the order {:?} tops out at {got} from the spouts {:?}", m.id, o.parts(), spec.spouts);
+                checked += 1;
+            }
         }
     }
-    assert!(checked >= 15, "only {checked} orders checked");
+    assert!(checked >= 25, "only {checked} orders checked");
     // missions.list.m_more_cola.try says cherry reaches a cup only through
     // the blend: that mission's line has no cherry spout.
     let more = mission("m_more_cola").unwrap();
-    assert!(!more.line.spouts.iter().any(|s| s == "cherry"), "m_more_cola's line has a cherry spout");
-    assert!(more.line.spouts.iter().any(|s| s == "cherry_cola"));
+    assert!(!more.lines[0].spouts.iter().any(|s| s == "cherry"), "m_more_cola's line has a cherry spout");
+    assert!(more.lines[0].spouts.iter().any(|s| s == "cherry_cola"));
 }
 
 /// H4 — a blend counts as its parts. Capacity 120, cola and cherry at 3 to 1:
@@ -121,66 +123,99 @@ fn a_blend_spout_emits_its_flavors_in_its_fixed_order() {
 #[test]
 fn every_share_is_a_whole_number_of_units() {
     for m in missions().into_iter().chain(held()) {
-        let cap = content::setup::cups()[&m.line.cup].capacity;
-        for o in &m.orders {
-            let t: u32 = o.parts().iter().map(|p| p.1).sum();
-            for (f, n) in o.parts() {
-                assert_eq!(cap * n % t, 0, "{}: {f}'s share is {cap}·{n}/{t}, not whole", m.id);
+        for l in &m.lines {
+            let cap = content::setup::cups()[&l.cup].capacity;
+            for o in &l.orders {
+                let t: u32 = o.parts().iter().map(|p| p.1).sum();
+                for (f, n) in o.parts() {
+                    assert_eq!(cap * n % t, 0, "{}: {f}'s share is {cap}·{n}/{t}, not whole", m.id);
+                }
             }
         }
     }
 }
 
 #[test]
-fn the_path_is_a_chain() {
+fn the_missions_form_a_tree_that_runs_downward() {
+    // After Vagrancy's road (Sam, 2026-10-05): a mission's row is how many
+    // requirements it has, and a requirement names only a mission with fewer,
+    // so nothing depends on itself. One mission is open from the start.
     let ms = missions();
-    assert_eq!(ms.len(), 11, "the MVP path has eleven missions (PLAN.md §8 Q5)");
-    assert!(ms[0].requires.is_empty(), "the first mission is open from the start");
-    for w in ms.windows(2) {
-        let req: Vec<&str> = w[1].requires.iter().map(|r| r.pass.as_str()).collect();
-        assert_eq!(req, vec![w[0].id.as_str()], "{} must require exactly {}", w[1].id, w[0].id);
+    let level = |id: &str| ms.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("no mission {id}")).level();
+    let roots: Vec<&str> = ms.iter().filter(|m| m.requires.is_empty()).map(|m| m.id.as_str()).collect();
+    assert_eq!(roots, vec!["m_first_pour"]);
+    for m in &ms {
+        for r in &m.requires {
+            assert!(level(r.mission()) < m.level(), "{} (row {}) requires {} (row {})", m.id, m.level(), r.mission(), level(r.mission()));
+        }
+        let mut named: Vec<&str> = m.requires.iter().map(|r| r.mission()).collect();
+        named.sort();
+        named.dedup();
+        assert_eq!(named.len(), m.requires.len(), "{} names a mission twice", m.id);
     }
     let mut ids: Vec<&str> = ms.iter().map(|m| m.id.as_str()).collect();
     ids.sort();
     ids.dedup();
     assert_eq!(ids.len(), ms.len(), "two missions share an id");
+    assert!(ms.iter().map(|m| m.level()).max().unwrap() >= 5, "the tree is too shallow to be a tree");
+}
+
+/// Every mission a mission's requirements reach, transitively.
+fn ancestors(id: &str) -> Vec<String> {
+    let ms = missions();
+    let mut out: Vec<String> = Vec::new();
+    let mut todo = vec![id.to_string()];
+    while let Some(x) = todo.pop() {
+        for r in &ms.iter().find(|m| m.id == x).unwrap().requires {
+            if !out.iter().any(|o| o == r.mission()) {
+                out.push(r.mission().to_string());
+                todo.push(r.mission().to_string());
+            }
+        }
+    }
+    out
 }
 
 #[test]
 fn every_component_is_taught_after_the_ones_it_builds_on() {
     // `builds_on` lists edges `A_B` of data/kc_graph.json: B is what the
-    // mission teaches, and A must have been taught by an earlier one.
+    // mission teaches, and A must be taught by a mission the player has to
+    // pass on the way to this one: one of its ancestors in the tree.
     let g: serde_json::Value = serde_json::from_str(include_str!("../../../data/kc_graph.json")).unwrap();
     let nodes: Vec<&str> = g["nodes"].as_array().unwrap().iter().map(|n| n["id"].as_str().unwrap()).collect();
     let edges: Vec<&str> = g["edges"].as_array().unwrap().iter().map(|e| e.as_str().unwrap()).collect();
     let copy = content::copy::copy();
-    let mut taught: Vec<String> = Vec::new();
-    for m in missions().into_iter().chain(held()) {
+    let ms = missions();
+    for m in &ms {
         for t in &m.teaches {
             assert!(nodes.contains(&t.as_str()), "{} teaches {t}, which is not in the graph", m.id);
             for part in ["name", "when", "then"] {
                 assert!(copy["kc"][t][part].is_string(), "kc.{t}.{part} has no sentence");
             }
         }
+        let before: Vec<String> = ancestors(&m.id).iter().flat_map(|a| ms.iter().find(|x| &x.id == a).unwrap().teaches.clone()).collect();
         for b in &m.builds_on {
             let (from, to) = b.split_once('_').unwrap_or_else(|| panic!("{}: {b} is not an edge", m.id));
             assert!(edges.contains(&b.as_str()), "{}: the edge {b} is not in the graph", m.id);
             assert!(copy["kc_edge"][b].is_string(), "kc_edge.{b} has no sentence");
             assert!(m.teaches.iter().any(|t| t == to), "{} builds on {b} but does not teach {to}", m.id);
-            assert!(taught.iter().any(|t| t == from), "{} builds on {from}, which no earlier mission teaches", m.id);
+            assert!(before.iter().any(|t| t == from), "{} builds on {from}, which none of the missions that open it teaches", m.id);
         }
-        taught.extend(m.teaches.iter().cloned());
     }
     for e in &edges {
-        assert!(missions().into_iter().chain(held()).any(|m| m.builds_on.iter().any(|b| b == e)), "the edge {e} is used by no mission");
+        assert!(ms.iter().any(|m| m.builds_on.iter().any(|b| b == e)), "the edge {e} is used by no mission");
     }
+    let mut taught: Vec<&String> = ms.iter().flat_map(|m| m.teaches.iter()).collect();
+    taught.sort();
+    taught.dedup();
+    assert_eq!(taught.len(), nodes.len(), "every component in the graph is taught once");
 }
 
 #[test]
 fn every_condition_a_mission_names_exists() {
     let c = conditions();
     for m in missions() {
-        for k in &m.conditions {
+        for k in &m.condition_ids() {
             assert!(c.get(k).is_some(), "{} names the condition {k}, which data/conditions.json lacks", m.id);
             assert!(c[k].get("held").is_none(), "{} uses {k}, which is held", m.id);
         }
@@ -190,7 +225,7 @@ fn every_condition_a_mission_names_exists() {
 #[test]
 fn every_condition_is_used_by_a_mission_or_marked_held() {
     let c = conditions();
-    let used: Vec<String> = missions().iter().flat_map(|m| m.conditions.clone()).collect();
+    let used: Vec<String> = missions().iter().flat_map(|m| m.condition_ids()).collect();
     for (k, v) in c.as_object().unwrap() {
         if k.starts_with('_') {
             continue;
@@ -204,7 +239,11 @@ fn every_mission_s_card_and_spouts_read_from_the_copy_file() {
     for m in missions() {
         let card = content::missions::card(&m);
         assert!(card["order"].as_str().unwrap().ends_with('.'));
-        assert_eq!(content::missions::spout_labels(&m).len(), m.line.spouts.len());
+        let labels = content::missions::spout_labels(&m);
+        assert_eq!(labels.len(), m.lines.len());
+        for (l, spec) in labels.iter().zip(&m.lines) {
+            assert_eq!(l.len(), spec.spouts.len());
+        }
         let copy = content::copy::copy();
         let tk = card["try_key"].as_str().unwrap();
         let mut v = &copy;
@@ -215,25 +254,44 @@ fn every_mission_s_card_and_spouts_read_from_the_copy_file() {
     }
 }
 
-fn run(m: &Mission, mut input: impl FnMut(&World) -> Input) -> World {
+fn run2(m: &Mission, mut input: impl FnMut(&World) -> [Input; 2]) -> World {
     let mut w = World::new(m.setup(1, sim::balance::DEFAULT_TUNING));
     while !w.done() && w.tick < 30_000 {
         let i = input(&w);
-        w.step([i, Input::NONE]);
+        w.step(i);
     }
     assert!(w.done(), "{} never finished", m.id);
     w
 }
 
+fn run(m: &Mission, mut input: impl FnMut(&World) -> Input) -> World {
+    run2(m, |w| [input(w), Input::NONE])
+}
+
+fn timer_run(m: &Mission) -> World {
+    let mut p = [pilot::Pilot::new(pilot::Kind::Timer), pilot::Pilot::new(pilot::Kind::Timer)];
+    run2(m, |w| [p[0].input(w, 0), p[1].input(w, 1)])
+}
+
 #[test]
 fn every_mission_can_be_passed() {
-    // By the timer pilot, which returns an Input and nothing else.
-    for m in missions() {
-        let mut p = pilot::Pilot::new(pilot::Kind::Timer);
-        let w = run(&m, |w| p.input(w, 0));
-        let o = outcome(&m, &w);
+    // By the timer pilot, which returns an Input and nothing else, opening
+    // the tree as a player would: a mission is played only once its
+    // requirements are met by what the timer has done, and in the end every
+    // mission is open and passed.
+    let ms = missions();
+    let mut save = content::save::Save::default();
+    let mut played: Vec<String> = Vec::new();
+    loop {
+        let Some(m) = ms.iter().find(|m| !played.contains(&m.id) && save.open(m)) else { break };
+        let w = timer_run(m);
+        let o = outcome(m, &w);
         assert!(o.passed, "{}: the timer averaged {} with {}% waste", m.id, o.average, o.waste_pct);
+        save.record(&m.id, o.average, o.passed, o.waste_pct);
+        played.push(m.id.clone());
     }
+    let shut: Vec<&str> = ms.iter().filter(|m| !played.contains(&m.id)).map(|m| m.id.as_str()).collect();
+    assert!(shut.is_empty(), "the timer never opened {shut:?}");
 }
 
 #[test]
@@ -241,7 +299,7 @@ fn no_mission_after_the_first_is_passed_with_every_key_held() {
     // The brief's trap: a goal met by standing still, here by holding every
     // key down (Part E). The waste limit is what stops it.
     for m in missions().iter().skip(1) {
-        let w = run(m, |_| Input(0x0F));
+        let w = run2(m, |_| [Input(0x0F), Input(0x0F)]);
         let o = outcome(m, &w);
         assert!(!o.passed, "{} was passed with every key held: average {}, waste {}%", m.id, o.average, o.waste_pct);
     }
@@ -366,28 +424,31 @@ fn ladder() -> (String, Vec<(String, f64, f64)>) {
 }
 
 #[test]
-fn the_path_gets_no_easier_within_a_chapter() {
-    // PLANNING-BRIEF 0.6 names this lint `the_path_gets_no_easier`. The
-    // ladder (yardstick averages, 200 seeded runs a mission) rises within
-    // every chapter and falls where a chapter opens on a new idea, and the
-    // path cannot be reordered past what each mission builds on. So this
-    // checks the claim the measurement supports, within chapters, and the
-    // whole-path claim is SECOND-ORDER-M4 row 2, for Sam's play to settle.
+fn the_tree_gets_no_easier_going_down_within_a_chapter() {
+    // After Vagrancy's the_tree_gets_no_easier_going_down. The yardstick's
+    // averages fall where a chapter opens on a new idea (SECOND-ORDER-M4
+    // row 2), so this checks each requirement between two missions of one
+    // chapter: the mission below is no easier than the one it requires,
+    // within the noise of the runs.
     let (fp, rows) = ladder();
     assert_eq!(fp, content::missions::fingerprint(pilot::VERSION), "analysis/ladder.md is stale; run `make ladder`");
     let ms = missions();
     assert_eq!(rows.iter().map(|r| r.0.clone()).collect::<Vec<_>>(), ms.iter().map(|m| m.id.clone()).collect::<Vec<_>>());
+    let row = |id: &str| rows.iter().find(|r| r.0 == id).unwrap();
     let mut steps = 0;
-    for (w, pair) in ms.windows(2).zip(rows.windows(2)) {
-        if w[0].chapter != w[1].chapter {
-            continue;
+    for m in &ms {
+        for r in &m.requires {
+            let above = ms.iter().find(|x| x.id == r.mission()).unwrap();
+            if above.chapter != m.chapter {
+                continue;
+            }
+            let ((_, a, sa), (_, b, sb)) = (row(&above.id), row(&m.id));
+            let noise = 2.0 * (sa * sa + sb * sb).sqrt();
+            assert!(b <= &(a + noise), "{} ({b:.2}) is easier than {} ({a:.2}), which opens it, beyond the noise of {noise:.2}", m.id, above.id);
+            steps += 1;
         }
-        let ((_, a, sa), (_, b, sb)) = (&pair[0], &pair[1]);
-        let noise = 2.0 * (sa * sa + sb * sb).sqrt();
-        assert!(b <= &(a + noise), "{} ({b:.2}) is easier than {} ({a:.2}) for the yardstick, beyond the noise of {noise:.2}", w[1].id, w[0].id);
-        steps += 1;
     }
-    assert!(steps >= 5, "only {steps} steps within chapters were checked");
+    assert!(steps >= 8, "only {steps} requirements within chapters were checked");
 }
 
 #[test]
@@ -433,4 +494,26 @@ fn three_excellent_cups_in_a_row_play_the_groove_and_a_lesser_cup_breaks_the_run
     assert_eq!(grooves, vec![2, 7, 10]);
     assert_eq!(seen[4], (0, false));
     assert_eq!(seen[10].0, 6);
+}
+
+#[test]
+fn every_field_stays_above_the_cups() {
+    // A field bends falling slush. One that reached into a cup would pull
+    // slush back out of it (the first attractor did: SECOND-ORDER-M5 row 2).
+    let mut fields = 0;
+    for m in missions() {
+        let s = m.setup(1, 1);
+        for line in s.lines.iter().flatten() {
+            let rim = line.belt_y + sim::balance::WALL_HALF * 2 + line.cup.inner_height;
+            for f in &line.fields {
+                fields += 1;
+                let bottom = match *f {
+                    sim::setup::Field::Plates { y0, .. } => y0,
+                    sim::setup::Field::Charge { at, radius, .. } => at.y - radius,
+                };
+                assert!(bottom > rim + sim::fx::Fx::int(4), "{}: a field reaches down to {:.1} cm, and the rim is at {:.1}", m.id, bottom.0 as f64 / 4096.0, rim.0 as f64 / 4096.0);
+            }
+        }
+    }
+    assert!(fields >= 8, "only {fields} fields checked");
 }

@@ -18,3 +18,7 @@ After M2 and M3: notebook has 13 rows (11 done, 1 open, 1 the human's). New stri
 | M4 — The path (MVP) | path with locks from the save, kc_graph.json and its sentences, the yardstick and `make ladder`, the chapter ladder test, the pilot boundary test | 87 tests in 17 binaries | 304591b, then 48fee51 (view polish) | deploy gate 5: live as build 93f5917c at 304591b, the live gate walked in Chromium, Firefox and WebKit; tagged v0.1.0-mvp at the last deployed commit |
 
 After M4: notebook has 7 rows (4 done, 1 open, 2 the human's). New strings awaiting Sam: the `kc` and `kc_edge` sentences (30), marked `"review": "new"`. Reliance revisited: "the order of the missions" was right to be low; the ladder supports the order within chapters only (SECOND-ORDER-M4 row 2).
+
+| M5 — Two lines, fields, the tree | Field (plates, turning plates, charges) in sim, two lines on one screen with their own keys, the tree of 21 missions with pass/mark/clean requirements, save v2, the pilot's landing through fields | 96 tests in 17 binaries | (this commit) | deployed, live gate walked; tag v0.2.0 |
+
+After M5: notebook has 9 rows (8 done, 1 the human's). New strings awaiting Sam: listed at the foot of SECOND-ORDER-M5.

@@ -37,6 +37,9 @@ pub fn numbers() -> String {
         "frac_bits": fx::FRAC_BITS,
         "sim_version": sim::SIM_VERSION,
         "actions": Input::ACTIONS.iter().map(|(n, b)| json!([n, b])).collect::<Vec<_>>(),
+        // The lower line's spout keys, which drive seat 1's spout bits when
+        // a mission has two lines.
+        "lower_actions": (0..4).map(|i| json!([format!("lower_{}", i + 1), Input::SPOUT[i]])).collect::<Vec<_>>(),
         "tunings": balance::TUNINGS.len(),
         "default_tuning": balance::DEFAULT_TUNING,
         "max_score": balance::MAX_SCORE,
@@ -52,23 +55,30 @@ pub fn script_checksum(ticks: u32) -> String {
     replay::script_checksum_of(content::setup::standing(2026, balance::DEFAULT_TUNING), ticks)
 }
 
-/// Every mission on the path, as its card says it, with its spouts' labels,
-/// and whether the save given opens it.
+/// Every mission in the tree, as its card says it, with its spouts' labels,
+/// whether the save given opens it, and each requirement with whether it is
+/// met and its sentence.
 #[wasm_bindgen]
 pub fn path_json(save_json: &str) -> String {
     let save = content::save::Save::load(save_json.as_bytes()).unwrap_or_default();
     let ms = content::missions::missions();
     let list: Vec<serde_json::Value> = ms
         .iter()
-        .enumerate()
-        .map(|(i, m)| {
+        .map(|m| {
             let mut card = content::missions::card(m);
             card["spout_labels"] = json!(content::missions::spout_labels(m));
             card["open"] = json!(save.open(m));
             card["passed"] = json!(save.passed.contains(&m.id));
             card["best"] = json!(save.best.get(&m.id));
-            card["locked_by"] = json!(m.requires.first().map(|r| content::copy::fill(&format!("missions.list.{}.name", r.pass), &json!({}))));
-            card["next"] = json!(ms.get(i + 1).map(|n| n.id.clone()));
+            card["requires"] = json!(m
+                .requires
+                .iter()
+                .map(|r| json!({ "from": r.mission(), "met": save.met(r), "sentence": r.sentence() }))
+                .collect::<Vec<_>>());
+            // What a pass here would open next, for the result's button.
+            let mut after = save.clone();
+            after.record(&m.id, sim::balance::MAX_SCORE, true, 0);
+            card["opens"] = json!(ms.iter().filter(|n| !save.open(n) && after.open(n)).map(|n| n.id.clone()).collect::<Vec<_>>());
             card
         })
         .collect();
@@ -97,9 +107,9 @@ pub fn save_load(bytes: &[u8]) -> Result<String, String> {
 }
 
 #[wasm_bindgen]
-pub fn save_record(save_json: &str, mission: &str, average: u32, passed: bool) -> String {
+pub fn save_record(save_json: &str, mission: &str, average: u32, passed: bool, waste_pct: u32) -> String {
     let mut s = content::save::Save::load(save_json.as_bytes()).unwrap_or_default();
-    s.record(mission, average, passed);
+    s.record(mission, average, passed, waste_pct);
     s.to_json()
 }
 
@@ -139,8 +149,9 @@ pub struct Game {
     play: Option<Playback>,
     /// The mission it plays, for its result; empty for the pour.
     mission: String,
-    /// The timer pilot, made the first time the gate asks it to play.
-    pilot: Option<pilot::Pilot>,
+    /// The timer pilots, one a seat, made the first time the gate asks one
+    /// to play.
+    pilot: Option<[pilot::Pilot; 2]>,
     /// Lids that closed since the page last asked, so a lid is heard and
     /// seen even when several ticks pass between two drawn frames.
     judged: Vec<serde_json::Value>,
@@ -234,13 +245,13 @@ impl Game {
     /// would be recorded. For the gate, which plays a mission to its result.
     pub fn autoplay(&mut self, ticks: u32) {
         let Some(r) = self.rec.as_mut() else { return };
-        let p = self.pilot.get_or_insert_with(|| pilot::Pilot::new(pilot::Kind::Timer));
+        let p = self.pilot.get_or_insert_with(|| [pilot::Pilot::new(pilot::Kind::Timer), pilot::Pilot::new(pilot::Kind::Timer)]);
         for _ in 0..ticks {
             if r.world.done() {
                 break;
             }
-            let i = p.input(&r.world, 0);
-            r.step([i, Input::NONE]);
+            let i = [p[0].input(&r.world, 0), p[1].input(&r.world, 1)];
+            r.step(i);
             for e in r.world.events.clone() {
                 if let sim::world::Event::Judged { cup, score, line } = e {
                     let (run, groove) = content::missions::streak(&r.world, line as usize);

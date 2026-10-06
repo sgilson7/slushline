@@ -22,6 +22,19 @@ export class Stage {
   }
 
   get scale() { return this.c.width / VIEW_WIDTH; }
+
+  // Fit the canvas's height to the lines this frame has: from a little
+  // below the lowest belt to a little above the highest handle. A mission
+  // with two lines is a taller picture, not a smaller one.
+  fit(frame) {
+    let top = 0;
+    for (const L of frame.lines) for (const sp of L.spouts) top = Math.max(top, sp.tip[1] / this.one);
+    const h = Math.round((top + 18 - VIEW_BOTTOM) * this.scale);
+    if (h > 0 && this.c.height !== h) {
+      this.c.height = h;
+      if (this.onResize) this.onResize(this.c.width, h);
+    }
+  }
   sx(raw) { return (raw / this.one - VIEW_LEFT) * this.scale; }
   sy(raw) { return this.c.height - (raw / this.one - VIEW_BOTTOM) * this.scale; }
   len(raw) { return (raw / this.one) * this.scale; }
@@ -83,14 +96,114 @@ export class Stage {
   }
 
   // One frame: the line, its spouts, cups and slush.
-  draw(frame, units, keyNames) {
+  draw(frame, units, keyNames, lowerKeyNames = []) {
+    this.fit(frame);
+    this.tick = frame.tick;
     const g = this.g;
     const p = this.pal;
     g.fillStyle = p.paper;
     g.fillRect(0, 0, this.c.width, this.c.height);
-    for (const line of frame.lines) this.drawLine(line, keyNames);
+    for (const line of frame.lines) this.drawFields(line);
+    for (const line of frame.lines) this.drawLine(line, line.seat === 1 ? lowerKeyNames : keyNames);
     this.drawUnits(units);
     for (const line of frame.lines) this.drawBars(line);
+  }
+
+  // Fields (Sam, 2026-10-05: "gravity fields that act almost like voltage
+  // fields"). Plates: a tinted box between two bars marked + and −, with
+  // chevrons drifting the way it pushes now. A charge: rings that pulse out
+  // if it pushes and in if it pulls, and arrows the same way. Which way is
+  // carried by shape and motion, never by color alone.
+  drawFields(L) {
+    const g = this.g;
+    const p = this.pal;
+    const t = this.tick ?? 0;
+    for (const f of L.fields) {
+      g.save();
+      if (f.kind === 'plates') {
+        const x0 = this.sx(f.x0), x1 = this.sx(f.x1), y0 = this.sy(f.y1), y1 = this.sy(f.y0);
+        g.globalAlpha = 0.13;
+        g.fillStyle = p.field;
+        g.fillRect(x0, y0, x1 - x0, y1 - y0);
+        g.globalAlpha = 0.9;
+        g.fillStyle = p.field_ink;
+        g.fillRect(x0 - 4, y0, 4, y1 - y0);
+        g.fillRect(x1, y0, 4, y1 - y0);
+        const dir = Math.sign(f.ax) || 1;
+        // The push runs from the + plate to the − plate.
+        g.font = '700 16px system-ui, sans-serif';
+        g.textAlign = 'center';
+        g.fillText(dir > 0 ? '+' : '\u2212', x0 - 12, y0 + 16);
+        g.fillText(dir > 0 ? '\u2212' : '+', x1 + 12, y0 + 16);
+        g.strokeStyle = p.field_ink;
+        g.lineWidth = 2.5;
+        g.globalAlpha = 0.55;
+        const span = x1 - x0;
+        const shift = ((t * 0.9) % 28) * dir;
+        for (let y = y0 + 14; y < y1 - 6; y += 22) {
+          for (let x = x0 + 10 + ((shift % 28) + 28) % 28; x < x1 - 8; x += 28) {
+            g.beginPath();
+            g.moveTo(x - 5 * dir, y - 6);
+            g.lineTo(x + 3 * dir, y);
+            g.lineTo(x - 5 * dir, y + 6);
+            g.stroke();
+          }
+        }
+        if (f.turns) {
+          // A turning field: a little ring of arrows over it.
+          g.globalAlpha = 0.8;
+          g.beginPath();
+          g.arc(x0 + span / 2, y0 - 12, 8, 0.3, Math.PI * 1.7);
+          g.stroke();
+        }
+      } else {
+        const x = this.sx(f.x), y = this.sy(f.y), r = this.len(f.radius);
+        const phase = ((t % 60) / 60);
+        for (let k = 0; k < 3; k += 1) {
+          const a = (phase + k / 3) % 1;
+          const rr = f.pulls ? r * (1 - a) : r * a;
+          g.globalAlpha = 0.45 * (1 - Math.abs(0.5 - a) * 1.2);
+          g.strokeStyle = p.field;
+          g.lineWidth = 3;
+          g.beginPath();
+          g.arc(x, y, Math.max(2, rr), 0, Math.PI * 2);
+          g.stroke();
+        }
+        g.globalAlpha = 0.8;
+        g.strokeStyle = p.field_ink;
+        g.lineWidth = 2;
+        for (let k = 0; k < 8; k += 1) {
+          const ang = (k / 8) * Math.PI * 2;
+          const a0 = r * 0.35, a1 = r * 0.6;
+          const [from, to] = f.pulls ? [a1, a0] : [a0, a1];
+          const fx = x + Math.cos(ang) * from, fy = y + Math.sin(ang) * from;
+          const tx = x + Math.cos(ang) * to, ty = y + Math.sin(ang) * to;
+          g.beginPath();
+          g.moveTo(fx, fy);
+          g.lineTo(tx, ty);
+          g.stroke();
+          const back = ang + Math.PI + (f.pulls ? 0 : 0);
+          const hx = Math.cos(f.pulls ? ang + Math.PI : ang), hy = Math.sin(f.pulls ? ang + Math.PI : ang);
+          g.beginPath();
+          g.moveTo(tx, ty);
+          g.lineTo(tx - hx * 5 - hy * 4, ty - hy * 5 + hx * 4);
+          g.moveTo(tx, ty);
+          g.lineTo(tx - hx * 5 + hy * 4, ty - hy * 5 - hx * 4);
+          g.stroke();
+          void back;
+        }
+        g.globalAlpha = 1;
+        g.fillStyle = p.field_ink;
+        g.beginPath();
+        g.arc(x, y, 9, 0, Math.PI * 2);
+        g.fill();
+        g.fillStyle = p.paper;
+        g.font = '700 14px system-ui, sans-serif';
+        g.textAlign = 'center';
+        g.fillText(f.pulls ? '\u2212' : '+', x, y + 5);
+      }
+      g.restore();
+    }
   }
 
   drawLine(L, keyNames) {

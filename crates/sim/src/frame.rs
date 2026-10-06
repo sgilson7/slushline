@@ -36,6 +36,18 @@ pub struct LineView {
     pub emitted: u32,
     pub wasted: u32,
     pub judged: u32,
+    /// The line's fields, as the page draws them: which way each pushes
+    /// now, worked out here.
+    pub fields: Vec<FieldView>,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum FieldView {
+    /// A box and the push it gives this tick (raw fixed point per tick²).
+    Plates { x0: i32, x1: i32, y0: i32, y1: i32, ax: i32, ay: i32, turns: bool },
+    /// A charge: where, how far it reaches, and whether it pulls.
+    Charge { x: i32, y: i32, radius: i32, pulls: bool },
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
@@ -124,6 +136,19 @@ pub fn frame(w: &World) -> Frame {
             emitted: ls.emitted,
             wasted: ls.wasted,
             judged: ls.judged,
+            fields: line
+                .fields
+                .iter()
+                .map(|f| match *f {
+                    crate::setup::Field::Plates { x0, x1, y0, y1, accel, flip } => {
+                        let a = if f.flipped(w.tick) { -accel } else { accel };
+                        FieldView::Plates { x0: x0.0, x1: x1.0, y0: y0.0, y1: y1.0, ax: a.x.0, ay: a.y.0, turns: flip.is_some() }
+                    }
+                    crate::setup::Field::Charge { at, strength, radius } => {
+                        FieldView::Charge { x: at.x.0, y: at.y.0, radius: radius.0, pulls: strength.0 < 0 }
+                    }
+                })
+                .collect(),
         });
     }
     Frame { tick: w.tick, done: w.done(), lines, events: w.events.clone() }

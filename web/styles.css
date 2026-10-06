@@ -79,3 +79,27 @@ section.how p { max-width: 720px; margin: 0; }
   @keyframes judge-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
 }
 #sound-volume { vertical-align: middle; width: 12em; }
+
+/* The tree of missions, after Vagrancy's road. */
+#tree { position: relative; display: grid; gap: 26px; padding: 4px 0 16px; }
+#tree .level { position: relative; z-index: 1; pointer-events: none; }
+#tree .tier-label { margin: 0 0 6px; text-align: center; color: var(--muted); font-size: 0.85em; }
+#tree .tier { display: flex; flex-wrap: wrap; gap: 10px 14px; justify-content: center; }
+#tree .node { pointer-events: auto; width: 168px; padding: 6px 4px; text-align: center; font-size: 0.9rem; }
+#tree .node.locked { color: var(--muted); background: var(--panel); border: 1px dashed var(--muted); }
+#tree .node.open { box-shadow: 0 0 0 2px var(--focus) inset; }
+#tree .node.passed { background: var(--line); color: var(--paper); }
+#tree .node.passed::after { content: " \2713"; }
+#tree .node.picked { outline: 3px solid var(--judge-bottom); outline-offset: 2px; }
+#tree .wires { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; overflow: visible; pointer-events: none; }
+#tree .wires path { fill: none; }
+#tree .wires path.met { stroke: var(--line); stroke-width: 2; opacity: 0.75; }
+#tree .wires path.unmet { stroke: var(--muted); stroke-width: 1.25; stroke-dasharray: 4 4; opacity: 0.6; }
+#tree .wires path.hot { stroke: var(--focus); stroke-width: 3.5; opacity: 1; stroke-dasharray: none; }
+#mission-card { border: 1px solid var(--panel); border-radius: 8px; padding: 10px 16px; margin-bottom: 16px; background: var(--cup); }
+#mission-card h3 { margin-top: 4px; }
+.needs { list-style: none; padding: 0; }
+.needs .mark { font-weight: 700; display: inline-block; min-width: 7.5em; }
+.needs .unmet { color: var(--muted); }
+.hud-line { display: inline-flex; gap: 14px; margin-right: 18px; }
+@media (max-width: 600px) { #tree .node { width: 112px; font-size: 0.8em; } }

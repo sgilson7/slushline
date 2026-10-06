@@ -120,6 +120,7 @@ pub fn line(spouts: &[&str], cup: &str, belt: &str, orders: Vec<Order>) -> Line 
         lid_x: Fx::int(d.lid_x),
         end_x: Fx::int(d.end_x),
         belt_y: Fx::int(d.belt_y),
+        fields: Vec::new(),
     }
 }
 

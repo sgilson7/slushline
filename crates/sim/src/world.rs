@@ -313,10 +313,18 @@ impl World {
     fn integrate(&mut self, t: &Tuning) {
         let ph = self.setup.physics;
         let cap = ph.cap.raw() as i64;
+        let tick = self.tick;
+        let lines = &self.setup.lines;
         for u in &mut self.units {
             let mut v = u.p - u.q;
             v -= v * ph.drag;
             v.y -= ph.gravity;
+            // The line's fields push its slush, and only its slush.
+            if let Some(l) = lines[u.line as usize].as_ref() {
+                if !l.fields.is_empty() {
+                    v += l.field_accel(u.p, tick);
+                }
+            }
             if v.len_sq_raw() > cap * cap {
                 v = v.with_len(ph.cap);
             }

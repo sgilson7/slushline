@@ -18,7 +18,7 @@ use sim::{Input, World};
 
 /// Bumped when a pilot plays differently, so `analysis/ladder.md` is known to
 /// be stale.
-pub const VERSION: u32 = 1;
+pub const VERSION: u32 = 2;
 
 /// The yardstick's error on each let-go, in units either way.
 pub const YARDSTICK_ERROR: u32 = 10;
@@ -85,11 +85,11 @@ impl Pilot {
                     self.pours[i].released_at = None;
                 }
             }
-            let x = w.spout_x(seat, i);
-            let fall = fall_ticks(w, seat, line.spouts[i].y);
+            // Where and when slush leaving now lands, through the line's
+            // fields, and the cup that will be there then.
+            let (x, fall) = landing(w, seat, i);
             let lead = speed * fall as i32;
             let room = line.cup.inner_half - Fx::int(8);
-            // The cup that slush leaving now would land in.
             let target = ls.cups.iter().find(|c| !c.judged && (c.x + lead - x).abs() <= room);
             let Some(cup) = target else {
                 if self.pours[i].cup.is_some() && !self.pours[i].done {
@@ -132,22 +132,29 @@ impl Pilot {
 /// The share of the plan the timer pours, as a fraction.
 pub const AIM: (i32, i32) = (11, 12);
 
-/// About how many ticks slush takes to fall from a spout at `y` to a little
-/// above a cup's floor, by stepping the same rule the world steps.
-fn fall_ticks(w: &World, seat: usize, y: Fx) -> u32 {
+/// Where slush leaving spout `i` now lands, a little above its cup's floor,
+/// and how many ticks it takes: one particle stepped by the rule the world
+/// steps (speed first, drag, gravity, the line's fields, the cap). Reading
+/// the setup and stepping a copy is what a player does by eye.
+fn landing(w: &World, seat: usize, i: usize) -> (Fx, u32) {
     let ph = w.setup.physics;
+    let line = w.line(seat);
     let target = w.floor(seat) + Fx::int(12);
-    let (mut h, mut v, mut t) = (y, -sim::balance::SPOUT_SPEED, 0u32);
-    while h > target && t < 200 {
+    let mut p = sim::fx::V2::new(w.spout_x(seat, i), line.spouts[i].y);
+    let mut v = sim::fx::V2::new(Fx(0), -sim::balance::SPOUT_SPEED);
+    let cap = ph.cap.raw() as i64;
+    let mut t = 0u32;
+    while p.y > target && t < 300 {
         v -= v * ph.drag;
-        v -= ph.gravity;
-        if v < -ph.cap {
-            v = -ph.cap;
+        v.y -= ph.gravity;
+        v += line.field_accel(p, w.tick + t);
+        if v.len_sq_raw() > cap * cap {
+            v = v.with_len(ph.cap);
         }
-        h += v;
+        p += v;
         t += 1;
     }
-    t
+    (p.x, t)
 }
 
 /// How many units spout `i` should pour into a cup with this order: a blend
