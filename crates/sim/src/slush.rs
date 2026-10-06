@@ -159,7 +159,7 @@ pub fn thicken(units: &mut [Unit], pairs: &[(u32, u32)], k: Fx) {
 /// `static_k × overlap`, and reduced by `kinetic_k × overlap` past it.
 /// Both shifts are split exactly between the two, so neither rule moves the
 /// pair's middle.
-pub fn contact(a: &mut Unit, b: &mut Unit, t: &Tuning) {
+pub fn contact(a: &mut Unit, b: &mut Unit, t: &Tuning, ma: i64, mb: i64) {
     let d = b.p - a.p;
     let reach = a.r + b.r;
     let dsq = d.len_sq_raw();
@@ -170,23 +170,33 @@ pub fn contact(a: &mut Unit, b: &mut Unit, t: &Tuning) {
     if dsq == 0 {
         // Exactly on top of each other: part them along x, the lower index
         // to the left, so the choice does not depend on anything else.
-        let half = Fx(reach.raw() / 2);
-        a.p.x -= half;
-        b.p.x += reach - half;
+        let part = Fx(crate::fx::narrow(reach.raw() as i64 * mb / (ma + mb)));
+        a.p.x -= part;
+        b.p.x += reach - part;
         return;
     }
     let dist = d.len();
     let overlap = reach - dist;
     let push = d.scale(overlap.raw() as i64, dist.raw().max(1) as i64);
-    let half = V2::new(Fx(push.x.raw() / 2), Fx(push.y.raw() / 2));
-    a.p -= half;
-    b.p += push - half;
+    // Each moves in proportion to the other's mass: a heavy unit is moved
+    // less, so it sinks through light slush (2026-10-06). Equal masses split
+    // the push in half, as before.
+    let share = |v: V2| V2::new(Fx(crate::fx::narrow(v.x.raw() as i64 * mb / (ma + mb))), Fx(crate::fx::narrow(v.y.raw() as i64 * mb / (ma + mb))));
+    let part = share(push);
+    a.p -= part;
+    b.p += push - part;
     // Slip: how far a moved against b this tick, less its part along d.
     let rel = (a.p - a.q) - (b.p - b.q);
     let along = rel.dot_raw(d);
     let slip = rel - d.scale(along, dsq);
+    // Heavy slush against light slush has no grip: it slides down through
+    // it (2026-10-06, "heavy slush settles to the bottom";
+    // `heavy_slush_sinks_through_lighter_slush`).
+    if ma != mb {
+        return;
+    }
     let Some(cancel) = friction(slip, overlap, t) else { return };
-    let h = V2::new(Fx(cancel.x.raw() / 2), Fx(cancel.y.raw() / 2));
+    let h = share(cancel);
     a.p -= h;
     b.p += cancel - h;
 }

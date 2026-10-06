@@ -181,3 +181,29 @@ fn units_of_one_size_would_not_swell() {
     u.grow(&t);
     assert_eq!(u.r, sim::balance::R_FULL);
 }
+
+#[test]
+fn heavy_slush_sinks_through_lighter_slush() {
+    // Sam, 2026-10-06: "a slush type that is super heavy". Lemon is poured
+    // first and raspberry on top of it; once settled, the raspberry's units
+    // sit lower on average than the lemon's.
+    let rasp = content::setup::flavor("raspberry");
+    let lemon = content::setup::flavor("lemon");
+    let mut l = line(&["lemon", "raspberry"], "regular", "steady", vec![order(&[("lemon", 1)])]);
+    l.belt.speed = Fx(0);
+    l.spouts[1].x = l.spouts[0].x;
+    l.first_x = l.spouts[0].x;
+    l.lid_x = Fx::int(10_000);
+    let mut w = World::new(setup_of(1, sim::balance::DEFAULT_TUNING, l));
+    for t in 0..260u32 {
+        let bits = if t < 30 { Input::SPOUT[0] } else if (90..120).contains(&t) { Input::SPOUT[1] } else { 0 };
+        w.step([Input(bits), Input::NONE]);
+    }
+    let mean = |f: u8| {
+        let ys: Vec<i64> = w.units.iter().filter(|u| u.flavor == f).map(|u| u.p.y.0 as i64).collect();
+        assert!(ys.len() > 20, "only {} units of flavor {f}", ys.len());
+        ys.iter().sum::<i64>() as f64 / ys.len() as f64 / 4096.0
+    };
+    let (r, le) = (mean(rasp), mean(lemon));
+    assert!(r + 2.0 < le, "raspberry poured last sits at {r:.1} cm on average and lemon at {le:.1}: it did not sink");
+}

@@ -68,6 +68,10 @@ pub struct Cup {
     pub order: u16,
     /// Scored and closed by the lid.
     pub judged: bool,
+    /// The height the cup's bottom rides at, and last tick's: the belt, or
+    /// its row's rail above it, moved by the bob (rows and bob, 2026-10-06).
+    pub base: Fx,
+    pub prev_base: Fx,
 }
 
 /// What the lid found in one cup.
@@ -134,6 +138,7 @@ struct Sides {
     cup: Option<u16>,
     left: i32,
     right: i32,
+    above: bool,
 }
 
 impl World {
@@ -144,7 +149,8 @@ impl World {
             cups: (0..l.orders.len())
                 .map(|k| {
                     let x = l.first_x - l.spacing * k as i32;
-                    Cup { x, prev_x: x, order: k as u16, judged: false }
+                    let base = cup_base(l, k, 0);
+                    Cup { x, prev_x: x, order: k as u16, judged: false, base, prev_base: base }
                 })
                 .collect(),
             results: Vec::new(),
@@ -179,11 +185,14 @@ impl World {
         slush::thicken(&mut self.units, &pairs, t.thick_k);
         let before: Vec<V2> = self.units.iter().map(|u| u.p).collect();
         let mut touched = vec![false; self.units.len()];
+        let mass: Vec<i64> = self.setup.flavor_physics.iter().map(|f| f.mass.max(1) as i64).collect();
+        let m = |f: u8| mass.get(f as usize).copied().unwrap_or(1);
         for _ in 0..balance::PASSES {
             for &(i, j) in &pairs {
                 let (i, j) = (i as usize, j as usize);
                 let (lo, hi) = self.units.split_at_mut(j);
-                slush::contact(&mut lo[i], &mut hi[0], &t);
+                let (ma, mb) = (m(lo[i].flavor), m(hi[0].flavor));
+                slush::contact(&mut lo[i], &mut hi[0], &t, ma, mb);
             }
             self.walls(&sides, &t, &mut touched);
         }
@@ -274,9 +283,13 @@ impl World {
         let speed = self.belt_speed(seat);
         let ls = self.lines[seat].as_mut().unwrap();
         ls.travel += speed;
-        for c in &mut ls.cups {
+        let line = self.setup.lines[seat].as_ref().unwrap();
+        let tick = self.tick + 1;
+        for (k, c) in ls.cups.iter_mut().enumerate() {
             c.prev_x = c.x;
             c.x += speed;
+            c.prev_base = c.base;
+            c.base = cup_base(line, k, tick);
         }
     }
 
@@ -301,24 +314,66 @@ impl World {
             let x = self.spout_x(seat, i);
             let line = self.setup.lines[seat].as_ref().unwrap();
             let spout = &line.spouts[i];
-            let (y, pours) = (spout.y, spout.pours.clone());
+            let (y, pours, nozzle) = (spout.y, spout.pours.clone(), spout.nozzle);
             let ls = self.lines[seat].as_mut().unwrap();
             let opening = ls.handles[i].opening();
             let valve = &mut ls.valves[i];
             valve.acc += opening * balance::VALVE_RATE;
+            let mut fired = Vec::new();
             while valve.acc >= ONE {
                 valve.acc -= ONE;
                 let k = valve.poured as usize;
                 valve.poured += 1;
-                let off = Fx::int(balance::NOZZLE_OFFSETS[k % balance::NOZZLE_OFFSETS.len()]);
-                let p = V2::new(x + off, y);
-                // Moving straight down at the spout's speed: `q` is above `p`.
-                let q = V2::new(p.x, p.y + balance::SPOUT_SPEED);
+                fired.push(k);
+            }
+            let _ = valve;
+            for k in fired {
                 let flavor = pours[k % pours.len()];
+                let (p, q) = match nozzle {
+                    crate::setup::Nozzle::Fall => {
+                        let off = Fx::int(balance::NOZZLE_OFFSETS[k % balance::NOZZLE_OFFSETS.len()]);
+                        let p = V2::new(x + off, y);
+                        // Moving straight down at the spout's speed: `q` is
+                        // above `p`.
+                        (p, V2::new(p.x, p.y + balance::SPOUT_SPEED))
+                    }
+                    crate::setup::Nozzle::Jet { speed } => {
+                        let land = self.jet_landing(seat, x);
+                        let p = V2::new(x, land + balance::R_BIRTH + Fx::ratio(1, 4));
+                        (p, V2::new(p.x, p.y + speed))
+                    }
+                };
+                let ls = self.lines[seat].as_mut().unwrap();
                 self.units.push(Unit { id: ls.emitted, p, q, r: balance::R_BIRTH, age: 0, flavor, line: seat as u8 });
                 ls.emitted += 1;
             }
         }
+    }
+
+    /// Where a jet from `x` lands: the first thing straight under it, traced
+    /// down from the nozzle (PLANNING-BRIEF 0.7): the top of the slush in
+    /// that column, a cup's floor or rim, or the belt.
+    fn jet_landing(&self, seat: usize, x: Fx) -> Fx {
+        let line = self.line(seat);
+        let ls = self.lines[seat].as_ref().unwrap();
+        let mut top = line.belt_y;
+        for c in ls.cups.iter() {
+            let d = (x - c.x).abs();
+            let rim = self.cup_rim(seat, c);
+            if c.judged && d < line.cup.inner_half + balance::WALL_HALF * 2 {
+                top = top.max(rim + balance::WALL_HALF);
+            } else if d < line.cup.inner_half {
+                top = top.max(self.cup_floor(seat, c));
+            } else if d < line.cup.inner_half + balance::WALL_HALF * 2 {
+                top = top.max(rim + balance::WALL_HALF);
+            }
+        }
+        for u in self.units.iter().filter(|u| u.line as usize == seat) {
+            if (u.p.x - x).abs() < u.r + balance::R_BIRTH && u.p.y + u.r > top {
+                top = u.p.y + u.r;
+            }
+        }
+        top
     }
 
     // --- the units ----------------------------------------------------------
@@ -329,10 +384,12 @@ impl World {
         let cap = ph.cap.raw() as i64;
         let tick = self.tick;
         let lines = &self.setup.lines;
+        let fp = &self.setup.flavor_physics;
         for u in &mut self.units {
             let mut v = u.p - u.q;
             v -= v * ph.drag;
-            v.y -= ph.gravity;
+            let g = fp.get(u.flavor as usize).map(|f| f.gravity_pct).unwrap_or(100);
+            v.y -= ph.gravity.scale(g as i64, 100);
             // The line's fields push its slush, and only its slush.
             if let Some(l) = lines[u.line as usize].as_ref() {
                 if !l.fields.is_empty() {
@@ -367,7 +424,7 @@ impl World {
                 continue;
             };
             let c = &ls.cups[ci];
-            let rim = self.rim(seat);
+            let rim = self.cup_rim(seat, c);
             let side_of = |wall_now: Fx, wall_then: Fx| -> i32 {
                 let a = u.q.x - wall_then;
                 let b = u.p.x - wall_now;
@@ -385,6 +442,9 @@ impl World {
                 cup: Some(ci as u16),
                 left: side_of(c.x - off, c.prev_x - off),
                 right: side_of(c.x + off, c.prev_x + off),
+                // A raised cup has open space under it: only a unit that was
+                // above its floor last tick is held up by it.
+                above: u.q.y + u.r >= c.prev_base + balance::WALL_HALF * 2 - balance::R_FULL,
             };
         }
         out
@@ -398,6 +458,13 @@ impl World {
     pub fn floor(&self, seat: usize) -> Fx {
         self.line(seat).belt_y + balance::WALL_HALF * 2
     }
+    /// One cup's floor top and rim, where its row and the bob have put it.
+    pub fn cup_floor(&self, _seat: usize, c: &Cup) -> Fx {
+        c.base + balance::WALL_HALF * 2
+    }
+    pub fn cup_rim(&self, seat: usize, c: &Cup) -> Fx {
+        self.cup_floor(seat, c) + self.line(seat).cup.inner_height
+    }
 
     fn walls(&mut self, sides: &[Sides], t: &Tuning, touched: &mut [bool]) {
         let w = balance::WALL_HALF;
@@ -405,13 +472,17 @@ impl World {
             let s = sides[k];
             let Some(ci) = s.cup else { continue };
             let seat = self.units[k].line as usize;
-            let (rim, floor) = (self.rim(seat), self.floor(seat));
-            let half = self.line(seat).cup.inner_half;
             let c = self.lines[seat].as_ref().unwrap().cups[ci as usize].clone();
-            let moved = V2::new(c.x - c.prev_x, Fx(0));
+            let (rim, floor) = (self.cup_rim(seat, &c), self.cup_floor(seat, &c));
+            let half = self.line(seat).cup.inner_half;
+            let moved = V2::new(c.x - c.prev_x, c.base - c.prev_base);
             let u = &mut self.units[k];
             for (wx, side) in [(c.x - half - w, s.left), (c.x + half + w, s.right)] {
                 let reach = u.r + w;
+                // Below a raised cup's bottom there is no wall.
+                if u.p.y + u.r < c.base {
+                    continue;
+                }
                 if u.p.y <= rim {
                     let gap = (u.p.x - wx) * side;
                     if gap < reach {
@@ -441,7 +512,7 @@ impl World {
             // The floor, between the walls. Nothing reaches the underside: the
             // belt is there.
             let (xl, xr) = (c.x - half - w * 2, c.x + half + w * 2);
-            if u.p.x > xl && u.p.x < xr {
+            if s.above && u.p.x > xl && u.p.x < xr {
                 let top = floor + u.r;
                 if u.p.y < top {
                     let push = top - u.p.y;
@@ -466,7 +537,7 @@ impl World {
     pub fn inside(&self, u: &Unit, c: &Cup) -> bool {
         let seat = u.line as usize;
         let half = self.line(seat).cup.inner_half;
-        (u.p.x - c.x).abs() < half && u.p.y < self.rim(seat) && u.p.y > self.floor(seat)
+        (u.p.x - c.x).abs() < half && u.p.y < self.cup_rim(seat, c) && u.p.y > self.cup_floor(seat, c)
     }
 
     // --- waste and the lid ------------------------------------------------
@@ -508,6 +579,8 @@ impl World {
                     continue;
                 }
                 let mut counts = vec![0u32; self.setup.flavors as usize];
+                let mut stack: Vec<(Fx, u32, u8)> = Vec::new();
+                let rim = self.cup_rim(seat, &c);
                 let (mut judged, mut scraped) = (0u32, 0u32);
                 let units = std::mem::take(&mut self.units);
                 let mut keep = Vec::with_capacity(units.len());
@@ -515,8 +588,9 @@ impl World {
                 for u in units {
                     if u.line as usize == seat && self.inside(&u, &c) {
                         counts[u.flavor as usize] += 1;
+                        stack.push((u.p.y, u.id, u.flavor));
                         judged += 1;
-                    } else if u.line as usize == seat && (u.p.x - c.x).abs() < span && u.p.y >= self.rim(seat) {
+                    } else if u.line as usize == seat && (u.p.x - c.x).abs() < span && u.p.y >= rim && u.p.y < rim + Fx::int(40) {
                         scraped += 1;
                         self.events.push(Event::Waste { line: seat as u8, x: u.p.x, y: u.p.y });
                         self.lines[seat].as_mut().unwrap().catch(u.p.x, u.flavor);
@@ -526,7 +600,14 @@ impl World {
                 }
                 self.units = keep;
                 let order = &line.orders[c.order as usize];
-                let sc = score::score(&counts, order, line.cup.capacity);
+                let sc = if order.layered {
+                    // From the bottom up, ties by the order they were poured.
+                    stack.sort();
+                    let ranked: Vec<u8> = stack.iter().map(|s| s.2).collect();
+                    score::score_layered(&counts, &ranked, order, line.cup.capacity)
+                } else {
+                    score::score(&counts, order, line.cup.capacity)
+                };
                 self.events.push(Event::Judged { line: seat as u8, cup: c.order, score: sc.score });
                 let ls = self.lines[seat].as_mut().unwrap();
                 ls.cups[ci].judged = true;
@@ -555,6 +636,13 @@ impl World {
     pub fn done(&self) -> bool {
         self.lines.iter().flatten().all(|l| l.cups.iter().all(|c| c.judged))
     }
+}
+
+/// Where cup `k` of a line rides on `tick`: its row's height above the belt,
+/// moved by the bob.
+pub fn cup_base(l: &Line, k: usize, tick: u32) -> Fx {
+    let row = if l.rows.is_empty() { Fx(0) } else { l.rows[k % l.rows.len()] };
+    l.belt_y + row + l.bob.map(|b| b.offset(tick)).unwrap_or(Fx(0))
 }
 
 /// 64-bit FNV-1a (Floodline `world.rs:2180`, by way of Vagrancy).

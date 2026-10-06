@@ -43,6 +43,8 @@ pub struct LineView {
     /// there in the order they landed; and the bin's width, raw.
     pub tray: Vec<Vec<u8>>,
     pub tray_bin: i32,
+    /// Whether the line's cups ride on lifts.
+    pub lifts: bool,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
@@ -65,6 +67,8 @@ pub struct SpoutView {
     /// The flavors it pours, in their repeating order.
     pub pours: Vec<u8>,
     pub rail: bool,
+    /// A rocket nozzle, which the page draws narrow and long.
+    pub jet: bool,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
@@ -81,6 +85,10 @@ pub struct CupView {
     /// The page labels the slush there when Settings asks it to.
     pub centers: Vec<[i32; 3]>,
     pub score: Option<u32>,
+    /// Where this cup rides: its bottom, floor top and rim (rows and lifts).
+    pub base: i32,
+    pub floor: i32,
+    pub rim: i32,
 }
 
 pub fn frame(w: &World) -> Frame {
@@ -117,6 +125,7 @@ pub fn frame(w: &World) -> Frame {
                         opening: h.opening().0,
                         pours: s.pours.clone(),
                         rail: s.rail.is_some(),
+                        jet: matches!(s.nozzle, crate::setup::Nozzle::Jet { .. }),
                     }
                 })
                 .collect(),
@@ -133,6 +142,9 @@ pub fn frame(w: &World) -> Frame {
                         shares: order.parts.iter().map(|&(f, _)| [f as u32, order.share(f, line.cup.capacity)]).collect(),
                         counts: counts[ci].clone(),
                         centers: centers(w, seat, ci),
+                        base: c.base.0,
+                        floor: w.cup_floor(seat, c).0,
+                        rim: w.cup_rim(seat, c).0,
                         score: ls.results.iter().find(|r| r.cup == c.order).map(|r| r.score.score),
                     }
                 })
@@ -155,6 +167,7 @@ pub fn frame(w: &World) -> Frame {
                 .collect(),
             tray: ls.tray.clone(),
             tray_bin: crate::fx::Fx::int(balance::TRAY_BIN).0,
+            lifts: line.bob.is_some(),
         });
     }
     Frame { tick: w.tick, done: w.done(), lines, events: w.events.clone() }

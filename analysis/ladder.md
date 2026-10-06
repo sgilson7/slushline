@@ -2,7 +2,7 @@
 
 The yardstick pilot (the timer with up to 10 units of error on each let-go, seeded) on every mission, 200 runs each, tuning 1. Written by `make ladder`; read by `the_path_gets_no_easier`.
 
-fingerprint: 4e0a1639040a7cfb
+fingerprint: 4c84f6518e0f3012
 
 | # | mission | runs | average | standard error | passed |
 |---|---|---|---|---|---|
@@ -27,3 +27,15 @@ fingerprint: 4e0a1639040a7cfb
 | 19 | m_two_lines_blend | 200 | 84.09 | 0.15 | 200 |
 | 20 | m_two_speeds | 200 | 82.22 | 0.16 | 200 |
 | 21 | m_storm | 200 | 76.99 | 0.20 | 200 |
+| 22 | s_zigzag | 200 | 80.19 | 0.15 | 200 |
+| 23 | s_field_maze | 200 | 71.79 | 0.18 | 200 |
+| 24 | s_flip_pair | 200 | 60.61 | 0.16 | 137 |
+| 25 | s_two_rows | 200 | 78.84 | 0.16 | 200 |
+| 26 | s_bobbing | 200 | 78.78 | 0.19 | 200 |
+| 27 | s_rows_bob | 200 | 77.14 | 0.17 | 200 |
+| 28 | s_heavy | 200 | 90.75 | 0.16 | 200 |
+| 29 | s_sink | 200 | 71.17 | 0.18 | 200 |
+| 30 | s_layers | 200 | 67.88 | 0.23 | 199 |
+| 31 | s_jet | 200 | 79.13 | 0.12 | 200 |
+| 32 | s_jet_pair | 200 | 79.28 | 0.18 | 200 |
+| 33 | s_jet_rows | 200 | 79.59 | 0.16 | 200 |

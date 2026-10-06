@@ -89,7 +89,7 @@ fn h2_the_cup_moves_while_the_slush_falls() {
 #[test]
 fn h3_the_score_follows_the_one_rule() {
     let (cola, lemon, cherry) = (content::setup::flavor("cola"), content::setup::flavor("lemon"), content::setup::flavor("cherry"));
-    let o = Order { parts: vec![(cola, 1), (lemon, 1)] };
+    let o = Order { parts: vec![(cola, 1), (lemon, 1)], layered: false };
     let cup = |pairs: &[(u8, u32)]| {
         let mut c = vec![0u32; 3];
         for &(f, n) in pairs {
@@ -114,7 +114,7 @@ fn slush_past_its_share_scores_nothing() {
     // how.score.body: "Slush past that share … adds nothing." Ten more cola
     // past its share does not move the score by a point.
     let cola = content::setup::flavor("cola");
-    let o = Order { parts: vec![(cola, 1)] };
+    let o = Order { parts: vec![(cola, 1)], layered: false };
     let at_share = score(&[60, 0, 0], &o, 60).score;
     for extra in 1..40 {
         assert_eq!(score(&[60 + extra, 0, 0], &o, 60).score, at_share);
@@ -254,4 +254,62 @@ fn every_wasted_unit_lands_in_the_tray_under_where_it_fell() {
         .filter(|(b, _)| ((*b as i32) * sim::balance::TRAY_BIN - spout).abs() <= 48)
         .map(|(_, v)| v.len()).sum();
     assert!(near * 2 > ls.wasted as usize, "{near} of {} wasted units are under the spout", ls.wasted);
+}
+
+/// H10 — a layered order (Sam, 2026-10-06: "levels where the order of the
+/// slushy in the cup matters"). Capacity 120, cola under lemon at 1 to 1, so
+/// the bottom 60 places are cola's and the top 60 lemon's. Sixty cola below
+/// sixty lemon: 100. The same units with the lemon underneath: 0. Thirty
+/// cola, sixty lemon, thirty cola: the bottom 30 cola count, lemon ranks 30
+/// to 59 are in cola's layer and 60 to 89 count, the top 30 cola are in
+/// lemon's layer: 60 count, 50.
+#[test]
+fn h10_a_layered_order_counts_slush_only_in_its_layer() {
+    let (cola, lemon) = (content::setup::flavor("cola"), content::setup::flavor("lemon"));
+    let o = Order { parts: vec![(cola, 1), (lemon, 1)], layered: true };
+    let mut counts = vec![0u32; 4];
+    counts[cola as usize] = 60;
+    counts[lemon as usize] = 60;
+    let stack = |runs: &[(u8, usize)]| runs.iter().flat_map(|&(f, n)| std::iter::repeat_n(f, n)).collect::<Vec<u8>>();
+    assert_eq!(sim::score::score_layered(&counts, &stack(&[(cola, 60), (lemon, 60)]), &o, 120).score, 100);
+    let upside_down = sim::score::score_layered(&counts, &stack(&[(lemon, 60), (cola, 60)]), &o, 120);
+    assert_eq!((upside_down.score, upside_down.cause), (0, Cause::Layer));
+    assert_eq!(sim::score::score_layered(&counts, &stack(&[(cola, 30), (lemon, 60), (cola, 30)]), &o, 120).score, 50);
+}
+
+#[test]
+fn a_jet_lands_its_slush_at_once_on_the_first_thing_under_it() {
+    // The rocket nozzle (PLANNING-BRIEF 0.7; Sam, 2026-10-06): no fall time.
+    // A jet over an empty standing cup puts its first unit on the cup's
+    // floor on the tick it fires, moving down at the jet's speed.
+    let mut s = standing(1, sim::balance::DEFAULT_TUNING);
+    s.lines[0].as_mut().unwrap().spouts[0].nozzle = sim::setup::Nozzle::Jet { speed: Fx::int(3) };
+    let mut w = World::new(s);
+    w.lines[0].as_mut().unwrap().handles[0] = Handle::full();
+    w.step([Input(Input::SPOUT[0]), Input::NONE]);
+    assert!(!w.units.is_empty(), "the jet fired nothing");
+    let floor = w.cup_floor(0, &w.lines[0].as_ref().unwrap().cups[0].clone());
+    let u = &w.units[0];
+    assert!(u.p.y - u.r - floor < Fx::int(2), "the jet's first unit is {:.1} cm above the floor", (u.p.y - u.r - floor).0 as f64 / 4096.0);
+    assert!(w.units.iter().all(|u| u.p.x == w.spout_x(0, 0)), "a jet has no spread");
+}
+
+#[test]
+fn cups_ride_their_rows_and_bob() {
+    // Sam, 2026-10-06: "multiple rows of cups, cups that move up and down".
+    // Rows 0 and 40 alternate; a bob of 18 over 240 ticks moves every cup by
+    // H8's triangle: +18 at tick 60, 0 at 120, -18 at 180.
+    let mut l = line(&["cola"], "regular", "steady", vec![order(&[("cola", 1)]); 4]);
+    l.rows = vec![Fx(0), Fx::int(40)];
+    l.bob = Some(Rail { amplitude: 18, period: 240 });
+    let belt = l.belt_y;
+    let mut w = World::new(setup_of(1, 1, l));
+    for (t, bob) in [(60, 18), (120, 0), (180, -18)] {
+        while w.tick < t {
+            w.step([Input::NONE; 2]);
+        }
+        let cups = &w.lines[0].as_ref().unwrap().cups;
+        assert_eq!(cups[0].base, belt + Fx::int(bob), "the low row at tick {t}");
+        assert_eq!(cups[1].base, belt + Fx::int(40 + bob), "the high row at tick {t}");
+    }
 }

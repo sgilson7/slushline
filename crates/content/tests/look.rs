@@ -54,7 +54,7 @@ fn every_pair_of_flavors_differs_in_brightness_under_each_color_deficiency() {
 fn every_pattern_is_one_the_page_draws_and_the_copy_names() {
     let copy = content::copy::copy();
     for f in flavors() {
-        assert!(["solid", "stripes", "dots"].contains(&f.pattern.as_str()), "{} has the pattern {}, which draw.js does not draw", f.id, f.pattern);
+        assert!(["solid", "stripes", "dots", "rings"].contains(&f.pattern.as_str()), "{} has the pattern {}, which draw.js does not draw", f.id, f.pattern);
         assert!(copy["patterns"][&f.pattern].is_string(), "the copy file has no patterns.{}", f.pattern);
         assert!(copy["flavors"][&f.id]["short"].is_string(), "the copy file has no short code for {}", f.id);
     }

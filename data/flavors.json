@@ -1,8 +1,23 @@
 {
-  "_about": "Each flavor's short code and pattern (PLANNING-BRIEF 0.5). Its name is in the copy file under flavors.<id>, its fill in palette.json under flavors.<id>. The order here is the flavor's number in sim.",
+  "_about": "Each flavor's short code and pattern (PLANNING-BRIEF 0.5). Its name is in the copy file under flavors.<id>, its fill in palette.json under flavors.<id>. The order here is the flavor's number in sim. `mass` and `gravity_pct` say how heavy its slush is (default 1 and 100): raspberry is the heavy one (Sam, 2026-10-06: \"a slush type that is super heavy\").",
   "flavors": [
-    { "id": "cola", "pattern": "solid" },
-    { "id": "cherry", "pattern": "stripes" },
-    { "id": "lemon", "pattern": "dots" }
+    {
+      "id": "cola",
+      "pattern": "solid"
+    },
+    {
+      "id": "cherry",
+      "pattern": "stripes"
+    },
+    {
+      "id": "lemon",
+      "pattern": "dots"
+    },
+    {
+      "id": "raspberry",
+      "pattern": "rings",
+      "mass": 3,
+      "gravity_pct": 200
+    }
   ]
 }

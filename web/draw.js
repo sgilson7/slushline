@@ -71,6 +71,12 @@ export class Stage {
       g.beginPath();
       g.arc(x, y, Math.max(0.9, r * 0.28), 0, Math.PI * 2);
       g.fill();
+    } else if (kind === 'rings') {
+      g.strokeStyle = this.ink(f);
+      g.lineWidth = Math.max(1, r * 0.2);
+      g.beginPath();
+      g.arc(x, y, r * 0.5, 0, Math.PI * 2);
+      g.stroke();
     }
   }
 
@@ -97,6 +103,16 @@ export class Stage {
           g.beginPath();
           g.arc(xx, yy, Math.max(1.4, step * 0.2), 0, Math.PI * 2);
           g.fill();
+        }
+      }
+    } else if (kind === 'rings') {
+      g.strokeStyle = this.ink(f);
+      g.lineWidth = Math.max(1.2, step * 0.14);
+      for (let yy = y + step / 2; yy < y + h; yy += step) {
+        for (let xx = x + step / 2 + (Math.round((yy - y) / step) % 2 ? step / 2 : 0); xx < x + w; xx += step) {
+          g.beginPath();
+          g.arc(xx, yy, Math.max(1.6, step * 0.28), 0, Math.PI * 2);
+          g.stroke();
         }
       }
     }
@@ -286,7 +302,8 @@ export class Stage {
     for (const s of L.spouts) {
       const x = this.sx(s.x);
       const y = this.sy(s.y);
-      const nw = 11 * u, top = y - 2.5 * u, nh = 17 * u;
+      // A rocket nozzle is narrow and long: a beam, not a pour.
+      const nw = (s.jet ? 6 : 11) * u, top = y - 2.5 * u, nh = (s.jet ? 22 : 17) * u;
       const w = nw / s.pours.length;
       s.pours.forEach((f, k) => {
         g.fillStyle = this.fill(f);
@@ -361,39 +378,50 @@ export class Stage {
       g.arc(this.sx(s.tip[0]), this.sy(s.tip[1]), 2.8 * u, 0, Math.PI * 2);
       g.fill();
     });
-    // Cups.
+    // Cups, each at the height its row and its lift put it.
+    const raised = [...new Set(L.cups.filter((c) => c.base > L.belt_y + this.one).map((c) => c.base))];
+    if (!L.lifts) {
+      // A rail for each raised row, along the line.
+      for (const b of raised) {
+        g.fillStyle = p.belt_mark;
+        g.fillRect(this.sx(0), this.sy(b), this.sx(L.end_x) - this.sx(0), 0.9 * u);
+      }
+    }
     for (const c of L.cups) {
       const cx = this.sx(c.x);
       if (cx < -80 || cx > this.c.width + 80) continue;
       const half = this.len(L.inner_half);
       const wall = this.len(L.wall_half) * 2;
-      const floorY = this.sy(L.floor);
+      const floorY = this.sy(c.floor);
+      const cupRim = this.sy(c.rim);
+      const baseY = this.sy(c.base);
+      // A lift: a piston from the belt up to the cup's bottom.
+      if (L.lifts) {
+        const beltY = this.sy(L.belt_y);
+        g.fillStyle = p.belt_mark;
+        g.fillRect(cx - 1.6 * u, baseY, 3.2 * u, Math.max(0, beltY - baseY));
+        g.fillRect(cx - 5 * u, beltY - 1.2 * u, 10 * u, 1.2 * u);
+      }
       g.fillStyle = p.cup;
-      g.fillRect(cx - half, rimY, half * 2, floorY - rimY);
+      g.fillRect(cx - half, cupRim, half * 2, floorY - cupRim);
       g.fillStyle = p.line;
-      g.fillRect(cx - half - wall, rimY, wall, floorY - rimY + wall);
-      g.fillRect(cx + half, rimY, wall, floorY - rimY + wall);
+      g.fillRect(cx - half - wall, cupRim, wall, floorY - cupRim + wall);
+      g.fillRect(cx + half, cupRim, wall, floorY - cupRim + wall);
       g.fillRect(cx - half - wall, floorY, half * 2 + wall * 2, wall);
       if (c.judged) {
         g.fillStyle = p.lid;
-        g.fillRect(cx - half - wall - 2, rimY - 6, half * 2 + wall * 2 + 4, 6);
+        g.fillRect(cx - half - wall - 2, cupRim - 6, half * 2 + wall * 2 + 4, 6);
         // The score the lid gave it, as core sent it.
         if (c.score !== null && c.score !== undefined) {
           g.fillStyle = p.line;
-          g.font = '700 18px system-ui, sans-serif';
+          g.font = `700 ${Math.round(6 * u)}px system-ui, sans-serif`;
           g.textAlign = 'center';
-          g.fillText(String(c.score), cx, rimY - 14);
+          g.fillText(String(c.score), cx, cupRim - 3.5 * u);
         }
       }
     }
   }
 
-  // Slush in three passes: every unit's outline in the line color, a little
-  // larger than the unit; then every fill; then every pattern. Each unit has
-  // its outline, and where units touch the fills cover the inner edges, so
-  // the outline shows round the mass and a cup of lemon reads as one bright
-  // area. Outlined and dotted one by one at 4 to 5 pixels, lemon read darker
-  // than cherry in gray (SECOND-ORDER-M3).
   drawUnits(u) {
     const g = this.g;
     const at = [];

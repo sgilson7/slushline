@@ -187,7 +187,9 @@ function path(pickId = null) {
     buttons.set(m.id, b);
     return b;
   };
-  const tierLabel = (l) => (l === 0 ? t('missions.tier.start') : l === 1 ? t('missions.tier.one') : t('missions.tier.many', { n: l }));
+  // Rows are depths (2026-10-06): how many missions lie between a mission
+  // and the start.
+  const tierLabel = (l) => (l === 0 ? t('missions.tier.start') : l === 1 ? t('missions.tier.step_one') : t('missions.tier.step', { n: l }));
   const depth = Math.max(...ms.map((m) => m.level)) + 1;
   if (chart) {
     // The lanes (Sam, 2026-10-05: "a hasse diagram with seperate lanes /
@@ -668,7 +670,11 @@ async function main() {
       if (!run) return [];
       const u = run.game.units();
       const out = [];
-      for (let k = 0; k < u.length; k += 5) out.push({ f: u[k + 4] & 255, x: stage.sx(u[k + 1]), y: stage.sy(u[k + 2]), r: stage.len(u[k + 3]) });
+      // Whether each unit sits in a cup, from the cups core sent: the gate
+      // samples the slush in cups, not slush passing behind a nozzle.
+      const L = run.frame.lines;
+      const inCup = (seat, x, y) => L[seat]?.cups.some((c) => !c.judged && Math.abs(x - c.x) < L[seat].inner_half && y > c.floor && y < c.rim);
+      for (let k = 0; k < u.length; k += 5) out.push({ f: u[k + 4] & 255, x: stage.sx(u[k + 1]), y: stage.sy(u[k + 2]), r: stage.len(u[k + 3]), cup: !!inCup(u[k + 4] >> 8, u[k + 1], u[k + 2]) });
       return out;
     },
     autoplay: (ticks) => {

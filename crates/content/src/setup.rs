@@ -97,7 +97,7 @@ pub fn is_blend(id: &str) -> bool {
 
 /// An order from `(flavor id, parts)`.
 pub fn order(parts: &[(&str, u32)]) -> Order {
-    Order { parts: parts.iter().map(|(f, n)| (flavor(f), *n)).collect() }
+    Order { parts: parts.iter().map(|(f, n)| (flavor(f), *n)).collect(), layered: false }
 }
 
 /// A line from data: its spouts by id in belt order, its cup size, its belt,
@@ -121,11 +121,17 @@ pub fn line(spouts: &[&str], cup: &str, belt: &str, orders: Vec<Order>) -> Line 
         end_x: Fx::int(d.end_x),
         belt_y: Fx::int(d.belt_y),
         fields: Vec::new(),
+        rows: Vec::new(),
+        bob: None,
     }
 }
 
 pub fn setup_of(seed: u64, tuning: u8, line: Line) -> Setup {
-    Setup { seed, tuning, physics: Physics::default(), lines: [Some(line), None], flavors: flavor_count() }
+    let flavor_physics = crate::look::flavors()
+        .iter()
+        .map(|f| sim::setup::FlavorPhysics { mass: f.mass, gravity_pct: f.gravity_pct })
+        .collect();
+    Setup { seed, tuning, physics: Physics::default(), lines: [Some(line), None], flavors: flavor_count(), flavor_physics }
 }
 
 /// The pour of M1: one cola spout over one regular cup that stands still

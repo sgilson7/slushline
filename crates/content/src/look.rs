@@ -28,6 +28,17 @@ pub const PALETTE_JSON: &str = include_str!("../../../data/palette.json");
 pub struct FlavorDef {
     pub id: String,
     pub pattern: String,
+    #[serde(default = "one")]
+    pub mass: u8,
+    #[serde(default = "hundred")]
+    pub gravity_pct: u16,
+}
+
+fn one() -> u8 {
+    1
+}
+fn hundred() -> u16 {
+    100
 }
 
 #[derive(Deserialize)]

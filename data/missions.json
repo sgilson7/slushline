@@ -1,5 +1,5 @@
 {
- "_about": "The missions, as a tree (Sam, 2026-10-05: \"the tree structure of vagrancy for the missions with different unlock reqs\"). After Vagrancy's data/road.json: a mission opens when every one of its requirements is met, and the row a mission sits in is how many it has; a requirement names only a mission with fewer requirements, so the tree runs downward. Requirements: pass a mission; average at least a mark on it (mark); pass it with waste under a share (clean). A mission has one line or two (Sam: \"levels with multiple conveyer belts\"), each with its belt, cup, spouts, orders and conditions; with two, the first is the upper line. Order parts are written in the order the sentence names them. builds_on lists edges of data/kc_graph.json.",
+ "_about": "The missions, as a tree (Sam, 2026-10-05: \"the tree structure of vagrancy for the missions with different unlock reqs\"). After Vagrancy's data/road.json: a mission opens when every one of its requirements is met, and the row a mission sits in is how many it has; a requirement names only a mission with fewer requirements, so the tree runs downward. Requirements: pass a mission; average at least a mark on it (mark); pass it with waste under a share (clean). A mission has one line or two (Sam: \"levels with multiple conveyer belts\"), each with its belt, cup, spouts, orders and conditions; with two, the first is the upper line. Order parts are written in the order the sentence names them. builds_on lists edges of data/kc_graph.json. Side paths (Sam, 2026-10-06: \"paths that only have one pre-req per level that are on a differnet path than the main line\"): missions whose ids start s_ each have one requirement, chained within their chapter; the tree places every mission by its depth, one more than the deepest mission it requires.",
  "missions": [
   {
    "id": "m_first_pour",
@@ -1199,6 +1199,500 @@
    "pass": {
     "average": 60,
     "waste_pct": 20
+   }
+  },
+  {
+   "id": "s_zigzag",
+   "chapter": "odd_fields",
+   "teaches": [
+    "K22"
+   ],
+   "builds_on": [
+    "K13_K22"
+   ],
+   "requires": [
+    {
+     "pass": "m_push"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola"
+     ],
+     "orders": [
+      {
+       "count": 4,
+       "parts": {
+        "cola": 1
+       }
+      }
+     ],
+     "conditions": [
+      "zig_high",
+      "zig_low"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_field_maze",
+   "chapter": "odd_fields",
+   "teaches": [
+    "K23"
+   ],
+   "builds_on": [
+    "K22_K23"
+   ],
+   "requires": [
+    {
+     "pass": "s_zigzag"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "cherry",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "cherry": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "maze_a",
+      "maze_b",
+      "maze_c"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_flip_pair",
+   "chapter": "odd_fields",
+   "teaches": [
+    "K24"
+   ],
+   "builds_on": [
+    "K23_K24"
+   ],
+   "requires": [
+    {
+     "pass": "s_field_maze"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "turning_slow",
+      "turning_slow_against"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_two_rows",
+   "chapter": "odd_cups",
+   "teaches": [
+    "K25"
+   ],
+   "builds_on": [
+    "K04_K25"
+   ],
+   "requires": [
+    {
+     "pass": "m_half"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 6,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "two_rows"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_bobbing",
+   "chapter": "odd_cups",
+   "teaches": [
+    "K26"
+   ],
+   "builds_on": [
+    "K25_K26"
+   ],
+   "requires": [
+    {
+     "pass": "s_two_rows"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "bob"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_rows_bob",
+   "chapter": "odd_cups",
+   "teaches": [
+    "K27"
+   ],
+   "builds_on": [
+    "K26_K27"
+   ],
+   "requires": [
+    {
+     "pass": "s_bobbing"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 6,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "two_rows",
+      "bob_small"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_heavy",
+   "chapter": "heavy",
+   "teaches": [
+    "K28"
+   ],
+   "builds_on": [
+    "K03_K28"
+   ],
+   "requires": [
+    {
+     "pass": "m_two_spouts"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "raspberry"
+     ],
+     "orders": [
+      {
+       "count": 4,
+       "parts": {
+        "raspberry": 1
+       }
+      }
+     ],
+     "conditions": [
+      "heavy"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_sink",
+   "chapter": "heavy",
+   "teaches": [
+    "K30"
+   ],
+   "builds_on": [
+    "K28_K30"
+   ],
+   "requires": [
+    {
+     "pass": "s_heavy"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "lemon",
+      "raspberry"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "raspberry": 1,
+        "lemon": 1
+       },
+       "layered": true
+      }
+     ],
+     "conditions": [
+      "heavy"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_layers",
+   "chapter": "heavy",
+   "teaches": [
+    "K29"
+   ],
+   "builds_on": [
+    "K30_K29"
+   ],
+   "requires": [
+    {
+     "pass": "s_sink"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       },
+       "layered": true
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_jet",
+   "chapter": "jets",
+   "teaches": [
+    "K31"
+   ],
+   "builds_on": [
+    "K02_K31"
+   ],
+   "requires": [
+    {
+     "pass": "m_tail"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola"
+     ],
+     "orders": [
+      {
+       "count": 4,
+       "parts": {
+        "cola": 1
+       }
+      }
+     ],
+     "conditions": [
+      "jet"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_jet_pair",
+   "chapter": "jets",
+   "teaches": [
+    "K32"
+   ],
+   "builds_on": [
+    "K31_K32"
+   ],
+   "requires": [
+    {
+     "pass": "s_jet"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 2,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "jet_second"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_jet_rows",
+   "chapter": "jets",
+   "teaches": [
+    "K33"
+   ],
+   "builds_on": [
+    "K32_K33"
+   ],
+   "requires": [
+    {
+     "pass": "s_jet_pair"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "lemon",
+      "cola"
+     ],
+     "orders": [
+      {
+       "count": 6,
+       "parts": {
+        "lemon": 1,
+        "cola": 1
+       }
+      }
+     ],
+     "conditions": [
+      "jet",
+      "two_rows"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
    }
   }
  ]

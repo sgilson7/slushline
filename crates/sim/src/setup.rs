@@ -23,6 +23,25 @@ pub struct Setup {
     pub lines: [Option<Line>; 2],
     /// How many flavors exist, so a cup's counts have a fixed length.
     pub flavors: u8,
+    /// Per flavor, by flavor number: how heavy its slush is (Sam,
+    /// 2026-10-06: "a slush type that is super heavy").
+    pub flavor_physics: Vec<FlavorPhysics>,
+}
+
+/// How one flavor's slush moves.
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct FlavorPhysics {
+    /// Its mass in contacts, against 1 for ordinary slush: a heavier unit is
+    /// moved less by a push, so it sinks through lighter slush.
+    pub mass: u8,
+    /// Gravity on it, in percent of the world's.
+    pub gravity_pct: u16,
+}
+
+impl Default for FlavorPhysics {
+    fn default() -> FlavorPhysics {
+        FlavorPhysics { mass: 1, gravity_pct: 100 }
+    }
 }
 
 /// The constants a test may need to change, carried in the setup so a
@@ -61,6 +80,13 @@ pub struct Line {
     /// "gravity fields that act almost like voltage fields to deflect the
     /// slurpee"). Empty on most lines.
     pub fields: Vec<Field>,
+    /// Rows of cups (Sam, 2026-10-06: "multiple rows of cups"): cup k rides
+    /// `rows[k % rows.len()]` cm above the belt, on a rail if it is above
+    /// it. Empty is one row, on the belt.
+    pub rows: Vec<Fx>,
+    /// Cups that ride up and down as they go ("cups that move up and down as
+    /// you pour them"): every cup's height moves by this triangle wave.
+    pub bob: Option<Rail>,
 }
 
 /// A field that pushes slush, as charged plates or a charge push a beam.
@@ -192,6 +218,12 @@ impl Rail {
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum Nozzle {
     Fall,
+    /// The rocket nozzle (PLANNING-BRIEF 0.7; Sam, 2026-10-06: "a nozzle
+    /// that fires slush downwards in a small beam at high pressure"): each
+    /// unit is traced straight down to the first thing under the nozzle and
+    /// put there moving down at `speed`, so there is no fall time and it
+    /// pushes what it hits.
+    Jet { speed: Fx },
 }
 
 /// The flavors a cup should hold and their parts (0.4). Always single
@@ -199,6 +231,9 @@ pub enum Nozzle {
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Order {
     pub parts: Vec<(Flavor, u32)>,
+    /// The parts are layers, from the bottom up (Sam, 2026-10-06: "levels
+    /// where the order of the slushy in the cup matters").
+    pub layered: bool,
 }
 
 impl Order {

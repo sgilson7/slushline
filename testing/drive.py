@@ -415,45 +415,59 @@ def every_flavor_differs_in_gray_on_the_rendered_page(page, name):
     # PLANNING-BRIEF 0.5: render a mixed cup, reduce the canvas to gray, and
     # check that each pair of flavors still differs. Each unit is sampled away
     # from its pattern mark.
-    page.evaluate(f"localStorage.setItem('slushline.save', {json.dumps(json.dumps(ALL_PASSED))})")
-    page.reload(wait_until="load")
-    page.wait_for_function("document.body.dataset.ready === '1'")
-    page.click("#menu-missions")
-    page.click("#mission-m_three")
-    page.click("#open-mission")
-    page.click("#start-mission")
-    page.wait_for_function("window.slushline.tick() > 2")
-    page.evaluate("window.slushline.autoplay(1150)")
-    page.wait_for_timeout(100)
-    lums = page.evaluate("""() => {
-        const c = document.getElementById('stage');
-        const g = c.getContext('2d');
-        const by = {};
-        const us = window.slushline.unitPixels();
-        us.forEach((u, i) => {
-            if (u.r < 3) return;
-            const x = Math.round(u.x + u.r * 0.45), y = Math.round(u.y + u.r * 0.45);
-            // Units are drawn in order; a point a later unit (or its
-            // outline) covers shows that unit, not this one.
-            // Fills are drawn after every outline, so only a later unit's
-            // fill can cover this point.
-            for (let j = i + 1; j < us.length; j += 1) {
-                const v = us[j];
-                if (v.f !== u.f && (v.x - x) ** 2 + (v.y - y) ** 2 < (v.r + 0.5) ** 2) return;
-            }
-            const d = g.getImageData(x, y, 1, 1).data;
-            (by[u.f] ??= []).push([d[0], d[1], d[2]]);
-        });
-        return by;
-    }""")
-    page.click("#leave-run")
-    page.click("#back-to-menu")
+    lums = {}
+    # m_three renders cola, cherry and lemon; s_sink adds raspberry.
+    for mission, ticks in (("m_three", 1150), ("s_sink", 1400)):
+        page.evaluate(f"localStorage.setItem('slushline.save', {json.dumps(json.dumps(ALL_PASSED))})")
+        page.reload(wait_until="load")
+        page.wait_for_function("document.body.dataset.ready === '1'")
+        page.click("#menu-missions")
+        page.click(f"#mission-{mission}")
+        page.click("#open-mission")
+        page.click("#start-mission")
+        page.wait_for_function("window.slushline.tick() > 2")
+        page.evaluate(f"window.slushline.autoplay({ticks})")
+        page.wait_for_timeout(100)
+        got = page.evaluate("""() => {
+            const c = document.getElementById('stage');
+            const g = c.getContext('2d');
+            const by = {};
+            const us = window.slushline.unitPixels();
+            us.forEach((u, i) => {
+                if (u.r < 3 || !u.cup) return;
+                const x = Math.round(u.x + u.r * 0.45), y = Math.round(u.y + u.r * 0.45);
+                // Units are drawn in order; a point a later unit (or its
+                // outline) covers shows that unit, not this one.
+                // Fills are drawn after every outline, so only a later unit's
+                // fill can cover this point.
+                for (let j = i + 1; j < us.length; j += 1) {
+                    const v = us[j];
+                    if (v.f !== u.f && (v.x - x) ** 2 + (v.y - y) ** 2 < (v.r + 0.5) ** 2) return;
+                }
+                // The fill is the color most of the unit shows: take a small
+                // grid inside it and keep the most common pixel, so a
+                // pattern's mark, however a browser strokes it, is outvoted.
+                const votes = new Map();
+                const d = g.getImageData(Math.round(u.x - u.r * 0.7), Math.round(u.y - u.r * 0.7), Math.max(1, Math.round(u.r * 1.4)), Math.max(1, Math.round(u.r * 1.4))).data;
+                for (let k = 0; k < d.length; k += 4) {
+                    const key = `${d[k]},${d[k + 1]},${d[k + 2]}`;
+                    votes.set(key, (votes.get(key) ?? 0) + 1);
+                }
+                const best = [...votes.entries()].sort((a, b) => b[1] - a[1])[0][0].split(',').map(Number);
+                (by[u.f] ??= []).push(best);
+            });
+            return by;
+        }""")
+        page.click("#leave-run")
+        page.click("#back-to-menu")
+        for f, px in got.items():
+            lums.setdefault(f, []).extend(px)
     gray = {}
     for f, px in lums.items():
         ls = sorted(srgb_lum(p) for p in px)
         gray[int(f)] = ls[len(ls) // 2]
     problems = []
-    if len(gray) < 3:
+    if len(gray) < 4:
         problems.append(f"only {len(gray)} flavors were on the canvas")
     fs = sorted(gray)
     for i, a in enumerate(fs):

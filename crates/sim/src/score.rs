@@ -24,6 +24,8 @@ pub enum Cause {
     Over,
     /// A flavor the order did not ask for.
     Wrong,
+    /// A layered order's slush out of its layer.
+    Layer,
 }
 
 impl Cause {
@@ -34,6 +36,7 @@ impl Cause {
             Cause::Empty => "empty",
             Cause::Over => "over",
             Cause::Wrong => "wrong",
+            Cause::Layer => "layer",
         }
     }
 }
@@ -49,6 +52,8 @@ pub struct CupScore {
     pub empty: u32,
     pub over: u32,
     pub wrong: u32,
+    /// In a layered order, units of an ordered flavor outside its layer.
+    pub misplaced: u32,
     /// The largest of the three; ties go empty, then over, then wrong.
     pub cause: Cause,
     /// The flavor that went over its share most, or was not ordered most,
@@ -99,7 +104,7 @@ pub fn score(counts: &[u32], order: &Order, capacity: u32) -> CupScore {
         Cause::Wrong => worst_wrong.1,
         _ => None,
     };
-    CupScore { score, counted, total, empty, over, wrong, cause, worst, fill_pct: (100 * total as u64 / c as u64) as u32 }
+    CupScore { score, counted, total, empty, over, wrong, misplaced: 0, cause, worst, fill_pct: (100 * total as u64 / c as u64) as u32 }
 }
 
 /// A mission's score: the average of its cups' scores, floored (0.4).
@@ -108,4 +113,53 @@ pub fn average(scores: &[u32]) -> u32 {
         return 0;
     }
     (scores.iter().map(|&s| s as u64).sum::<u64>() / scores.len() as u64) as u32
+}
+
+/// A layered order (2026-10-06): the parts are layers from the bottom up,
+/// each as tall as its share. `ranked` is the cup's units from the lowest
+/// up. A unit counts when its flavor is the layer it sits in; one of an
+/// ordered flavor in another layer is misplaced, one of a flavor not
+/// ordered is wrong, and units past the capacity count for nothing.
+///
+/// Hand case: capacity 120, cola under lemon, 1 to 1. Sixty cola below
+/// sixty lemon is 100; the same 120 units with the lemon underneath is 0;
+/// thirty cola, then sixty lemon, then thirty cola is 25 + 25 = 50.
+pub fn score_layered(counts: &[u32], ranked: &[u8], order: &Order, capacity: u32) -> CupScore {
+    let c = capacity.max(1);
+    let mut bands = Vec::new();
+    for &(f, _) in &order.parts {
+        bands.extend(std::iter::repeat_n(f, order.share(f, c) as usize));
+    }
+    let (mut counted, mut misplaced, mut wrong) = (0u32, 0u32, 0u32);
+    let mut worst = vec![0u32; counts.len()];
+    for (k, &f) in ranked.iter().enumerate().take(c as usize) {
+        let ordered = order.parts.iter().any(|p| p.0 == f);
+        if bands.get(k) == Some(&f) {
+            counted += 1;
+        } else if ordered {
+            misplaced += 1;
+            worst[f as usize] += 1;
+        } else {
+            wrong += 1;
+        }
+    }
+    let total: u32 = counts.iter().sum();
+    let over = total.saturating_sub(c);
+    let empty = c.saturating_sub(total);
+    let score = (MAX_SCORE as u64 * counted as u64 / c as u64) as u32;
+    let cause = if score >= MAX_SCORE {
+        Cause::None
+    } else if misplaced >= empty && misplaced >= wrong && misplaced >= over && misplaced > 0 {
+        Cause::Layer
+    } else if empty >= over && empty >= wrong && empty > 0 {
+        Cause::Empty
+    } else if over >= wrong && over > 0 {
+        Cause::Over
+    } else if wrong > 0 {
+        Cause::Wrong
+    } else {
+        Cause::Empty
+    };
+    let worst = (cause == Cause::Layer).then(|| worst.iter().enumerate().max_by_key(|w| *w.1).map(|w| w.0 as u8)).flatten();
+    CupScore { score, counted, total, empty, over, wrong, misplaced, cause, worst, fill_pct: (100 * total as u64 / c as u64) as u32 }
 }

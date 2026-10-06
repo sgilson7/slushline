@@ -24,6 +24,10 @@
     "lemon": {
       "fill": "#F0E442",
       "dim": "#C1BFA4"
+    },
+    "raspberry": {
+      "fill": "#56B4E9",
+      "dim": "#A9B9C2"
     }
   },
   "judge_top": "#FFF3B0",

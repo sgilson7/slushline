@@ -70,6 +70,9 @@ pub struct OrderSpec {
     pub count: u32,
     /// Flavor id to parts, in the order the sentence names them.
     pub parts: serde_json::Map<String, Value>,
+    /// The parts are layers from the bottom up, in the order written.
+    #[serde(default)]
+    pub layered: bool,
 }
 
 impl OrderSpec {
@@ -77,7 +80,7 @@ impl OrderSpec {
         self.parts.iter().map(|(k, v)| (k.clone(), v.as_u64().expect("parts are whole numbers") as u32)).collect()
     }
     pub fn order(&self) -> Order {
-        Order { parts: self.parts().iter().map(|(f, n)| (flavor(f), *n)).collect() }
+        Order { parts: self.parts().iter().map(|(f, n)| (flavor(f), *n)).collect(), layered: self.layered }
     }
 }
 
@@ -133,13 +136,35 @@ fn milli(n: i64) -> Fx {
 /// Apply a condition from `data/conditions.json` to a line.
 fn apply(line: &mut Line, id: &str, def: &Value) {
     assert!(def.get("held").is_none(), "the held condition {id} is in use");
-    if id == "second_line" {
+    if id == "second_line" || id == "heavy" {
+        // Shown on the card; the lines and the flavor's weight do the rest.
+        return;
+    }
+    if id == "two_rows" {
+        line.rows = def["rows"].as_array().unwrap().iter().map(|r| Fx::int(r.as_i64().unwrap() as i32)).collect();
+        return;
+    }
+    if def.get("amplitude").is_some() && def.get("rise").is_some() {
+        // A lift: the cups ride `rise` above where they would be, bobbing by
+        // `amplitude` either way.
+        let rise = Fx::int(def["rise"].as_i64().unwrap() as i32);
+        if line.rows.is_empty() {
+            line.rows = vec![Fx(0)];
+        }
+        for r in &mut line.rows {
+            *r += rise;
+        }
+        line.bob = Some(sim::setup::Rail { amplitude: def["amplitude"].as_i64().unwrap() as i32, period: def["period"].as_u64().unwrap() as u32 });
         return;
     }
     let spout = def["spout"].as_u64().unwrap_or_else(|| panic!("{id} names no spout")) as usize;
     let int = |k: &str| def[k].as_i64().unwrap_or_else(|| panic!("{id} has no {k}"));
     let rim = line.belt_y + sim::balance::WALL_HALF * 2 + line.cup.inner_height;
     let (sx, sy) = (line.spouts[spout].x, line.spouts[spout].y);
+    if id.starts_with("jet") {
+        line.spouts[spout].nozzle = sim::setup::Nozzle::Jet { speed: milli(int("speed")) };
+        return;
+    }
     if id == "rail" {
         line.spouts[spout].rail = Some(sim::setup::Rail { amplitude: int("amplitude") as i32, period: int("period") as u32 });
         return;
@@ -194,7 +219,7 @@ impl Mission {
         self.lines.iter().map(LineSpec::cup_count).sum()
     }
 
-    /// The row of the tree it sits in: how many requirements it has.
+    /// How many requirements it has.
     pub fn level(&self) -> usize {
         self.requires.len()
     }
@@ -253,7 +278,9 @@ pub fn blend_recipe(id: &str) -> String {
 pub fn card(m: &Mission) -> Value {
     let specs: Vec<&OrderSpec> = m.lines.iter().flat_map(|l| l.orders.iter()).collect();
     let same = specs.windows(2).all(|w| w[0].parts() == w[1].parts());
-    let order = if same {
+    let order = if same && specs[0].layered {
+        fill("missions.order.layered", &json!({ "count": m.cup_count(), "recipe": recipe(&specs[0].parts()) }))
+    } else if same {
         fill("missions.order.same", &json!({ "count": m.cup_count(), "recipe": recipe(&specs[0].parts()) }))
     } else {
         fill("missions.order.mixed", &json!({ "count": m.cup_count() }))
@@ -271,7 +298,7 @@ pub fn card(m: &Mission) -> Value {
     json!({
         "id": m.id,
         "chapter": m.chapter,
-        "level": m.level(),
+        "level": depths(&missions()).get(&m.id).copied().unwrap_or(0),
         "name": fill(&format!("missions.list.{}.name", m.id), &json!({})),
         "order": order,
         "pass": pass,
@@ -361,7 +388,7 @@ pub fn outcome(m: &Mission, w: &World) -> Outcome {
     let ids: Vec<String> = crate::look::flavors().into_iter().map(|f| f.id).collect();
     let max = sim::balance::MAX_SCORE;
     let mut lines = Vec::new();
-    let (mut empty, mut over, mut wrong) = (0u32, 0u32, 0u32);
+    let (mut empty, mut over, mut wrong, mut layer) = (0u32, 0u32, 0u32, 0u32);
     for (k, r) in results.iter().enumerate() {
         let s = &r.score;
         lines.push(fill("results.cup.line", &json!({ "n": k + 1, "score": s.score, "max_score": max })));
@@ -370,11 +397,13 @@ pub fn outcome(m: &Mission, w: &World) -> Outcome {
             Cause::Empty => fill("results.cup.short", &json!({ "fill_pct": s.fill_pct })),
             Cause::Over => fill("results.cup.over", &json!({ "flavor_mid": mid(&ids[s.worst.unwrap() as usize]) })),
             Cause::Wrong => fill("results.cup.wrong", &json!({ "flavor_mid": mid(&ids[s.worst.unwrap() as usize]) })),
+            Cause::Layer => fill("results.cup.layer", &json!({ "flavor_mid": mid(&ids[s.worst.unwrap_or(0) as usize]) })),
         };
         lines.push(why);
         empty += s.empty;
         over += s.over;
         wrong += s.wrong;
+        layer += s.misplaced;
     }
     if passed {
         lines.push(fill("results.mission.pass", &json!({ "avg": avg, "max_score": max, "pass": m.pass.average })));
@@ -388,6 +417,8 @@ pub fn outcome(m: &Mission, w: &World) -> Outcome {
     }
     let cause = if avg >= max {
         None
+    } else if layer > empty && layer >= over && layer >= wrong {
+        Some("layer")
     } else if empty >= over && empty >= wrong && empty > 0 {
         Some("empty")
     } else if over >= wrong && over > 0 {
@@ -529,4 +560,33 @@ pub fn chapters(ms: &[Mission]) -> Vec<String> {
         }
     }
     out
+}
+
+/// Each mission's depth in the tree, by id: 0 for one open from the start,
+/// else one more than the deepest mission it requires. The tree's rows
+/// (2026-10-06: with side paths of one requirement each, a row can no longer
+/// be the number of requirements).
+pub fn depths(ms: &[Mission]) -> std::collections::BTreeMap<String, usize> {
+    let mut out = std::collections::BTreeMap::new();
+    fn depth(ms: &[Mission], id: &str, out: &mut std::collections::BTreeMap<String, usize>, seen: &mut Vec<String>) -> usize {
+        if let Some(&d) = out.get(id) {
+            return d;
+        }
+        assert!(!seen.iter().any(|s| s == id), "the requirements of {id} loop back to it");
+        seen.push(id.to_string());
+        let m = ms.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("no mission {id}"));
+        let d = m.requires.iter().map(|r| depth(ms, r.mission(), out, seen) + 1).max().unwrap_or(0);
+        seen.pop();
+        out.insert(id.to_string(), d);
+        d
+    }
+    for m in ms {
+        depth(ms, &m.id, &mut out, &mut Vec::new());
+    }
+    out
+}
+
+/// A side path's mission: its id starts `s_`.
+pub fn is_side(m: &Mission) -> bool {
+    m.id.starts_with("s_")
 }

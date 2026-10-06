@@ -84,7 +84,7 @@ fn is_advice(key: &str) -> bool {
 }
 /// Glossary exceptions, each with its reason. `conditions.jet.*` is "the one
 /// place the word nozzle appears" (Game text, Missions).
-const GLOSSARY_ALLOWED: &[(&str, &str)] = &[("conditions.jet.name", "nozzle")];
+const GLOSSARY_ALLOWED: &[(&str, &str)] = &[("conditions.jet.name", "nozzle"), ("conditions.jet_second.name", "nozzle")];
 
 /// Every TONE.md failure in one string, as sentences naming the rule.
 fn tone_failures(key: &str, s: &str, universals: &Value) -> Vec<String> {

@@ -75,6 +75,112 @@
     "lines": 2
   },
   "jet": {
-    "held": "M6"
+    "spout": 0,
+    "speed": 3000
+  },
+  "zig_high": {
+    "field": "plates",
+    "spout": 0,
+    "x0": -30,
+    "x1": 30,
+    "from_rim": 46,
+    "below_spout": 6,
+    "accel": [
+      160,
+      0
+    ]
+  },
+  "zig_low": {
+    "field": "plates",
+    "spout": 0,
+    "x0": -30,
+    "x1": 30,
+    "from_rim": 6,
+    "below_spout": 46,
+    "accel": [
+      -160,
+      0
+    ]
+  },
+  "maze_a": {
+    "field": "plates",
+    "spout": 0,
+    "x0": -12,
+    "x1": 48,
+    "from_rim": 6,
+    "below_spout": 6,
+    "accel": [
+      110,
+      0
+    ]
+  },
+  "maze_b": {
+    "field": "charge",
+    "spout": 1,
+    "dx": 26,
+    "dy": -34,
+    "strength": -520,
+    "radius": 34
+  },
+  "maze_c": {
+    "field": "plates",
+    "spout": 2,
+    "x0": -48,
+    "x1": 12,
+    "from_rim": 6,
+    "below_spout": 6,
+    "accel": [
+      -110,
+      0
+    ]
+  },
+  "two_rows": {
+    "rows": [
+      0,
+      40
+    ]
+  },
+  "bob": {
+    "rise": 24,
+    "amplitude": 24,
+    "period": 180
+  },
+  "bob_small": {
+    "rise": 10,
+    "amplitude": 10,
+    "period": 200
+  },
+  "heavy": {
+    "flavor": "raspberry"
+  },
+  "jet_second": {
+    "spout": 1,
+    "speed": 3000
+  },
+  "turning_slow": {
+    "field": "plates",
+    "spout": 0,
+    "x0": -48,
+    "x1": 48,
+    "from_rim": 6,
+    "below_spout": 6,
+    "accel": [
+      110,
+      0
+    ],
+    "flip": 240
+  },
+  "turning_slow_against": {
+    "field": "plates",
+    "spout": 1,
+    "x0": -48,
+    "x1": 48,
+    "from_rim": 6,
+    "below_spout": 6,
+    "accel": [
+      -110,
+      0
+    ],
+    "flip": 240
   }
 }

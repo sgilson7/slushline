@@ -137,16 +137,17 @@ fn every_share_is_a_whole_number_of_units() {
 
 #[test]
 fn the_missions_form_a_tree_that_runs_downward() {
-    // After Vagrancy's road (Sam, 2026-10-05): a mission's row is how many
-    // requirements it has, and a requirement names only a mission with fewer,
-    // so nothing depends on itself. One mission is open from the start.
+    // After Vagrancy's road (Sam, 2026-10-05), with side paths (2026-10-06):
+    // a mission's row is its depth, one more than the deepest mission it
+    // requires, so a requirement is always on a row above and nothing
+    // depends on itself. One mission is open from the start.
     let ms = missions();
-    let level = |id: &str| ms.iter().find(|m| m.id == id).unwrap_or_else(|| panic!("no mission {id}")).level();
+    let depth = content::missions::depths(&ms);
     let roots: Vec<&str> = ms.iter().filter(|m| m.requires.is_empty()).map(|m| m.id.as_str()).collect();
     assert_eq!(roots, vec!["m_first_pour"]);
     for m in &ms {
         for r in &m.requires {
-            assert!(level(r.mission()) < m.level(), "{} (row {}) requires {} (row {})", m.id, m.level(), r.mission(), level(r.mission()));
+            assert!(depth[r.mission()] < depth[&m.id], "{} (row {}) requires {} (row {})", m.id, depth[&m.id], r.mission(), depth[r.mission()]);
         }
         let mut named: Vec<&str> = m.requires.iter().map(|r| r.mission()).collect();
         named.sort();
@@ -157,7 +158,29 @@ fn the_missions_form_a_tree_that_runs_downward() {
     ids.sort();
     ids.dedup();
     assert_eq!(ids.len(), ms.len(), "two missions share an id");
-    assert!(ms.iter().map(|m| m.level()).max().unwrap() >= 5, "the tree is too shallow to be a tree");
+    assert!(depth.values().max().unwrap() >= &5, "the tree is too shallow to be a tree");
+}
+
+#[test]
+fn every_side_mission_has_one_requirement_and_its_own_path() {
+    // Sam, 2026-10-06: "paths that only have one pre-req per level that are
+    // on a differnet path than the main line". Each side mission requires
+    // exactly one mission: the one before it on its own path, or a main-line
+    // mission where the path begins. A side path's chapter has no main-line
+    // mission in it.
+    let ms = missions();
+    let mut starts = 0;
+    for m in ms.iter().filter(|m| content::missions::is_side(m)) {
+        assert_eq!(m.requires.len(), 1, "{} has {} requirements", m.id, m.requires.len());
+        let before = ms.iter().find(|x| x.id == m.requires[0].mission()).unwrap();
+        if content::missions::is_side(before) {
+            assert_eq!(before.chapter, m.chapter, "{} follows {} from another path", m.id, before.id);
+        } else {
+            starts += 1;
+        }
+        assert!(ms.iter().filter(|x| x.chapter == m.chapter).all(content::missions::is_side), "the chapter {} mixes side and main missions", m.chapter);
+    }
+    assert!(starts >= 4, "only {starts} side paths");
 }
 
 /// Every mission a mission's requirements reach, transitively.

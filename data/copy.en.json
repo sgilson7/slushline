@@ -267,6 +267,12 @@
       "name": "Lemon",
       "name_mid": "lemon",
       "short": "Le"
+    },
+    "raspberry": {
+      "name": "Raspberry",
+      "name_mid": "raspberry",
+      "short": "Ra",
+      "review": "new"
     }
   },
   "blends": {
@@ -278,7 +284,8 @@
   "patterns": {
     "solid": "solid",
     "stripes": "diagonal stripes",
-    "dots": "dots"
+    "dots": "dots",
+    "rings": "rings"
   },
   "spout": {
     "single": "{flavor} ({short}), {pattern}",
@@ -306,7 +313,9 @@
   "missions": {
     "order": {
       "same": "Fill {count} cups with {recipe}.",
-      "mixed": "Fill {count} cups. Each cup carries its own order."
+      "mixed": "Fill {count} cups. Each cup carries its own order.",
+      "layered": "Fill {count} cups with {recipe}, in layers from the bottom up.",
+      "review": "new: layered"
     },
     "pass": "To pass, average {pass} of {max_score} and keep waste under {waste_limit_pct} percent.",
     "pass_no_limit": "To pass, average {pass} of {max_score}.",
@@ -408,6 +417,66 @@
         "name": "The storm",
         "try": "Take each line one cup at a time, and use the belt keys to slow both belts when the fields make a pour hard to aim.",
         "review": "new"
+      },
+      "s_zigzag": {
+        "name": "Zigzag",
+        "try": "Pour as usual and watch the stream bend twice, because the upper field pushes it along the belt and the lower field pushes it back.",
+        "review": "new"
+      },
+      "s_field_maze": {
+        "name": "A maze of fields",
+        "try": "Aim each spout through its own field, because each field bends its slush a different way.",
+        "review": "new"
+      },
+      "s_flip_pair": {
+        "name": "Two plates that turn",
+        "try": "Watch both sets of arrows, because the two fields turn together and push in opposite directions.",
+        "review": "new"
+      },
+      "s_two_rows": {
+        "name": "Two rows of cups",
+        "try": "Start a little later for the high cups, because their slush has less far to fall.",
+        "review": "new"
+      },
+      "s_bobbing": {
+        "name": "Cups on a lift",
+        "try": "Watch each cup rise and fall, and pour so the slush lands while the cup is under the spout.",
+        "review": "new"
+      },
+      "s_rows_bob": {
+        "name": "High and low, up and down",
+        "try": "Take the high cups and the low cups one at a time, and watch each one ride its lift.",
+        "review": "new"
+      },
+      "s_heavy": {
+        "name": "Heavy slush",
+        "try": "Let go a little early, because raspberry is heavy and falls faster than the other slush.",
+        "review": "new"
+      },
+      "s_layers": {
+        "name": "Layers",
+        "try": "Pour the cola first and the lemon on top, because lemon under the cola is out of its layer.",
+        "review": "new"
+      },
+      "s_sink": {
+        "name": "Sinking slush",
+        "try": "Pour the lemon first and let the raspberry sink through it, because heavy slush settles to the bottom.",
+        "review": "new"
+      },
+      "s_jet": {
+        "name": "The jet",
+        "try": "Hold the key while the cup is under the jet and let go as it leaves, because the jet lands at once.",
+        "review": "new"
+      },
+      "s_jet_pair": {
+        "name": "Jet and stream",
+        "try": "Pour the cola early, as usual, and the lemon jet late, because the jet has no fall time.",
+        "review": "new"
+      },
+      "s_jet_rows": {
+        "name": "A jet over two rows",
+        "try": "Use the jet on high and low cups alike, because it needs no lead, and give the cola spout its usual lead.",
+        "review": "new"
       }
     },
     "req": {
@@ -420,7 +489,9 @@
       "start": "Open from the start",
       "one": "Opens when one requirement is met",
       "many": "Opens when {n} requirements are met",
-      "review": "new"
+      "review": "new",
+      "step": "{n} steps from the start",
+      "step_one": "One step from the start"
     },
     "needs": "To open this mission, meet each of these.",
     "needs_review": "new",
@@ -478,6 +549,66 @@
       "name": "A charge that pulls",
       "desc": "A charge beside one spout pulls its slush toward it as the slush falls.",
       "review": "new"
+    },
+    "zig_high": {
+      "name": "Plates high up",
+      "desc": "A field high under the spout pushes falling slush along the belt.",
+      "review": "new"
+    },
+    "zig_low": {
+      "name": "Plates low down",
+      "desc": "A field low under the spout pushes falling slush back against the belt.",
+      "review": "new"
+    },
+    "maze_a": {
+      "name": "Plates under the first spout",
+      "desc": "A field under the first spout pushes its slush along the belt.",
+      "review": "new"
+    },
+    "maze_b": {
+      "name": "A charge by the second spout",
+      "desc": "A charge beside the second spout pulls its slush toward it as the slush falls.",
+      "review": "new"
+    },
+    "maze_c": {
+      "name": "Plates under the third spout",
+      "desc": "A field under the third spout pushes its slush back against the belt.",
+      "review": "new"
+    },
+    "two_rows": {
+      "name": "Two rows of cups",
+      "desc": "Alternate cups ride on a rail above the belt, so their rims are higher.",
+      "review": "new"
+    },
+    "bob": {
+      "name": "Cups on a lift",
+      "desc": "Each cup rides up and down as the belt carries it.",
+      "review": "new"
+    },
+    "bob_small": {
+      "name": "Cups on a lift",
+      "desc": "Each cup rides up and down as the belt carries it.",
+      "review": "new"
+    },
+    "heavy": {
+      "name": "Heavy slush",
+      "desc": "Raspberry slush is heavy: it falls faster and sinks through lighter slush.",
+      "review": "new"
+    },
+    "jet_second": {
+      "name": "A rocket nozzle",
+      "desc": "One spout fires a straight jet with no fall time, and the jet pushes what it hits.",
+      "review": "new"
+    },
+    "turning_slow": {
+      "name": "Plates that turn slowly",
+      "desc": "A field under the first spout pushes its slush one way and then the other, and turns slowly.",
+      "review": "new"
+    },
+    "turning_slow_against": {
+      "name": "Plates that turn the other way",
+      "desc": "A field under the second spout pushes the other way from the first, and turns when the first does.",
+      "review": "new"
     }
   },
   "results": {
@@ -486,7 +617,8 @@
       "full": "The cup was full and each flavor matched its share.",
       "short": "The cup was {fill_pct} percent full.",
       "over": "The cup held more {flavor_mid} than its share.",
-      "wrong": "The cup held {flavor_mid}, which its order did not ask for."
+      "wrong": "The cup held {flavor_mid}, which its order did not ask for.",
+      "layer": "The cup's {flavor_mid} was out of its layer."
     },
     "mission": {
       "pass": "You passed. Your cups averaged {avg} of {max_score}, and the mark is {pass}.",
@@ -497,7 +629,8 @@
     "cause": {
       "empty": "room left empty",
       "over": "flavors poured past their share",
-      "wrong": "flavors the order did not ask for"
+      "wrong": "flavors the order did not ask for",
+      "layer": "layers poured out of order"
     },
     "versus": {
       "win": "{winner} won, {win_avg} to {lose_avg}.",
@@ -518,7 +651,8 @@
     "replay": {
       "label": "Download replay"
     },
-    "key_hint": "Press {key} to choose the first button."
+    "key_hint": "Press {key} to choose the first button.",
+    "review": "new: cup.layer, cause.layer"
   },
   "lines": {
     "upper": {
@@ -734,6 +868,78 @@
       "when": "Two lines carry fields, blends and a rail.",
       "then": "Slow the belts when a pour is hard to aim, and speed them up between cups.",
       "review": "new"
+    },
+    "K22": {
+      "name": "Two fields under one spout",
+      "when": "Two fields push one stream in turn.",
+      "then": "Expect the stream to bend one way and then the other, and aim for where it ends.",
+      "review": "new"
+    },
+    "K23": {
+      "name": "A field for each spout",
+      "when": "Each spout has its own field.",
+      "then": "Aim each pour through its own field.",
+      "review": "new"
+    },
+    "K24": {
+      "name": "Two turning fields",
+      "when": "Two fields turn together, pushing opposite ways.",
+      "then": "Pour each spout when its own field points toward the cup.",
+      "review": "new"
+    },
+    "K25": {
+      "name": "High cups and low cups",
+      "when": "Cups ride at two heights.",
+      "then": "Lead the low cups more than the high ones.",
+      "review": "new"
+    },
+    "K26": {
+      "name": "A cup on a lift",
+      "when": "A cup rises and falls under the spout.",
+      "then": "Pour so the slush lands while the cup is under the spout.",
+      "review": "new"
+    },
+    "K27": {
+      "name": "Rows on lifts",
+      "when": "Cups ride at two heights and bob.",
+      "then": "Read each cup's height as it comes, and lead it to match.",
+      "review": "new"
+    },
+    "K28": {
+      "name": "Heavy slush",
+      "when": "A slush falls faster than the others.",
+      "then": "Let go a little earlier.",
+      "review": "new"
+    },
+    "K29": {
+      "name": "Layers",
+      "when": "An order's flavors are layers, and none of them sinks.",
+      "then": "Pour the bottom layer first.",
+      "review": "new"
+    },
+    "K30": {
+      "name": "Slush that sinks",
+      "when": "A heavy slush sinks through a lighter one.",
+      "then": "Pour the other layer first and let the heavy one sink through it.",
+      "review": "new"
+    },
+    "K31": {
+      "name": "The jet",
+      "when": "A spout fires straight down with no fall time.",
+      "then": "Pour while the cup is under it, with no lead.",
+      "review": "new"
+    },
+    "K32": {
+      "name": "A jet beside a stream",
+      "when": "One spout falls and one fires.",
+      "then": "Lead the falling one and not the jet.",
+      "review": "new"
+    },
+    "K33": {
+      "name": "A jet over two rows",
+      "when": "A jet pours on cups at two heights.",
+      "then": "Use the jet on any cup; lead the falling spout by each cup's height.",
+      "review": "new"
     }
   },
   "kc_edge": {
@@ -771,7 +977,19 @@
     "K14_K16": "A charge that pulls bends the stream back, as the plates against the belt did.",
     "K12_K20": "Two lines again, each with something met before.",
     "K20_K19": "Two lines again, now with belts at different speeds.",
-    "K19_K21": "The two belts return, with fields on them."
+    "K19_K21": "The two belts return, with fields on them.",
+    "K13_K22": "One field becomes two, pushing opposite ways.",
+    "K22_K23": "The fields spread to each spout.",
+    "K23_K24": "The fields now turn.",
+    "K04_K25": "Two flavors in each cup, at two heights.",
+    "K25_K26": "The cups now move up and down.",
+    "K26_K27": "Rows and lifts together.",
+    "K03_K28": "An order of one heavy flavor.",
+    "K02_K31": "The tail of a jet is short, because it has no fall.",
+    "K31_K32": "A jet and a falling spout on one line.",
+    "K32_K33": "The jet over cups at two heights.",
+    "K28_K30": "The heavy flavor goes underneath by itself.",
+    "K30_K29": "Now the layers are yours to pour in order."
   },
   "judge": {
     "excellent": "EXCELLENT",
@@ -803,6 +1021,18 @@
     "belts": {
       "name": "Two lines"
     },
-    "review": "new"
+    "review": "new",
+    "odd_fields": {
+      "name": "Odd fields"
+    },
+    "odd_cups": {
+      "name": "Odd cups"
+    },
+    "heavy": {
+      "name": "Heavy slush"
+    },
+    "jets": {
+      "name": "Jets"
+    }
   }
 }
