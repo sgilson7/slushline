@@ -327,3 +327,16 @@ pub fn judgement(score: u32) -> String {
     }
     unreachable!("the last judgement is at 0")
 }
+
+/// How many cups in a row, ending with the last one judged on `seat`'s line,
+/// earned the streak's word; and whether that run has just reached a
+/// multiple of the streak's length, which plays the reward (Sam,
+/// 2026-10-05: "3 of the highest tier in the row").
+pub fn streak(w: &World, seat: usize) -> (u32, bool) {
+    let v: Value = serde_json::from_str(JUDGEMENTS_JSON).expect("data/judgements.json is valid");
+    let word = v["streak"]["word"].as_str().unwrap();
+    let length = v["streak"]["length"].as_u64().unwrap() as u32;
+    let Some(ls) = w.lines[seat].as_ref() else { return (0, false) };
+    let run = ls.results.iter().rev().take_while(|r| judgement(r.score.score) == word).count() as u32;
+    (run, run > 0 && run % length == 0)
+}

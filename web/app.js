@@ -6,6 +6,7 @@ import { Stage } from './draw.js';
 import * as keys from './keys.js';
 import { download, pick } from './files.js';
 import * as sound from './sound.js';
+import * as grooveArt from './groove.js';
 
 const BUILD = '__BUILD__';
 const STORE = 'slushline.save';
@@ -207,6 +208,7 @@ function stopRun() {
   run = null;
   const j = $('judge');
   if (j) j.hidden = true;
+  grooveArt.stop($('groove'));
 }
 
 function loop(now) {
@@ -229,7 +231,7 @@ function loop(now) {
   if (steps) {
     draw();
     hudLive();
-    for (const j of JSON.parse(run.game.take_judged())) judge(j.word);
+    for (const j of JSON.parse(run.game.take_judged())) judge(j.word, j.groove);
   }
   const over = run.game.is_replay() ? run.game.replay_done() : run.game.done();
   if (over && !run.finished && run.mission) {
@@ -249,8 +251,9 @@ function draw() {
 // A judged cup: the lid's sound and a big word over the line, after Dance
 // Dance Revolution (Sam, 2026-10-05). The word and the phrase are the ones
 // core chose for the score; the page only performs them.
-function judge(word) {
+function judge(word, groove = false) {
   sound.judged(word);
+  if (groove) setTimeout(() => playGroove(), 650);
   const j = $('judge');
   const fresh = j.cloneNode(false);
   fresh.className = `judge-${word}`;
@@ -260,6 +263,17 @@ function judge(word) {
   j.replaceWith(fresh);
   clearTimeout(judge.timer);
   judge.timer = setTimeout(() => { $('judge').hidden = true; }, 1300);
+}
+
+// Three of the top word in a row (core decides when): the groove and its
+// animation, over the middle of the line.
+function playGroove() {
+  if (!run) return;
+  const seconds = sound.groove();
+  const L = run.frame.lines[0];
+  // Centered on the line rather than the lid, which is near the edge.
+  grooveArt.play($('groove'), NUM, PAL, FLAVORS, $('groove').width / 2, stage.sy(L.rim), seconds, sound.GROOVE_BPM);
+  document.body.dataset.groove = String(Number(document.body.dataset.groove ?? 0) + 1);
 }
 
 // The HUD: the keys and spouts once, then the live numbers core worked out.
@@ -485,8 +499,11 @@ async function main() {
       if (!run) return;
       run.game.autoplay(ticks);
       draw();
-      for (const j of JSON.parse(run.game.take_judged())) judge(j.word);
+      for (const j of JSON.parse(run.game.take_judged())) judge(j.word, j.groove);
     },
+    // Play the groove on the run on screen, as three top cups in a row would.
+    groove: () => playGroove(),
+    grooveShowing: () => !$('groove').hidden,
     judgement: () => { const j = $('judge'); return j && !j.hidden ? [j.dataset.word, j.textContent] : null; },
   };
   $('status').hidden = true;

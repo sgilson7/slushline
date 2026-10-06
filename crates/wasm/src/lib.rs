@@ -185,8 +185,9 @@ impl Game {
     fn collect(&mut self) {
         let events = self.world().events.clone();
         for e in events {
-            if let sim::world::Event::Judged { cup, score, .. } = e {
-                self.judged.push(json!({ "cup": cup, "score": score, "word": content::missions::judgement(score) }));
+            if let sim::world::Event::Judged { cup, score, line } = e {
+                let (run, groove) = content::missions::streak(self.world(), line as usize);
+                self.judged.push(json!({ "cup": cup, "score": score, "word": content::missions::judgement(score), "streak": run, "groove": groove }));
             }
         }
     }
@@ -241,8 +242,9 @@ impl Game {
             let i = p.input(&r.world, 0);
             r.step([i, Input::NONE]);
             for e in r.world.events.clone() {
-                if let sim::world::Event::Judged { cup, score, .. } = e {
-                    self.judged.push(json!({ "cup": cup, "score": score, "word": content::missions::judgement(score) }));
+                if let sim::world::Event::Judged { cup, score, line } = e {
+                    let (run, groove) = content::missions::streak(&r.world, line as usize);
+                    self.judged.push(json!({ "cup": cup, "score": score, "word": content::missions::judgement(score), "streak": run, "groove": groove }));
                 }
             }
         }

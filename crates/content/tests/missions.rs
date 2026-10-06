@@ -409,3 +409,28 @@ fn every_score_earns_one_judgement_and_each_word_has_its_text() {
         assert!(copy["judge"][w].is_string(), "judge.{w} has no text");
     }
 }
+
+#[test]
+fn three_excellent_cups_in_a_row_play_the_groove_and_a_lesser_cup_breaks_the_run() {
+    use sim::world::CupResult;
+    let m = mission("m_first_pour").unwrap();
+    let mut w = World::new(m.setup(1, 1));
+    let push = |w: &mut World, score: u32| {
+        let ls = w.lines[0].as_mut().unwrap();
+        let mut s = sim::score::score(&[0, 0, 0], &order(&[("cola", 1)]), 120);
+        s.score = score;
+        let n = ls.results.len() as u16;
+        ls.results.push(CupResult { cup: n, counts: vec![0; 3], score: s });
+    };
+    let mut seen = Vec::new();
+    for score in [100, 96, 99, 95, 80, 97, 98, 100, 100, 100, 100] {
+        push(&mut w, score);
+        seen.push(content::missions::streak(&w, 0));
+    }
+    let grooves: Vec<usize> = seen.iter().enumerate().filter(|(_, s)| s.1).map(|(i, _)| i).collect();
+    // The third excellent in a row (index 2); the 80 breaks the run; then
+    // three more (index 7) and three more again (index 10).
+    assert_eq!(grooves, vec![2, 7, 10]);
+    assert_eq!(seen[4], (0, false));
+    assert_eq!(seen[10].0, 6);
+}

@@ -50,6 +50,7 @@ section.how p { max-width: 720px; margin: 0; }
    forward, a gradient fill inside a thick dark edge, popping in and fading.
    System faces only, because nothing loads from off the site. */
 #stage-wrap { position: relative; }
+#groove { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 #judge {
   position: absolute; left: 0; right: 0; top: 18%;
   text-align: center; pointer-events: none;

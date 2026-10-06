@@ -232,6 +232,12 @@ def a_mission_plays_to_a_result_and_round_trips_through_a_replay_file(page, name
         problems.append("no judgement word appeared when a lid closed")
     elif seen[1] != COPY["judge"][seen[0]]:
         problems.append(f"the judgement word reads {seen[1]!r}, not judge.{seen[0]}")
+    # The groove for three top cups in a row: its animation shows and plays
+    # with no console error. Core's rule for when is a cargo test.
+    page.evaluate("window.slushline.groove()")
+    page.wait_for_timeout(400)
+    if not page.evaluate("window.slushline.grooveShowing()"):
+        problems.append("the groove's animation did not show")
     page.evaluate("window.slushline.autoplay(10000)")
     page.wait_for_selector(".verdict", timeout=20000)
     problems += lines_not_in_copy(page, "the result")
