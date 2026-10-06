@@ -1,6 +1,6 @@
 # Handoff
 
-Written for a reader with none of the last session's context. This one is for v0.3.1 (2026-10-06), which added a pour sound and a blurred store behind the line. Nothing Sam has asked for is unstarted; section 7 lists what waits on him.
+Written for a reader with none of the last session's context. This one is for v0.3.1 (2026-10-06, build `dc2eb240`, live gate walked in three engines), which added a pour sound and a blurred store behind the line. Nothing Sam has asked for is unstarted; section 7 lists what waits on him.
 
 ## 1. What this is
 
