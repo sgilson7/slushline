@@ -3,3 +3,6 @@
 /dist/
 /.venv-test/
 .DS_Store
+
+# Raw recordings Sam drops in the folder; the game ships only web/voice/*.wav.
+/*.m4a
