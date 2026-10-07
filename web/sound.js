@@ -314,6 +314,15 @@ function twang(t) {
   note(t, 196, 0.35, { type: 'sine', gain: 0.04, slide: 0.85 });
 }
 
+// Story mode's door (Sam, 2026-10-07: a button like Vagrancy's arcade mode,
+// whose door makes a sound): the two-tone chime of a shop door opening.
+export function door() {
+  if (!ctx || ctx.state === 'closed' || volume <= 0) return;
+  const t = ctx.currentTime + 0.02;
+  mallet(t, 659.25, 0.9, 0.15);
+  mallet(t + 0.3, 523.25, 1.2, 0.15);
+}
+
 // A cup judged: the lid, then the phrase its judgement earned, which core
 // chose (the word, or its flair). A missed cup is Sam saying so.
 export function judged(word) {

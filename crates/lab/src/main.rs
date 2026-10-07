@@ -102,6 +102,13 @@ fn main() {
             println!("{:.3} ms/tick", t0.elapsed().as_secs_f64() * 1000.0 / 1500.0);
 
         }
+        // Each mission's depth in the tree, as core decides it: the art
+        // (analysis/art/stores.py) reads this rather than working it out.
+        Some("levels") => {
+            let d = content::missions::depths(&content::missions::missions());
+            let pairs: Vec<String> = d.iter().map(|(id, n)| format!("\"{id}\":{n}")).collect();
+            println!("{{{}}}", pairs.join(","));
+        }
         Some("script-checksum") => {
             let ticks: u32 = args.get(2).and_then(|s| s.parse().ok()).unwrap_or(600);
             println!("{}", sim::replay::script_checksum_of(content::setup::standing(2026, sim::balance::DEFAULT_TUNING), ticks));

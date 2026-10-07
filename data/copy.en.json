@@ -184,8 +184,9 @@
   },
   "menu": {
     "missions": {
-      "label": "Play the missions",
-      "desc": "Fill each mission's orders to open the next one."
+      "label": "Story mode",
+      "desc": "Pour slush at corner stores around the world, a new store for each mission.",
+      "review": "new (Sam, 2026-10-07: story mode, a world tour of stores). Was \"Play the missions\" and \"Fill each mission's orders to open the next one.\""
     },
     "local": {
       "label": "Play at one keyboard",
@@ -327,156 +328,201 @@
     "list": {
       "m_first_pour": {
         "name": "First pour",
-        "try": "Hold {key.spout_1} while the cup is under the spout. Let go as the slush nears the rim, because slush that goes over it is wasted."
+        "try": "Hold {key.spout_1} while the cup is under the spout. Let go as the slush nears the rim, because slush that goes over it is wasted.",
+        "place": "Your first store, a corner store by the highway at the edge of town.",
+        "review": "place: new (Sam, 2026-10-07: each mission a store in a different place)"
       },
       "m_tail": {
         "name": "The tail",
-        "try": "Let go earlier than looks right. The handle takes a moment to swing shut, and these cups are small enough for that last slush to overfill them."
+        "try": "Let go earlier than looks right. The handle takes a moment to swing shut, and these cups are small enough for that last slush to overfill them.",
+        "place": "A snack stand on the pier, where the gulls wait for the drips.",
+        "review": "place: new (Sam, 2026-10-07: each mission a store in a different place)"
       },
       "m_two_spouts": {
         "name": "Two spouts",
-        "try": "Read each cup's order before the cup reaches the first spout, so you know which handle to pull."
+        "try": "Read each cup's order before the cup reaches the first spout, so you know which handle to pull.",
+        "place": "A boardwalk store beside the big wheel, with two machines.",
+        "review": "place: new (Sam, 2026-10-07: each mission a store in a different place)"
       },
       "m_half": {
         "name": "Half and half",
-        "try": "Fill the cup halfway at the first spout and finish it at the second. A cup that is full when it reaches the second spout has no room left, and what you pour there is wasted."
+        "try": "Fill the cup halfway at the first spout and finish it at the second. A cup that is full when it reaches the second spout has no room left, and what you pour there is wasted.",
+        "place": "A gas stop on a state border, half in each state.",
+        "review": "place: new (Sam, 2026-10-07: each mission a store in a different place)"
       },
       "m_two_one": {
         "name": "Two to one",
-        "try": "Stop each pour where its share ends on the order bar. The first share is the larger one here, so the first pour is the longer one."
+        "try": "Stop each pour where its share ends on the order bar. The first share is the larger one here, so the first pour is the longer one.",
+        "place": "A store on a busy avenue, where the orders run two to one.",
+        "review": "place: new (Sam, 2026-10-07: each mission a store in a different place)"
       },
       "m_third": {
         "name": "A new spout",
-        "try": "Let a cup pass a spout its order does not name, because a flavor the order did not ask for takes up room. {key.spout_3} pulls the new handle."
+        "try": "Let a cup pass a spout its order does not name, because a flavor the order did not ask for takes up room. {key.spout_3} pulls the new handle.",
+        "place": "A truck stop that has put in a new machine.",
+        "review": "place: new (Sam, 2026-10-07: each mission a store in a different place)"
       },
       "m_three": {
         "name": "Cola, cherry and lemon",
-        "try": "Stop each pour where its share ends on the order bar. Each spout gets one pass at the cup, and the belt does not go back."
+        "try": "Stop each pour where its share ends on the order bar. Each spout gets one pass at the cup, and the belt does not go back.",
+        "place": "A store in the ski lodge at the foot of the slopes.",
+        "review": "place: new (Sam, 2026-10-07: each mission a store in a different place)"
       },
       "m_cherry_cola": {
         "name": "Cherry cola",
-        "try": "Read the label on the second spout. It now pours cherry and cola together, in the shares the label lists."
+        "try": "Read the label on the second spout. It now pours cherry and cola together, in the shares the label lists.",
+        "place": "A diner on a downtown corner.",
+        "review": "place: new (Sam, 2026-10-07: each mission a store in a different place)"
       },
       "m_more_cola": {
         "name": "More cola than cherry",
-        "try": "Work out how much of the cup the blend should fill, then finish with cola. Cherry now reaches a cup only through the blend, and it brings cola with it."
+        "try": "Work out how much of the cup the blend should fill, then finish with cola. Cherry now reaches a cup only through the blend, and it brings cola with it.",
+        "place": "A cabin store beside the frozen lake.",
+        "review": "place: new (Sam, 2026-10-07: each mission a store in a different place)"
       },
       "m_rail": {
         "name": "A spout on a rail",
-        "try": "Pull the handle as the sliding spout comes over the cup, and let go before it slides past. Slush falls straight down from wherever the spout is."
+        "try": "Pull the handle as the sliding spout comes over the cup, and let go before it slides past. Slush falls straight down from wherever the spout is.",
+        "place": "A store at the foot of the cable car.",
+        "review": "place: new (Sam, 2026-10-07: each mission a store in a different place)"
       },
       "m_lemon_cherry_cola": {
         "name": "Lemon cherry cola",
-        "try": "Fill half the cup from the blend, which covers the cherry and the cola together. The sliding spout pours the rest."
+        "try": "Fill half the cup from the blend, which covers the cherry and the cola together. The sliding spout pours the rest.",
+        "place": "A beach hut on a lagoon.",
+        "review": "place: new (Sam, 2026-10-07: each mission a store in a different place)"
       },
       "m_two_lines": {
         "name": "Two lines",
-        "try": "Run the upper line with {keys_upper} and the lower line with {keys_lower}. Watch whichever cup is closest to a spout, since that one needs you next."
+        "try": "Run the upper line with {keys_upper} and the lower line with {keys_lower}. Watch whichever cup is closest to a spout, since that one needs you next.",
+        "place": "A store on two floors in a mountain village.",
+        "review": "place: new (Sam, 2026-10-07: each mission a store in a different place)"
       },
       "m_push": {
         "name": "A push along the belt",
         "try": "Start each pour a little later than usual, because the field carries the slush past the spout before it lands.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store on the boardwalk, where the sea wind pushes the slush along."
       },
       "m_push_back": {
         "name": "A push against the belt",
         "try": "Watch where the lemon lands, not where its spout is, because the field pushes it back toward the cup that is coming.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store at the foot of the towers, where the wind blows against the belt."
       },
       "m_charge": {
         "name": "A charge that pushes",
         "try": "Let the cup get a little past the cherry spout before you pour, because the charge pushes the cherry along the belt as it falls.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store beside a desert power plant, under the humming wires."
       },
       "m_attract": {
         "name": "A charge that pulls",
         "try": "Pour the cherry a little early, because the charge pulls it back toward the start of the belt as it falls.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store at the observatory on the peak."
       },
       "m_alternating": {
         "name": "Plates that turn",
         "try": "Watch the arrows under the cola spout and pour when they point toward the cup, because the push turns while you wait.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store on an island where the trade winds turn."
       },
       "m_field_blend": {
         "name": "A blend through the fields",
         "try": "Pour the blend for half of each cup and the lemon for the rest, and time each pour to the turning plates under its spout.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store in the old square, under the clock tower."
       },
       "m_two_speeds": {
         "name": "Two belts, two speeds",
         "try": "Keep an eye on the lower line, because its belt runs faster and its cups reach the spouts sooner.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A stall in the night market, under the paper lanterns."
       },
       "m_two_lines_blend": {
         "name": "A blend above, a rail below",
         "try": "Fill the upper cups from the blend and the cola spout, and time the lower line's lemon to its sliding spout.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store on a canal bridge, with a line above and a line below."
       },
       "m_storm": {
         "name": "The storm",
         "try": "Take each line one cup at a time, and use the belt keys to slow both belts when the fields make a pour hard to aim.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "The store at the lighthouse at the end of the world, in a storm."
       },
       "s_zigzag": {
         "name": "Zigzag",
         "try": "Pour as usual and watch the stream bend twice, because the upper field pushes it along the belt and the lower field pushes it back.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store on the desert road, where the dust devils blow back and forth."
       },
       "s_field_maze": {
         "name": "A maze of fields",
         "try": "Aim each spout through its own field, because each field bends its slush a different way.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store at a crossroads of tall streets, where the winds cross."
       },
       "s_flip_pair": {
         "name": "Two plates that turn",
         "try": "Watch both sets of arrows, because the two fields turn together and push in opposite directions.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store at a windy mountain pass, under a spinning weather vane."
       },
       "s_two_rows": {
         "name": "Two rows of cups",
         "try": "Start a little later for the high cups, because their slush has less far to fall.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A stand at the stadium, with cups in two rows."
       },
       "s_bobbing": {
         "name": "Cups on a lift",
         "try": "Watch each cup rise and fall, and pour so the slush lands while the cup is under the spout.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store at the top of the chairlift."
       },
       "s_rows_bob": {
         "name": "High and low, up and down",
         "try": "Take the high cups and the low cups one at a time, and watch each one ride its lift.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store on a houseboat that rises and falls with the waves."
       },
       "s_heavy": {
         "name": "Heavy slush",
         "try": "Let go a little early, because raspberry is heavy and falls faster than the other slush.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store in a mining town, where the slush comes out heavy."
       },
       "s_layers": {
         "name": "Layers",
         "try": "Pour the cola first and the lemon on top, because lemon under the cola is out of its layer.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store at the quarry, where the rock lies in layers."
       },
       "s_sink": {
         "name": "Sinking slush",
         "try": "Pour the lemon first and let the raspberry sink through it, because heavy slush settles to the bottom.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store at the harbor, beside the cargo ships."
       },
       "s_jet": {
         "name": "The jet",
         "try": "Hold the key while the cup is under the jet and let go as it leaves, because the jet lands at once.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store at the edge of a rocket launch site."
       },
       "s_jet_pair": {
         "name": "Jet and stream",
         "try": "Pour the cola early, as usual, and the lemon jet late, because the jet has no fall time.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store across the street from the firehouse."
       },
       "s_jet_rows": {
         "name": "A jet over two rows",
         "try": "Use the jet on high and low cups alike, because it needs no lead, and give the cola spout its usual lead.",
-        "review": "new"
+        "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place)",
+        "place": "A store beside the snow cannons."
       }
     },
     "req": {
@@ -1049,5 +1095,38 @@
     "volume": "Soundtrack volume",
     "blocked": "Press play on the player once to start the soundtrack, because this browser asks for that press on the player itself.",
     "review": "new (Sam, 2026-10-06: play a song from SoundCloud as you play, after Gear Master's player)."
+  },
+  "world": {
+    "premise": "You pour slush for a chain of corner stores, and each mission sends you to a different store, from your hometown out around the world. Fill a store's orders to open the next stops on the tour.",
+    "region": {
+      "0": {
+        "name": "Your hometown"
+      },
+      "1": {
+        "name": "The boardwalk"
+      },
+      "2": {
+        "name": "The desert highway"
+      },
+      "3": {
+        "name": "The big city"
+      },
+      "4": {
+        "name": "The mountains"
+      },
+      "5": {
+        "name": "The islands"
+      },
+      "6": {
+        "name": "The old town"
+      },
+      "7": {
+        "name": "The night market"
+      },
+      "8": {
+        "name": "The lighthouse at the end of the world"
+      }
+    },
+    "review": "new (Sam, 2026-10-07: \"the chart of the missions ends up taking you on a world tour of slushee world\"). The premise, and a region for each row of the mission tree."
   }
 }

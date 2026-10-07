@@ -1,0 +1,14 @@
+# SECOND-ORDER-M10
+
+The notebook for story mode's world tour (Sam, 2026-10-07; DECISIONS.md quotes the request).
+
+| # | Kind | Status | Row |
+|---|---|---|---|
+| 1 | finding | done | **Vagrancy's method** (`vagrancy/analysis/art/regions.py`, `seals.py`; SECOND-ORDER-M5 rows 81 and 86): a Python script writes TikZ with every color from the palette's `art` section, pdflatex and pdftocairo render it, and the PNGs are committed. Region bands are drawn at the band's height and repeated along it so their scale holds; each fight is an island of its row's ground with props from its place line. "The TikZ prompt" is §8 of `advanced-prompt-engineering-prompts.md`: ask for a compilable standalone TikZ file rather than an image. Taken: all of it. Not taken: Vagrancy's per-fight seal shapes; here every store is the same chain, and the props carry the place. |
+| 2 | divergence | done | **The first store scenes put four missions in the wrong region.** The script worked out depths from requirements written as `{"pass": id}` and missed `{"mark": {"mission": id}}` and `{"clean": ...}`, so A push along the belt, Zigzag, A maze of fields and Two plates that turn were drawn and placed for a row above their own. The script now reads core's depths (`lab levels`), and the four were moved: the boardwalk's sea wind, the desert road's dust devils, a city crossroads, a mountain pass under a weather vane. |
+| 3 | finding | done | **"Station" is a synonym of the glossary's "line"** in the tone lint, so four place lines were refused; they say gas stop, power plant, the foot of the cable car and firehouse. |
+| 4 | finding | done | **A row of nine stores wrapped**, stretching the mountains band and landing the second line on its trees. The map now scrolls sideways in its own frame, as Vagrancy's chart does, and opens on the next mission; region names stick to the frame's edge. |
+| 5 | finding | done | **`every_mission_has_a_store_and_every_row_of_the_tree_has_a_region`** checks each mission's place line and picture and each row's name and band, from core's depths. Broken once by moving `s_jet.png` away: "s_jet has no store picture". |
+| 6 | worklist | the human's | **Sam reviews the tour:** the framing and premise, the region names and the 33 place lines (all marked `"review": "new"`), the art, and the story mode button and its door chime. |
+
+New strings, marked `"review": "new"`: `menu.missions.label` (now "Story mode") and `.desc`, `world.premise`, `world.region.0` to `.8`, and `missions.list.<id>.place` for each mission.

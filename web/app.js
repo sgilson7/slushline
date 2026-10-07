@@ -130,9 +130,14 @@ function screen(...kids) {
 function menu() {
   const item = (key, onClick, desc = true) =>
     el('div', { class: 'item' }, button(t(`menu.${key}.label`), onClick, { id: `menu-${key}` }), desc ? el('p', {}, t(`menu.${key}.desc`)) : null);
+  // Story mode first, set apart, after Vagrancy's arcade mode (Sam,
+  // 2026-10-07): the shop door chimes and the map of the tour opens.
+  const story = el('div', { class: 'item featured' },
+    button(t('menu.missions.label'), () => { sound.wake(); sound.door(); path(); }, { id: 'menu-missions' }),
+    el('p', {}, t('menu.missions.desc')));
   screen(
     el('nav', { class: 'menu' },
-      item('missions', () => path()),
+      story,
       item('replay', () => loadReplay()),
       item('how', () => how(), false),
       item('settings', () => settings(), false),
@@ -182,10 +187,16 @@ function path(pickId = null) {
   wires.setAttribute('aria-hidden', 'true');
   tree.append(wires);
   const buttons = new Map();
+  // The next mission to take: the first open one not yet passed. On the map
+  // it is set apart as the story mode button is.
+  const next = ms.find((m) => m.open && !m.passed)?.id;
   const node = (m) => {
     const state = m.passed ? 'passed' : m.open ? 'open' : 'locked';
-    const b = el('button', { type: 'button', id: `mission-${m.id}`, class: `node ${state}`, 'aria-pressed': 'false',
-      on: { click: () => pick(m.id), mouseenter: () => light(m.id), focus: () => light(m.id), mouseleave: () => light(null), blur: () => light(null) } }, m.name);
+    // On the map, each mission is its store: a scene and a name plaque.
+    const art = chart ? [] : [el('img', { src: `art/store/${m.id}.png`, alt: '', class: 'store', draggable: 'false' })];
+    const label = chart ? m.name : el('span', { class: 'plaque' }, m.name);
+    const b = el('button', { type: 'button', id: `mission-${m.id}`, class: `node ${state}${m.id === next ? ' next' : ''}`, 'aria-pressed': 'false',
+      on: { click: () => pick(m.id), mouseenter: () => light(m.id), focus: () => light(m.id), mouseleave: () => light(null), blur: () => light(null) } }, ...art, label);
     buttons.set(m.id, b);
     return b;
   };
@@ -243,8 +254,13 @@ function path(pickId = null) {
       }
       row.forEach((m, i) => place.set(m.id, (i + 0.5) / row.length));
     });
+    // The map (Sam, 2026-10-07): each row is a leg of the tour, a band of
+    // its region's art that fades into the next, after Vagrancy's chart.
     rows.forEach((row, l) => {
-      if (row) tree.append(el('div', { class: 'level' }, el('p', { class: 'tier-label' }, tierLabel(l)), el('div', { class: 'tier' }, ...row.map(node))));
+      if (!row) return;
+      const band = el('div', { class: 'level band' }, el('p', { class: 'region-name' }, t(`world.region.${l}.name`)), el('div', { class: 'tier' }, ...row.map(node)));
+      band.style.setProperty('--region', `url(art/region-${l}.png)`);
+      tree.append(band);
     });
   }
   const paths = [];
@@ -282,10 +298,16 @@ function path(pickId = null) {
   const switcher = el('div', { class: 'controls view-switch' },
     button(t('missions.view.tree.label'), () => pickView('tree'), { id: 'view-tree', class: chart ? 'quiet' : '', 'aria-pressed': String(!chart) }),
     button(t('missions.view.chart.label'), () => pickView('chart'), { id: 'view-chart', class: chart ? '' : 'quiet', 'aria-pressed': String(chart) }));
-  screen(el('h2', {}, t('menu.missions.label')), cardBox, switcher, tree, el('div', { class: 'controls' }, back()));
+  // The map scrolls sideways in its own frame, as Vagrancy's chart does, so
+  // a long row of stores stays one row.
+  const frame = chart ? tree : el('div', { class: 'map-scroll' }, tree);
+  screen(el('h2', {}, t('menu.missions.label')), el('p', { class: 'premise' }, t('world.premise')), cardBox, switcher, frame, el('div', { class: 'controls' }, back()));
   const first = pickId ?? (ms.find((m) => m.open && !m.passed) ?? ms[0]).id;
   pick(first);
   wire();
+  // Open the map on the next mission.
+  const nextButton = next && buttons.get(next);
+  if (!chart && nextButton) frame.scrollLeft = Math.max(0, nextButton.offsetLeft + nextButton.offsetWidth / 2 - frame.clientWidth / 2);
   new ResizeObserver(() => { if (tree.isConnected) wire(); }).observe(tree);
 }
 
@@ -294,7 +316,9 @@ function path(pickId = null) {
 function fillCard(box, m) {
   const max = NUM.max_score;
   box.replaceChildren(...[
+    el('img', { src: `art/store/${m.id}.png`, alt: '', class: 'card-store' }),
     el('h3', { id: 'card-name' }, m.name),
+    el('p', { class: 'place' }, t(`missions.list.${m.id}.place`)),
     el('p', {}, m.order),
     el('p', {}, m.pass),
     ...m.conditions.map((c) => el('p', { class: 'condition' }, el('strong', {}, c.name), ' ', c.desc)),
@@ -314,7 +338,9 @@ function card(id) {
   const names = (seat) => (seat === 0 ? keyNames() : lowerKeyNames());
   const lineList = (labels, seat) => el('ul', { class: 'spouts' }, ...labels.map((label, i) => el('li', {}, label, ' ', el('strong', {}, t('spout.key', { key: names(seat)[i] })))));
   screen(
+    el('img', { src: `art/store/${m.id}.png`, alt: '', class: 'card-store' }),
     el('h2', { id: 'card-name' }, m.name),
+    el('p', { class: 'place' }, t(`missions.list.${m.id}.place`)),
     el('p', {}, m.order),
     el('p', {}, m.pass),
     ...m.conditions.map((c) => el('p', { class: 'condition' }, el('strong', {}, c.name), ' ', c.desc)),
