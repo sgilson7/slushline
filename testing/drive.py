@@ -568,12 +568,10 @@ def the_soundtrack_names_its_track_and_the_game_plays_without_it(page, name):
 
 
 @check
-def a_missed_cup_is_said_aloud_in_the_copy_file_s_words(page, name):
-    # Sam, 2026-10-06: "a man sadly saying OH NO, and the variation is he
-    # says DARN like a cowboy". A test cannot hear; it catches what the page
-    # hands the browser's speech: the line from judge.voice, the cowboy lower
-    # and slower. A browser with no voice of its own on the machine says
-    # nothing, and the old phrase plays.
+def a_missed_cup_plays_sam_s_recording(page, name):
+    # Sam, 2026-10-07: his own "Oh no" for a missed cup, and "Darn" for its
+    # flair (web/voice). A test cannot hear; it checks both files are served
+    # and decode, and that MISS plays the first and DARN the second.
     page.reload(wait_until="load")
     page.wait_for_function("document.body.dataset.ready === '1'")
     page.click("#menu-missions")
@@ -581,38 +579,27 @@ def a_missed_cup_is_said_aloud_in_the_copy_file_s_words(page, name):
     page.click("#open-mission")
     page.click("#start-mission")
     page.wait_for_function("window.slushline.tick() > 2")
-    got = page.evaluate("""async () => {
-        if (!('speechSynthesis' in window)) return { voices: 0, said: [] };
-        const local = () => speechSynthesis.getVoices().filter((v) => v.localService && /^en/i.test(v.lang)).length;
-        for (let k = 0; k < 20 && !local(); k += 1) await new Promise((r) => setTimeout(r, 100));
-        const said = [];
-        const speak = speechSynthesis.speak.bind(speechSynthesis);
-        speechSynthesis.speak = (u) => { said.push([u.text, u.pitch, u.rate]); };
-        window.slushline.performJudgement('miss');
-        const missWord = document.getElementById('judge').textContent;
-        window.slushline.performJudgement('darn');
-        const darnWord = document.getElementById('judge').textContent;
-        speechSynthesis.speak = speak;
-        return { voices: local(), said, words: [missWord, darnWord] };
-    }""")
     problems = []
-    if got.get("words") != [COPY["judge"]["miss"], COPY["judge"]["darn"]]:
-        problems.append(f"the words shown were {got.get('words')}")
-    voice = COPY["judge"]["voice"]
-    if got["voices"]:
-        said = got["said"]
-        if [x[0] for x in said] != [voice["miss"], voice["darn"]]:
-            problems.append(f"the voice said {said}")
-        elif not (said[1][1] < said[0][1] and said[1][2] < said[0][2]):
-            problems.append(f"the cowboy is not lower and slower than the sad line: {said}")
-    elif got["said"]:
-        problems.append(f"with no voice on the machine the page still spoke: {got['said']}")
+    for f in ("voice/oh-no.wav", "voice/darn.wav"):
+        head = page.evaluate(f"fetch('{f}').then(r => r.ok ? r.arrayBuffer() : null).then(b => b && String.fromCharCode(...new Uint8Array(b, 0, 4)))")
+        if head != "RIFF":
+            problems.append(f"{f} is not served as a WAV file ({head!r})")
+    try:
+        page.wait_for_function("window.slushline.voiceClips().loaded.length === 2", timeout=10000)
+    except Exception:
+        problems.append(f"the clips did not decode: {page.evaluate('window.slushline.voiceClips()')}")
+    played = []
+    for word in ("miss", "darn"):
+        page.evaluate(f"window.slushline.performJudgement('{word}')")
+        played.append((page.evaluate("window.slushline.voiceClips().last"), page.inner_text("#judge")))
+    want = [("voice/oh-no.wav", COPY["judge"]["miss"]), ("voice/darn.wav", COPY["judge"]["darn"])]
+    if not problems and played != want:
+        problems.append(f"MISS and DARN played and showed {played}, not {want}")
     page.click("#leave-run")
     page.click("#back-to-menu")
     if problems:
         return [f"{name}: {p}" for p in problems]
-    how = f"said {[x[0] for x in got['said']]}" if got["voices"] else "no voice on this machine, so the old phrase"
-    print(f"ok: {name}: MISS and DARN showed their copy; {how}")
+    print(f"ok: {name}: both clips are served and decode; MISS played oh-no and DARN played darn")
     return []
 
 

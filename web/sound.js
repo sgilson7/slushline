@@ -6,6 +6,8 @@
 
 let ctx = null;
 let master = null;
+let squeeze = null;
+let voiceBus = null;
 let volume = 0.7;
 
 // Browsers start audio only after a person presses something, so the page
@@ -26,7 +28,7 @@ export function wake() {
     soften.type = 'lowpass';
     soften.frequency.value = 2200;
     soften.Q.value = 0.5;
-    const squeeze = ctx.createDynamicsCompressor();
+    squeeze = ctx.createDynamicsCompressor();
     squeeze.threshold.value = -20;
     squeeze.knee.value = 12;
     squeeze.ratio.value = 3;
@@ -35,6 +37,12 @@ export function wake() {
     master = ctx.createGain();
     master.gain.value = volume * 0.6;
     master.connect(soften).connect(squeeze).connect(ctx.destination);
+    // Sam's recorded voice skips the low-pass, which would muffle a real
+    // voice, and shares the compressor with everything else.
+    voiceBus = ctx.createGain();
+    voiceBus.gain.value = volume * 0.5;
+    voiceBus.connect(squeeze);
+    loadClips();
   }
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
 }
@@ -47,8 +55,9 @@ window.addEventListener('pagehide', () => {
     const c = ctx;
     ctx = null;
     master = null;
+    squeeze = null;
+    voiceBus = null;
     voices.clear();
-    try { window.speechSynthesis?.cancel(); } catch { /* no speech here */ }
     c.close().catch(() => {});
   }
 });
@@ -56,6 +65,7 @@ window.addEventListener('pagehide', () => {
 export function setVolume(v) {
   volume = Math.max(0, Math.min(1, v));
   if (master) master.gain.value = volume * 0.6;
+  if (voiceBus) voiceBus.gain.value = volume * 0.5;
 }
 
 // One note: an oscillator with a quick attack and a decay, optionally
@@ -258,46 +268,44 @@ Object.assign(PHRASES, {
   },
 });
 
-// --- a voice for a missed cup (Sam, 2026-10-06) ---------------------------
+// --- a voice for a missed cup (Sam, 2026-10-06 and 2026-10-07) -----------
 //
 // "a man sadly saying OH NO, and the variation is he says DARN like a
-// cowboy". There is no recording: the browser's own speech voice says the
-// line from the copy file, slow and low for the sad one, slower and lower
-// still, drawn out, for the cowboy. Only voices the browser keeps on this
-// machine are used, so nothing leaves the page. With no such voice, the old
-// wah-wah plays instead.
+// cowboy", in Sam's own voice: two clips he recorded for the game, trimmed
+// to the word (web/voice, LICENSES.md). They are fetched from this site when
+// sound wakes; until they arrive, the old wah-wah plays instead.
 
-const MAN = /\b(fred|ralph|daniel|alex|aaron|arthur|albert|tom|david|mark|george|james|male)\b/i;
+const CLIPS = { miss: 'voice/oh-no.wav', darn: 'voice/darn.wav' };
+const clips = {};       // word -> decoded clip
+let lastClip = null;    // the file that played last, for the gate
 
-function speechVoice() {
-  if (!('speechSynthesis' in window)) return null;
-  const local = window.speechSynthesis.getVoices().filter((v) => v.localService && /^en/i.test(v.lang));
-  return local.find((v) => MAN.test(v.name)) ?? local[0] ?? null;
-}
-
-const VOICES = { miss: { pitch: 0.7, rate: 0.75 }, darn: { pitch: 0.45, rate: 0.6 } };
-
-function speak(text, how) {
-  const v = speechVoice();
-  if (!v) return false;
-  try {
-    const u = new SpeechSynthesisUtterance(text);
-    u.voice = v;
-    u.lang = v.lang;
-    u.pitch = how.pitch;
-    u.rate = how.rate;
-    u.volume = Math.min(1, volume * 1.2);
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
-    return true;
-  } catch {
-    return false;
+function loadClips() {
+  const c = ctx;
+  for (const [word, url] of Object.entries(CLIPS)) {
+    if (clips[word]) continue;
+    fetch(url)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(url))))
+      .then((bytes) => c.decodeAudioData(bytes))
+      .then((buf) => { clips[word] = buf; })
+      .catch(() => { /* the wah-wah plays instead */ });
   }
 }
 
-// Voices load late in some browsers; asking once early lets them arrive.
-if ('speechSynthesis' in window) {
-  try { window.speechSynthesis.getVoices(); } catch { /* no speech here */ }
+function playClip(word, t) {
+  const buf = clips[word];
+  if (!buf || !voiceBus) return false;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(voiceBus);
+  src.start(t);
+  lastClip = CLIPS[word];
+  return true;
+}
+
+// For the gate, which cannot hear: which clips have loaded, and which
+// played last.
+export function clipState() {
+  return { loaded: Object.keys(clips).sort(), last: lastClip };
 }
 
 // A twang under the cowboy: a plucked low string that bends down.
@@ -307,17 +315,15 @@ function twang(t) {
 }
 
 // A cup judged: the lid, then the phrase its judgement earned, which core
-// chose (the word, or its flair). `said` is the line a voice says, from the
-// copy file, for the words that have one.
-export function judged(word, said = null) {
+// chose (the word, or its flair). A missed cup is Sam saying so.
+export function judged(word) {
   if (!ctx || ctx.state === 'closed' || volume <= 0) return;
   // Now, not a moment ahead: the lid is closing on screen this frame.
   const t = ctx.currentTime;
   thunk(t);
-  if (VOICES[word] && said) {
+  if (CLIPS[word]) {
     if (word === 'darn') twang(t + 0.08);
-    if (speak(said, VOICES[word])) return;
-    PHRASES.miss(t + 0.08);
+    if (!playClip(word, t + 0.06)) PHRASES.miss(t + 0.08);
     return;
   }
   (PHRASES[word] ?? PHRASES.ok)(t + 0.08);

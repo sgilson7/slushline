@@ -445,9 +445,7 @@ function draw() {
 // Dance Revolution (Sam, 2026-10-05). The word and the phrase are the ones
 // core chose for the score; the page only performs them.
 function judge(word, groove = false) {
-  // A missed cup is said aloud, in words from the copy file (judge.voice).
-  const said = COPY.judge.voice?.[word] ? t(`judge.voice.${word}`) : null;
-  sound.judged(word, said);
+  sound.judged(word);
   if (groove) setTimeout(() => playGroove(), 650);
   const j = $('judge');
   const fresh = j.cloneNode(false);
@@ -734,6 +732,7 @@ async function main() {
     pourVoices: () => sound.pourVoices(),
     // Perform a judgement's word and sound, as a lid closing would.
     performJudgement: (word) => judge(word),
+    voiceClips: () => sound.clipState(),
     music: () => music.state(),
     judgement: () => { const j = $('judge'); return j && !j.hidden ? [j.dataset.word, j.textContent] : null; },
   };
