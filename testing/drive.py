@@ -116,10 +116,15 @@ def open_page(browser, query=""):
     page = ctx.new_page()
     problems, offsite = [], []
     # A refused soundtrack request is reported by the browser as a load
-    # failure; it is the gate's doing, not the page's.
+    # failure; it is the gate's doing, not the page's. Firefox reports a
+    # picture of the tour whose download a reload cut short as "corrupt or
+    # truncated" (SECOND-ORDER-M10 row 7); the gate reloads often, and
+    # tests/world.rs checks every such picture is whole.
+    def cut_short_art(text):
+        return "Image corrupt or truncated" in text and f"{ORIGIN}/art/" in text
     page.on("console", lambda m: problems.append(f"console.{m.type}: {m.text}")
             if m.type == "error" and not soundtrack(m.location.get("url") or "")
-            and not any(h in m.text for h in SOUNDTRACK_HOSTS) else None)
+            and not any(h in m.text for h in SOUNDTRACK_HOSTS) and not cut_short_art(m.text) else None)
     page.on("pageerror", lambda e: problems.append(f"pageerror: {e}"))
     # blob: and data: URLs are the page talking to itself; anything else that
     # does not start with the origin has left it.
