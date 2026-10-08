@@ -115,3 +115,24 @@ fn a_version_1_save_loads_as_version_2() {
     assert!(s.clean.is_empty());
     assert_eq!(s.keys["lower_1"], "KeyJ", "the lower line's keys take their defaults");
 }
+
+#[test]
+fn the_map_shows_a_mission_once_a_mission_it_requires_is_passed() {
+    // Sam, 2026-10-07: clean up the map after Vagrancy's chart, which shows a
+    // fight only once it is open, won, or a prerequisite is won.
+    let ms = content::missions::missions();
+    let mut save = content::save::Save::default();
+    let known = |s: &content::save::Save| ms.iter().filter(|m| s.known(m)).map(|m| m.id.clone()).collect::<Vec<_>>();
+    assert_eq!(known(&save), vec!["m_first_pour".to_string()]);
+    save.record("m_first_pour", 70, true, 10);
+    let after = known(&save);
+    for id in ["m_first_pour", "m_tail", "m_two_spouts", "m_push"] {
+        assert!(after.iter().any(|k| k == id), "{id} is not shown after passing the first mission: {after:?}");
+    }
+    // A mission two steps on stays hidden.
+    assert!(!after.iter().any(|k| k == "m_half"), "{after:?}");
+    // Each passed mission is shown, and so is each open one.
+    for m in &ms {
+        assert!(!(save.open(m) || save.passed.contains(&m.id)) || save.known(m), "{}", m.id);
+    }
+}

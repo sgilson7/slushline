@@ -181,6 +181,12 @@ impl Save {
     pub fn open(&self, mission: &crate::missions::Mission) -> bool {
         mission.requires.iter().all(|r| self.met(r))
     }
+    /// Whether the map shows a mission yet (Sam, 2026-10-07, after
+    /// Vagrancy's chart, which hides "the fights a player cannot yet see
+    /// coming"): it is open, or passed, or a mission it requires is passed.
+    pub fn known(&self, mission: &crate::missions::Mission) -> bool {
+        self.open(mission) || self.passed.contains(&mission.id) || mission.requires.iter().any(|r| self.passed.iter().any(|p| p == r.mission()))
+    }
 }
 
 fn distinct(keys: &BTreeMap<String, String>) -> bool {

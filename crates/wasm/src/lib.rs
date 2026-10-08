@@ -69,6 +69,7 @@ pub fn path_json(save_json: &str) -> String {
             card["spout_labels"] = json!(content::missions::spout_labels(m));
             card["open"] = json!(save.open(m));
             card["passed"] = json!(save.passed.contains(&m.id));
+            card["known"] = json!(save.known(m));
             card["best"] = json!(save.best.get(&m.id));
             card["requires"] = json!(m
                 .requires

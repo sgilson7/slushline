@@ -205,3 +205,13 @@ section.how p { max-width: 720px; margin: 0; }
   #tree.rows .node { width: 118px; } #tree.rows .node .store { width: 112px; height: 84px; }
   .card-store { width: 120px; }
 }
+
+/* The other way to draw the tour, folded away under the map (Sam,
+   2026-10-07, after Vagrancy's chart): muted and small until opened. */
+.view-fold { margin-top: 18px; color: var(--muted); font-size: 0.9em; }
+.view-fold summary { cursor: pointer; }
+.view-fold .controls { margin-top: 8px; }
+.view-fold button { font-size: 0.9em; }
+/* Focus shows on the store's plaque, not as a box round the whole scene. */
+#tree.rows .node:focus { outline: none; }
+#tree.rows .node:focus-visible .plaque { outline: 3px solid var(--focus); outline-offset: 2px; }

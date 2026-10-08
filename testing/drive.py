@@ -377,13 +377,21 @@ ALL_PASSED = {"format": "slushline.save", "version": 2, "best": {i: 90 for i in 
 
 
 @check
-def the_lanes_draw_fewer_lines_than_the_tree(page, name):
-    # Sam, 2026-10-05: "a chart view that has less lines and is in a hasse
-    # diagram with seperate lanes". Both views, from the switch.
+def the_map_draws_one_route_into_each_store_and_the_lanes_their_hasse_lines(page, name):
+    # Sam, 2026-10-07: clean up the map after Vagrancy's chart, which draws
+    # one route into each fight and folds its other views away. With every
+    # mission passed, the map draws a route into each mission but the first,
+    # and the lanes (Sam, 2026-10-05: "a hasse diagram with seperate lanes")
+    # draw the Hasse diagram's lines, from the fold at the foot of the screen.
+    page.evaluate(f"localStorage.setItem('slushline.save', {json.dumps(json.dumps(ALL_PASSED))}); localStorage.removeItem('slushline.view')")
+    page.reload(wait_until="load")
+    page.wait_for_function("document.body.dataset.ready === '1'")
     page.click("#menu-missions")
-    page.click("#view-tree")
     page.wait_for_function("document.querySelector('#tree.rows') && Number(document.querySelector('#tree').dataset.lines) > 0")
-    tree = int(page.get_attribute("#tree", "data-lines"))
+    stores = page.locator("#tree .node").count()
+    routes = int(page.get_attribute("#tree", "data-lines"))
+    folded = not page.evaluate("document.getElementById('view-fold').open")
+    page.click("#view-fold summary")
     page.click("#view-chart")
     page.wait_for_function("document.querySelector('#tree.chart') && Number(document.querySelector('#tree').dataset.lines) > 0")
     chart = int(page.get_attribute("#tree", "data-lines"))
@@ -391,11 +399,13 @@ def the_lanes_draw_fewer_lines_than_the_tree(page, name):
     problems = lines_not_in_copy(page, "the lanes")
     page.click("#view-tree")
     page.click("#back-to-menu")
-    if not (0 < chart < tree) or lanes < 5:
-        problems.append(f"the tree drew {tree} lines, the lanes {chart} in {lanes} lanes")
+    if routes != stores - 1 or not folded:
+        problems.append(f"the map drew {routes} routes for {stores} stores, and the other views were {'folded' if folded else 'open'}")
+    if not (chart > routes) or lanes < 5:
+        problems.append(f"the lanes drew {chart} lines in {lanes} lanes, against the map's {routes}")
     if problems:
         return [f"{name}: {p}" for p in problems]
-    print(f"ok: {name}: the tree draws {tree} lines and the lanes {chart}, in {lanes} lanes")
+    print(f"ok: {name}: the map draws {routes} routes for {stores} stores, its other views folded; the lanes draw {chart}, in {lanes} lanes")
     return []
 
 

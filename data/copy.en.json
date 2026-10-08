@@ -545,12 +545,13 @@
     "unmet": "Not met yet",
     "view": {
       "tree": {
-        "label": "Show the tree"
+        "label": "Show the map"
       },
       "chart": {
         "label": "Show the lanes"
       },
-      "review": "new"
+      "review": "new; other: new (Sam, 2026-10-07: the other views folded away, after Vagrancy's chart); tree.label: new (was \"Show the tree\"; the tree view is now the map)",
+      "other": "Other ways to draw the tour"
     }
   },
   "conditions": {

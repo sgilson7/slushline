@@ -178,7 +178,10 @@ function missionView() {
 function path(pickId = null) {
   const view = missionView();
   const chart = view === 'chart';
-  const ms = missions();
+  // Only the missions a player can see coming (core's `known`: open,
+  // passed, or a mission it requires is passed), after Vagrancy's chart
+  // (Sam, 2026-10-07). The tour shows each leg as it is reached.
+  const ms = missions().filter((m) => m.known);
   const byId = new Map(ms.map((m) => [m.id, m]));
   const cardBox = el('section', { id: 'mission-card' });
   const tree = el('div', { id: 'tree', class: chart ? 'chart' : 'rows' });
@@ -269,8 +272,20 @@ function path(pickId = null) {
     paths.length = 0;
     const box = tree.getBoundingClientRect();
     wires.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+    const cx = (id) => { const r = buttons.get(id).getBoundingClientRect(); return r.left + r.width / 2; };
     for (const m of ms) {
-      const froms = chart ? m.hasse : m.requires.map((r) => r.from);
+      // The lanes draw the Hasse diagram's lines. The map draws one route
+      // into each store, as Vagrancy's chart does: from a mission it
+      // requires in the row directly above, the nearest across if there are
+      // several. The card still lists everything a mission asks for.
+      let froms = chart ? m.hasse : m.requires.map((r) => r.from);
+      froms = froms.filter((f) => buttons.has(f));
+      if (!chart && froms.length > 1) {
+        const above = froms.filter((f) => byId.get(f).level === m.level - 1);
+        const pool = above.length ? above : froms;
+        const here = cx(m.id);
+        froms = [pool.reduce((best, f) => (Math.abs(cx(f) - here) < Math.abs(cx(best) - here) ? f : best))];
+      }
       for (const from of froms) {
         const met = m.requires.find((r) => r.from === from)?.met;
         const a = buttons.get(from).getBoundingClientRect();
@@ -295,13 +310,17 @@ function path(pickId = null) {
     fillCard(cardBox, byId.get(id));
   }
   const pickView = (v) => { try { localStorage.setItem('slushline.view', v); } catch { /* storage off */ } path(pickId); };
-  const switcher = el('div', { class: 'controls view-switch' },
-    button(t('missions.view.tree.label'), () => pickView('tree'), { id: 'view-tree', class: chart ? 'quiet' : '', 'aria-pressed': String(!chart) }),
-    button(t('missions.view.chart.label'), () => pickView('chart'), { id: 'view-chart', class: chart ? '' : 'quiet', 'aria-pressed': String(chart) }));
+  // The map is the view; the other is folded away at the foot of the screen,
+  // open only when it is the one chosen, as on Vagrancy's chart.
+  const switcher = el('details', { id: 'view-fold', class: 'view-fold', open: chart },
+    el('summary', {}, t('missions.view.other')),
+    el('div', { class: 'controls view-switch' },
+      button(t('missions.view.tree.label'), () => pickView('tree'), { id: 'view-tree', class: chart ? 'quiet' : '', 'aria-pressed': String(!chart) }),
+      button(t('missions.view.chart.label'), () => pickView('chart'), { id: 'view-chart', class: chart ? '' : 'quiet', 'aria-pressed': String(chart) })));
   // The map scrolls sideways in its own frame, as Vagrancy's chart does, so
   // a long row of stores stays one row.
   const frame = chart ? tree : el('div', { class: 'map-scroll' }, tree);
-  screen(el('h2', {}, t('menu.missions.label')), el('p', { class: 'premise' }, t('world.premise')), cardBox, switcher, frame, el('div', { class: 'controls' }, back()));
+  screen(el('h2', {}, t('menu.missions.label')), el('p', { class: 'premise' }, t('world.premise')), cardBox, frame, el('div', { class: 'controls' }, back()), switcher);
   const first = pickId ?? (ms.find((m) => m.open && !m.passed) ?? ms[0]).id;
   pick(first);
   wire();
