@@ -215,3 +215,21 @@ section.how p { max-width: 720px; margin: 0; }
 /* Focus shows on the store's plaque, not as a box round the whole scene. */
 #tree.rows .node:focus { outline: none; }
 #tree.rows .node:focus-visible .plaque { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* The stores stand out from their region (Sam, 2026-10-07: "some of them
+   get really drowned out by the city background"): the band recedes under
+   a paper wash with its color softened, and each store is set off by a
+   paper halo, as Vagrancy sets off its fight scenes, and drawn larger. */
+#tree.rows .level.band::before { opacity: 0.58; filter: saturate(0.75); }
+#tree.rows .node { width: 186px; }
+#tree.rows .node .store {
+  width: 176px; height: 132px;
+  filter: drop-shadow(0 0 1.5px var(--cup)) drop-shadow(0 0 1.5px var(--cup)) drop-shadow(0 0 5px var(--cup));
+}
+#tree.rows .node.open .store {
+  filter: drop-shadow(0 0 1.5px var(--cup)) drop-shadow(0 0 1.5px var(--cup)) drop-shadow(0 0 7px var(--art-gold)) drop-shadow(0 4px 0 var(--art-shadow));
+}
+#tree.rows .node.locked .store {
+  filter: grayscale(1) opacity(0.75) drop-shadow(0 0 1.5px var(--cup)) drop-shadow(0 0 4px var(--cup));
+}
+@media (max-width: 600px) { #tree.rows .node { width: 124px; } #tree.rows .node .store { width: 118px; height: 88px; } }
