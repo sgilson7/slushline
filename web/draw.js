@@ -7,6 +7,8 @@ import { Backdrop } from './backdrop.js';
 // The view: centimeters of the line shown across the canvas. A layout
 // choice of the page, not a rule of the game.
 const VIEW_LEFT = -10;
+// The centimeters shown across: the usual line, or a longer one (the
+// gauntlet, 2026-10-08), whose end core sends.
 const VIEW_WIDTH = 480;
 // The lowest centimeter shown: a little below the belt, which is at 50.
 const VIEW_BOTTOM = -5;
@@ -24,12 +26,15 @@ export class Stage {
     this.backdrop = new Backdrop(palette);
   }
 
-  get scale() { return this.c.width / VIEW_WIDTH; }
+  get scale() { return this.c.width / (this.viewWidth ?? VIEW_WIDTH); }
 
   // Fit the canvas's height to the lines this frame has: from a little
   // below the lowest belt to a little above the highest handle. A mission
   // with two lines is a taller picture, not a smaller one.
   fit(frame) {
+    // Wide enough for the longest line this frame has.
+    const end = Math.max(...frame.lines.map((L) => L.end_x / this.one));
+    this.viewWidth = Math.max(VIEW_WIDTH, end - VIEW_LEFT - 10);
     // Wide as the page lets it be, at the screen's own pixel density, so a
     // bigger window is a bigger line (Sam, 2026-10-05: "generally
     // everything should be larger").
@@ -332,7 +337,8 @@ export class Stage {
   }
 
   drawLine(L, keyNames) {
-    this.drawTray(L);
+    // An open belt (the mirror line) has no tray: its slush falls through.
+    if (!L.open) this.drawTray(L);
     const g = this.g;
     const p = this.pal;
     // The belt, with marks that move with it.
@@ -340,7 +346,14 @@ export class Stage {
     const left = this.sx(0);
     const right = this.sx(L.end_x);
     g.fillStyle = p.belt;
-    g.fillRect(left, top, right - left, this.len(6 * this.one));
+    if (L.open) {
+      // A track of slats with gaps, so it reads as something slush falls
+      // through.
+      const h = this.len(6 * this.one);
+      for (let x = left; x < right; x += this.len(12 * this.one)) g.fillRect(x, top, this.len(7 * this.one), h * 0.6);
+    } else {
+      g.fillRect(left, top, right - left, this.len(6 * this.one));
+    }
     g.strokeStyle = p.belt_mark;
     g.lineWidth = 2;
     const step = 12 * this.one;

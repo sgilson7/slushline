@@ -2046,6 +2046,342 @@
     "average": 60,
     "waste_pct": 30
    }
+  },
+  {
+   "id": "s_heatwave",
+   "chapter": "wild_shifts",
+   "teaches": [
+    "K42"
+   ],
+   "builds_on": [
+    "K03_K42"
+   ],
+   "requires": [
+    {
+     "pass": "m_two_spouts"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "heat"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_rush_hour",
+   "chapter": "wild_shifts",
+   "teaches": [
+    "K43"
+   ],
+   "builds_on": [
+    "K42_K43"
+   ],
+   "requires": [
+    {
+     "pass": "s_heatwave"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 6,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "speed_run"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_switchback",
+   "chapter": "wild_shifts",
+   "teaches": [
+    "K44"
+   ],
+   "builds_on": [
+    "K43_K44"
+   ],
+   "requires": [
+    {
+     "pass": "s_rush_hour"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 3,
+       "parts": {
+        "cola": 1
+       }
+      }
+     ],
+     "conditions": [
+      "open"
+     ]
+    },
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [],
+     "orders": [
+      {
+       "count": 3,
+       "parts": {
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "mirror"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_sunburn",
+   "chapter": "wild_shifts",
+   "teaches": [
+    "K45"
+   ],
+   "builds_on": [
+    "K44_K45"
+   ],
+   "requires": [
+    {
+     "pass": "s_switchback"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "quick",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "cherry",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "cherry": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "heat_fast",
+      "speed_run"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_gauntlet",
+   "chapter": "wild_shifts",
+   "teaches": [
+    "K46"
+   ],
+   "builds_on": [
+    "K45_K46"
+   ],
+   "requires": [
+    {
+     "pass": "s_sunburn"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon",
+      "cherry"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "lemon": 1,
+        "cherry": 1
+       }
+      }
+     ],
+     "conditions": [
+      "long_line",
+      "gauntlet_charge",
+      "gauntlet_plates",
+      "jet_gauntlet"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_night_shift",
+   "chapter": "wild_shifts",
+   "teaches": [
+    "K47"
+   ],
+   "builds_on": [
+    "K46_K47"
+   ],
+   "requires": [
+    {
+     "pass": "s_gauntlet"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 3,
+       "parts": {
+        "cola": 2,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": [
+      "open",
+      "speed_run_hard"
+     ]
+    },
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [],
+     "orders": [
+      {
+       "count": 3,
+       "parts": {
+        "lemon": 2,
+        "cola": 1
+       }
+      }
+     ],
+     "conditions": [
+      "speed_run_hard",
+      "mirror"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_last_stretch",
+   "chapter": "wild_shifts",
+   "teaches": [
+    "K48"
+   ],
+   "builds_on": [
+    "K47_K48"
+   ],
+   "requires": [
+    {
+     "pass": "s_night_shift"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "regular",
+     "spouts": [
+      "cola",
+      "lemon",
+      "cherry"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "lemon": 1,
+        "cherry": 1
+       }
+      }
+     ],
+     "conditions": [
+      "long_line",
+      "gauntlet_charge",
+      "gauntlet_plates",
+      "jet_gauntlet",
+      "heat_long",
+      "speed_run_hard"
+     ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
   }
  ]
 }

@@ -164,6 +164,34 @@
     {
       "id": "K41",
       "group": "cup_shapes"
+    },
+    {
+      "id": "K42",
+      "group": "wild_shifts"
+    },
+    {
+      "id": "K43",
+      "group": "wild_shifts"
+    },
+    {
+      "id": "K44",
+      "group": "wild_shifts"
+    },
+    {
+      "id": "K45",
+      "group": "wild_shifts"
+    },
+    {
+      "id": "K46",
+      "group": "wild_shifts"
+    },
+    {
+      "id": "K47",
+      "group": "wild_shifts"
+    },
+    {
+      "id": "K48",
+      "group": "wild_shifts"
     }
   ],
   "edges": [
@@ -220,7 +248,14 @@
     "K40_K41",
     "K34_K36",
     "K38_K35",
-    "K35_K39"
+    "K35_K39",
+    "K03_K42",
+    "K42_K43",
+    "K43_K44",
+    "K44_K45",
+    "K45_K46",
+    "K46_K47",
+    "K47_K48"
   ],
   "held": []
 }

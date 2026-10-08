@@ -1,5 +1,5 @@
 {
-  "_about": "Conditions on a line (PLANNING-BRIEF 0.7; D13): each is a change to the line's Setup, applied by content before the world is built; sim does not know which mission it is running. Fields (Sam, 2026-10-05) are placed relative to a spout: plates fill a box from `x0` to `x1` cm either side of the spout's nozzle and from `from_rim` cm above the cups' rim to `below_spout` cm under the nozzle, pushing by `accel` thousandths of a cm per tick\u00b2 (and reversing every `flip` ticks if given); a charge sits `dx`, `dy` cm from the nozzle with `strength` thousandths of a cm per tick\u00b2 at its center (negative pulls) fading to nothing at `radius` cm. A held condition is designed and not yet built.",
+  "_about": "Conditions on a line (PLANNING-BRIEF 0.7; D13): each is a change to the line's Setup, applied by content before the world is built; sim does not know which mission it is running. Fields (Sam, 2026-10-05) are placed relative to a spout: plates fill a box from `x0` to `x1` cm either side of the spout's nozzle and from `from_rim` cm above the cups' rim to `below_spout` cm under the nozzle, pushing by `accel` thousandths of a cm per tick² (and reversing every `flip` ticks if given); a charge sits `dx`, `dy` cm from the nozzle with `strength` thousandths of a cm per tick² at its center (negative pulls) fading to nothing at `radius` cm. A held condition is designed and not yet built.",
   "rail": {
     "spout": 1,
     "amplitude": 36,
@@ -182,5 +182,72 @@
       0
     ],
     "flip": 240
+  },
+  "heat": {
+    "melt_s": 11
+  },
+  "heat_fast": {
+    "melt_s": 9
+  },
+  "speed_run": {
+    "every_s": 8,
+    "steps_pct": [
+      120,
+      140,
+      160,
+      180
+    ]
+  },
+  "speed_run_hard": {
+    "every_s": 6,
+    "steps_pct": [
+      125,
+      150,
+      175,
+      200
+    ]
+  },
+  "open": {
+    "rise": 130
+  },
+  "mirror": {
+    "offset": 50
+  },
+  "long_line": {
+    "end_x": 860,
+    "lid_x": 800,
+    "spout_x": [
+      150,
+      420,
+      690
+    ]
+  },
+  "gauntlet_charge": {
+    "field": "charge",
+    "spout": 0,
+    "dx": -22,
+    "dy": -34,
+    "strength": 520,
+    "radius": 34
+  },
+  "gauntlet_plates": {
+    "field": "plates",
+    "spout": 1,
+    "x0": -48,
+    "x1": 48,
+    "from_rim": 6,
+    "below_spout": 6,
+    "accel": [
+      110,
+      0
+    ],
+    "flip": 150
+  },
+  "jet_gauntlet": {
+    "spout": 2,
+    "speed": 3000
+  },
+  "heat_long": {
+    "melt_s": 15
   }
 }

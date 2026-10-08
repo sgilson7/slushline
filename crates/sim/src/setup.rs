@@ -87,6 +87,21 @@ pub struct Line {
     /// Cups that ride up and down as they go ("cups that move up and down as
     /// you pour them"): every cup's height moves by this triangle wave.
     pub bob: Option<Rail>,
+    /// Slush that melts (Sam, 2026-10-08): ticks after pouring at which a
+    /// unit of this line has melted away. It shrinks over the last
+    /// `balance::MELT_SHRINK` of them first.
+    pub melt: Option<u16>,
+    /// An open belt (Sam, 2026-10-08, the mirror line): slush that misses
+    /// this line's cups falls between them to the line below, rather than
+    /// landing on the belt as waste.
+    pub open: bool,
+}
+
+impl Line {
+    /// Which way the belt carries its cups: 1 toward +x, -1 toward -x.
+    pub fn dir(&self) -> i32 {
+        if self.belt.speed.raw() < 0 { -1 } else { 1 }
+    }
 }
 
 /// A field that pushes slush, as charged plates or a charge push a beam.

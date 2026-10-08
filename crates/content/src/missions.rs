@@ -140,6 +140,52 @@ fn apply(line: &mut Line, id: &str, def: &Value) {
         // Shown on the card; the lines and the flavor's weight do the rest.
         return;
     }
+    let num = |k: &str| def[k].as_i64().unwrap_or_else(|| panic!("{id} has no {k}"));
+    let tps = sim::balance::TICKS_PER_SECOND as i64;
+    if id.starts_with("heat") {
+        // Slush that melts away `melt_s` seconds after it pours (2026-10-08).
+        line.melt = Some((num("melt_s") * tps) as u16);
+        return;
+    }
+    if id.starts_with("speed_run") {
+        // The belt speeds up on a fixed schedule (2026-10-08): every
+        // `every_s` seconds to the next share of its speed, in percent.
+        let base = line.belt.speed;
+        line.belt.schedule = def["steps_pct"].as_array().unwrap().iter().enumerate()
+            .map(|(k, p)| (((k as i64 + 1) * num("every_s") * tps) as u32, base.scale(p.as_i64().unwrap(), 100)))
+            .collect();
+        return;
+    }
+    if id.starts_with("long_line") {
+        // The gauntlet (2026-10-08): a longer line, its spouts spread along
+        // it. Listed first among a line's conditions, so the fields and jets
+        // after it are placed by the spouts where they now are.
+        line.end_x = Fx::int(num("end_x") as i32);
+        line.lid_x = Fx::int(num("lid_x") as i32);
+        for (s, x) in line.spouts.iter_mut().zip(def["spout_x"].as_array().unwrap()) {
+            s.x = Fx::int(x.as_i64().unwrap() as i32);
+        }
+        return;
+    }
+    if id == "open" {
+        // The upper line of a mirror line: slush that misses its cups falls
+        // through to the line below (its rise is set in `Mission::setup`).
+        line.open = true;
+        return;
+    }
+    if id == "mirror" {
+        // The lower line of a mirror line runs the other way: its cups come
+        // in from the far end and are judged at a lid near the start.
+        line.belt.speed = -line.belt.speed;
+        for s in &mut line.belt.schedule {
+            s.1 = -s.1;
+        }
+        // Its cups start `offset` cm further out, so they pass under the
+        // spouts between the upper line's cups, not beneath them.
+        line.first_x = line.end_x - line.first_x + Fx::int(num("offset") as i32);
+        line.lid_x = line.end_x - line.lid_x;
+        return;
+    }
     if id == "two_rows" {
         line.rows = def["rows"].as_array().unwrap().iter().map(|r| Fx::int(r.as_i64().unwrap() as i32)).collect();
         return;
@@ -243,7 +289,14 @@ impl Mission {
     /// upper one and is seat 0; the second, lower, is seat 1.
     pub fn setup(&self, seed: u64, tuning: u8) -> Setup {
         assert!((1..=2).contains(&self.lines.len()), "{} has {} lines", self.id, self.lines.len());
-        let mut s = setup::setup_of(seed, tuning, self.lines[0].build(if self.lines.len() == 2 { UPPER_LINE_RISE } else { 0 }));
+        // A mirror line's upper line sits lower than a second line's does,
+        // so slush falling through it reaches the cups below.
+        let rise = match self.lines.len() {
+            2 if self.lines[0].conditions.iter().any(|c| c == "open") => conditions()["open"]["rise"].as_i64().unwrap() as i32,
+            2 => UPPER_LINE_RISE,
+            _ => 0,
+        };
+        let mut s = setup::setup_of(seed, tuning, self.lines[0].build(rise));
         if let Some(lower) = self.lines.get(1) {
             s.lines[1] = Some(lower.build(0));
         }

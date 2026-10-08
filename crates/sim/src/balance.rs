@@ -120,3 +120,8 @@ pub const BELT_STEP: Fx = Fx::ratio(1, 120);
 /// of a slurpee machine"): waste is kept by where it fell, in bins this
 /// many cm wide along the line.
 pub const TRAY_BIN: i32 = 12;
+
+/// Ticks over which melting slush shrinks before it is gone (2026-10-08).
+pub const MELT_SHRINK: u16 = 60;
+/// The smallest a melting unit is drawn and pushes, before it is gone.
+pub const R_MELTED: Fx = Fx::ratio(1, 2);

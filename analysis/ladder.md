@@ -2,7 +2,7 @@
 
 The yardstick pilot (the timer with up to 10 units of error on each let-go, seeded) on every mission, 200 runs each, tuning 1. Written by `make ladder`; read by `the_path_gets_no_easier`.
 
-fingerprint: 1f240bd4e5cc3765
+fingerprint: 8b74d02e92f1511d
 
 | # | mission | runs | average | standard error | passed |
 |---|---|---|---|---|---|
@@ -47,3 +47,10 @@ fingerprint: 1f240bd4e5cc3765
 | 39 | s_fishbowl | 200 | 64.88 | 0.10 | 200 |
 | 40 | s_glass_bowl | 200 | 63.65 | 0.38 | 152 |
 | 41 | s_jar_hourglass | 200 | 64.12 | 0.15 | 192 |
+| 42 | s_heatwave | 200 | 87.44 | 0.12 | 200 |
+| 43 | s_rush_hour | 200 | 86.93 | 0.11 | 200 |
+| 44 | s_switchback | 200 | 86.80 | 0.08 | 200 |
+| 45 | s_sunburn | 200 | 86.29 | 0.12 | 200 |
+| 46 | s_gauntlet | 200 | 82.59 | 0.14 | 200 |
+| 47 | s_night_shift | 200 | 78.91 | 0.10 | 200 |
+| 48 | s_last_stretch | 200 | 63.50 | 0.19 | 186 |

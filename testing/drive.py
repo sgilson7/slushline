@@ -619,6 +619,40 @@ def a_missed_cup_plays_sam_s_recording(page, name):
 
 
 @check
+def a_mirror_line_runs_its_lower_belt_back_under_one_set_of_spouts(page, name):
+    # Sam, 2026-10-08: "the mirror line but only one set of nozzles for both".
+    # Switchback's upper belt is open and its lower line has no spouts; the
+    # lower cups travel toward the start, and the HUD lists keys for the
+    # line that has spouts and no other.
+    page.evaluate(f"localStorage.setItem('slushline.save', {json.dumps(json.dumps(ALL_PASSED))})")
+    page.reload(wait_until="load")
+    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.click("#menu-missions")
+    page.click("#mission-s_switchback")
+    page.click("#open-mission")
+    problems = lines_not_in_copy(page, "the mirror line's card")
+    page.click("#start-mission")
+    page.wait_for_function("window.slushline.tick() > 2")
+    first = page.evaluate("window.slushline.frame().lines.map((L) => [L.open, L.spouts.length, L.cups[0].x])")
+    page.wait_for_timeout(600)
+    later = page.evaluate("window.slushline.frame().lines.map((L) => L.cups[0].x)")
+    keys = page.locator("#hud .hud-keys").count()
+    problems += lines_not_in_copy(page, "the mirror line")
+    if [f[0] for f in first] != [True, False] or [f[1] for f in first] != [2, 0]:
+        problems.append(f"the lines read (open, spouts) {[(f[0], f[1]) for f in first]}")
+    if not (later[0] > first[0][2] and later[1] < first[1][2]):
+        problems.append(f"the upper cup went {first[0][2]} to {later[0]} and the lower {first[1][2]} to {later[1]}")
+    if keys != 1:
+        problems.append(f"the HUD lists keys for {keys} lines")
+    page.click("#leave-run")
+    page.click("#back-to-menu")
+    if problems:
+        return [f"{name}: {p}" for p in problems]
+    print(f"ok: {name}: the upper belt is open and the lower has no spouts; its cups run back; the HUD lists one line's keys")
+    return []
+
+
+@check
 def a_file_that_is_not_a_replay_is_refused_with_a_sentence(page, name):
     junk = ROOT / "testing" / "replays" / "not-a-replay.txt"
     junk.write_text("this is not a replay")

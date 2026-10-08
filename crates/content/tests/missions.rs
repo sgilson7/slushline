@@ -61,8 +61,16 @@ fn every_order_can_reach_full_marks_from_its_line() {
         let s = m.setup(1, 1);
         for (k, spec) in m.lines.iter().enumerate() {
             let l = s.lines[k].as_ref().unwrap();
+            // A line with no spouts of its own (a mirror line's lower line,
+            // 2026-10-08) is filled through the open line above it.
+            let mut via = l.clone();
+            if via.spouts.is_empty() {
+                let up = s.lines[0].as_ref().unwrap();
+                assert!(k == 1 && up.open, "{} line {k} has no spouts and no open line above it", m.id);
+                via.spouts = up.spouts.clone();
+            }
             for o in &spec.orders {
-                let got = best(l, &o.order());
+                let got = best(&via, &o.order());
                 assert_eq!(got, 100, "{} line {k}: the order {:?} tops out at {got} from the spouts {:?}", m.id, o.parts(), spec.spouts);
                 checked += 1;
             }

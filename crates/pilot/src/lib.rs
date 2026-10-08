@@ -18,7 +18,7 @@ use sim::{Input, World};
 
 /// Bumped when a pilot plays differently, so `analysis/ladder.md` is known to
 /// be stale.
-pub const VERSION: u32 = 3;
+pub const VERSION: u32 = 4;
 
 /// The yardstick's error on each let-go, in units either way.
 pub const YARDSTICK_ERROR: u32 = 10;
@@ -34,7 +34,8 @@ pub enum Kind {
 /// A pour in progress or done: which cup, and the valve's count when it began.
 #[derive(Clone, Debug, Default)]
 struct Pour {
-    cup: Option<u16>,
+    /// The line the cup is on (the line below, on a mirror line) and its order.
+    cup: Option<(usize, u16)>,
     start: u32,
     done: bool,
     /// The valve's count when the key was let go, to measure the tail.
@@ -89,23 +90,26 @@ impl Pilot {
             // fields, and the cup that will be there then.
             let (x, fall) = landing(w, seat, i);
             let lead = speed * fall as i32;
-            // Aim inside the narrower of the middle and the mouth, so a jar's
-            // shoulders are not poured on (cup shapes, 2026-10-08).
-            let aim = line.cup.inner_half.min(line.cup.mouth());
-            let room = (aim - Fx::int(8)).max(aim / 2);
-            let target = ls.cups.iter().find(|c| !c.judged && (c.x + lead - x).abs() <= room);
-            let Some(cup) = target else {
+            // An upper cup this spout has nothing to pour into does not stop
+            // it reaching a lower cup through the open belt (the mirror line).
+            let here = aimed(w, seat, line, &ls.cups, x, lead).map(|c| (seat, c.order));
+            let wants = |o: u16| plan(line, &line.orders[o as usize], i) > 0;
+            let target = match here {
+                Some((_, o)) if wants(o) => here,
+                _ => below(w, seat, i).or(here),
+            };
+            let Some((cup_seat, order)) = target else {
                 if self.pours[i].cup.is_some() && !self.pours[i].done {
                     self.let_go(i, poured);
                 }
                 continue;
             };
-            if self.pours[i].cup != Some(cup.order) {
+            if self.pours[i].cup != Some((cup_seat, order)) {
                 let slop = match self.kind {
                     Kind::Yardstick { error, .. } => self.rng.range(-(error as i32), error as i32),
                     _ => 0,
                 };
-                self.pours[i] = Pour { cup: Some(cup.order), start: poured, done: false, released_at: None, slop };
+                self.pours[i] = Pour { cup: Some((cup_seat, order)), start: poured, done: false, released_at: None, slop };
             }
             if self.pours[i].done {
                 continue;
@@ -113,13 +117,29 @@ impl Pilot {
             // Aim a little short: slush heaps under the stream and spills
             // over one wall before the cup is level (the slope rule), so a
             // full share poured at one point wastes some of it.
-            let plan = plan(line, &line.orders[cup.order as usize], i) as i32 * AIM.0 / AIM.1;
+            // A cup on the line below is filled to its own order and size
+            // from this line's spouts.
+            let plan = if cup_seat == seat {
+                plan(line, &line.orders[order as usize], i)
+            } else {
+                let mut via = line.clone();
+                via.cup = w.line(cup_seat).cup;
+                plan(&via, &w.line(cup_seat).orders[order as usize], i)
+            } as i32
+                * AIM.0
+                / AIM.1;
             let out = (poured - self.pours[i].start) as i32;
             if plan > 0 && out + self.tail[i] + self.pours[i].slop < plan {
                 bits |= Input::SPOUT[i];
             } else if out > 0 || plan == 0 {
                 self.let_go(i, poured);
             }
+        }
+        // Slush that melts (2026-10-08) is carried to the lid sooner on a
+        // faster belt, so the pilot holds the belt's faster key, as the
+        // mission's card tells a player to.
+        if line.melt.is_some() {
+            bits |= Input::BELT_FASTER;
         }
         Input(bits)
     }
@@ -130,6 +150,65 @@ impl Pilot {
             self.pours[i].released_at = Some(poured);
         }
     }
+}
+
+/// The first cup on `line` that slush landing at `x` reaches, `lead` ahead:
+/// inside the narrower of the cup's middle and its mouth, so a jar's
+/// shoulders are not poured on (cup shapes, 2026-10-08).
+fn aimed<'a>(_w: &World, _seat: usize, line: &sim::setup::Line, cups: &'a [sim::world::Cup], x: Fx, lead: Fx) -> Option<&'a sim::world::Cup> {
+    let aim = line.cup.inner_half.min(line.cup.mouth());
+    let room = (aim - Fx::int(8)).max(aim / 2);
+    cups.iter().find(|c| !c.judged && (c.x + lead - x).abs() <= room)
+}
+
+/// On a mirror line (2026-10-08): the lower line's cup that slush from
+/// spout `i` falls into through the open upper belt, if no upper cup is in
+/// its way as it passes the belt.
+fn below(w: &World, seat: usize, i: usize) -> Option<(usize, u16)> {
+    let line = w.line(seat);
+    if !line.open || seat != 0 || w.lines[1].is_none() {
+        return None;
+    }
+    let (x, fall, cross) = landing_below(w, i)?;
+    let up = w.lines[0].as_ref().unwrap();
+    let speed_up = w.belt_speed(0);
+    let clear = line.cup.widest() + sim::balance::WALL_HALF * 2 + sim::balance::R_FULL * 2;
+    // Where the slush passes the upper belt, no upper cup may stand.
+    let (cx, ct) = cross;
+    if up.cups.iter().any(|c| !c.judged && (c.x + speed_up * ct as i32 - cx).abs() < clear) {
+        return None;
+    }
+    let low = w.line(1);
+    let lead = w.belt_speed(1) * fall as i32;
+    aimed(w, 1, low, &w.lines[1].as_ref().unwrap().cups, x, lead).map(|c| (1, c.order))
+}
+
+/// Where slush from spout `i` of the upper line lands on the line below,
+/// how many ticks it takes, and where and when it passes the upper belt.
+fn landing_below(w: &World, i: usize) -> Option<(Fx, u32, (Fx, u32))> {
+    let ph = w.setup.physics;
+    let line = w.line(0);
+    let target = w.floor(1) + Fx::int(12);
+    let mut p = sim::fx::V2::new(w.spout_x(0, i), line.spouts[i].y);
+    let mut v = sim::fx::V2::new(Fx(0), -sim::balance::SPOUT_SPEED);
+    let cap = ph.cap.raw() as i64;
+    let mut t = 0u32;
+    let mut cross = None;
+    while p.y > target && t < 400 {
+        v -= v * ph.drag;
+        v.y -= ph.gravity;
+        let fields = if p.y > line.belt_y { line.field_accel(p, w.tick + t) } else { w.line(1).field_accel(p, w.tick + t) };
+        v += fields;
+        if v.len_sq_raw() > cap * cap {
+            v = v.with_len(ph.cap);
+        }
+        p += v;
+        t += 1;
+        if cross.is_none() && p.y <= line.belt_y {
+            cross = Some((p.x, t));
+        }
+    }
+    Some((p.x, t, cross?))
 }
 
 /// The share of the plan the timer pours, as a fraction.

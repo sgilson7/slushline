@@ -369,10 +369,10 @@ function card(id) {
     el('p', {}, m.pass),
     ...m.conditions.map((c) => el('p', { class: 'condition' }, el('strong', {}, c.name), ' ', c.desc)),
     el('p', { class: 'try' }, t(m.try_key, { ...kv, keys_upper: upper, keys_lower: lower })),
-    ...m.spout_labels.flatMap((labels, seat) => [
+    ...m.spout_labels.flatMap((labels, seat) => (labels.length ? [
       m.lines > 1 ? el('h4', {}, t(seat === 0 ? 'lines.upper.name' : 'lines.lower.name')) : null,
       lineList(labels, seat),
-    ]),
+    ] : [])),
     el('p', {}, t('hud.belt_keys', kv)),
     el('div', { class: 'controls' },
       button(t('missions.start.label'), () => startMission(id), { id: 'start-mission' }),
@@ -526,6 +526,9 @@ function hudStatic() {
   const labels = run.mission ? run.mission.spout_labels : f.lines.map((L) => L.spouts.map(() => ''));
   const kids = [el('div', { id: 'hud-live' })];
   f.lines.forEach((L, seat) => {
+    // A line with no spouts of its own (a mirror line's lower line) has no
+    // keys to list.
+    if (!L.spouts.length) return;
     const names = seat === 0 ? keyNames() : lowerKeyNames();
     const list = names.slice(0, L.spouts.length).join(', ');
     kids.push(el('p', { class: 'hud-keys' }, seat === 0 ? t('hud.keys', { keys_upper: list }) : t('hud.keys_lower', { keys_lower: list })));

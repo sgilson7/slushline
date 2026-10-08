@@ -612,6 +612,55 @@
         "place": "A bottle shop below the lighthouse, where the storm washes bottles ashore.",
         "store": "Bottle Shop",
         "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+      },
+      "s_heatwave": {
+        "name": "Heat wave",
+        "try": "Speed the belt up, because slush that reaches the lid sooner has less time to melt.",
+        "place": "A store at a desert gas stop in a heat wave.",
+        "store": "Hot Spot",
+        "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+      },
+      "s_rush_hour": {
+        "name": "Rush hour",
+        "try": "Lead the cups more as the belt speeds up, because they travel further while the slush falls.",
+        "place": "A store at a busy downtown crossing at rush hour.",
+        "store": "Gridlock",
+        "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+      },
+      "s_switchback": {
+        "name": "Switchback",
+        "try": "Pour between the upper cups for the lower ones, because slush that misses the top belt falls to the cups coming back.",
+        "place": "A store at a switchback on the mountain road, where the road doubles back below.",
+        "store": "Switchback",
+        "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+      },
+      "s_sunburn": {
+        "name": "Sunburn",
+        "try": "Pour late and let the faster belt carry the cups, because the slush melts fast in this sun.",
+        "place": "A beach store on the islands under a blazing sun.",
+        "store": "Sun Shack",
+        "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+      },
+      "s_gauntlet": {
+        "name": "The gauntlet",
+        "try": "Treat each spout as its own puzzle, because each has a different push or beam.",
+        "place": "A store at the end of a long market street in the old town.",
+        "store": "Market Run",
+        "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+      },
+      "s_night_shift": {
+        "name": "Night shift",
+        "try": "Watch both belts as they speed up, because the cups below come back faster too.",
+        "place": "A stall on two floors in the night market, open late.",
+        "store": "Night Shift",
+        "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+      },
+      "s_last_stretch": {
+        "name": "The last stretch",
+        "try": "Speed the belt up early, because slush from the first spout melts before the long ride ends.",
+        "place": "The store at the end of the long pier to the lighthouse.",
+        "store": "Last Stretch",
+        "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
       }
     },
     "req": {
@@ -745,6 +794,61 @@
       "name": "Plates that turn the other way",
       "desc": "A field under the second spout pushes the other way from the first, and turns when the first does.",
       "review": "new"
+    },
+    "heat": {
+      "name": "Heat",
+      "desc": "Slush melts away a few seconds after it pours, so slush poured early may be gone before its cup reaches the lid.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "heat_fast": {
+      "name": "Fierce heat",
+      "desc": "Slush melts away even sooner after it pours.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "speed_run": {
+      "name": "Rush",
+      "desc": "The belt speeds up on its own as the mission goes on.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "speed_run_hard": {
+      "name": "A harder rush",
+      "desc": "The belt speeds up sooner, and further.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "open": {
+      "name": "An open belt",
+      "desc": "The upper belt has gaps between its cups, so slush that misses them falls to the line below.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "mirror": {
+      "name": "A belt running back",
+      "desc": "The lower belt runs the other way, so its cups come back under the spouts.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "long_line": {
+      "name": "The long line",
+      "desc": "The line is longer than any before, with its spouts spread along it.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "gauntlet_charge": {
+      "name": "A charge at the first spout",
+      "desc": "A charge beside the first spout pushes its slush away as it falls.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "gauntlet_plates": {
+      "name": "Turning plates at the second spout",
+      "desc": "Plates under the second spout push one way, then the other.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "jet_gauntlet": {
+      "name": "A jet at the third spout",
+      "desc": "The third spout fires its slush straight down.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "heat_long": {
+      "name": "Long heat",
+      "desc": "Slush melts away after a while, so slush from the first spout may be gone before the long line ends.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
     }
   },
   "results": {
@@ -1124,6 +1228,48 @@
       "when": "Both lines carry cups with narrow openings.",
       "then": "Watch where each opening is.",
       "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+    },
+    "K42": {
+      "name": "Melting slush",
+      "when": "Slush melts away a few seconds after it pours.",
+      "then": "Get it to the lid sooner, by pouring late or speeding the belt up.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "K43": {
+      "name": "A belt that speeds up",
+      "when": "The belt speeds up on its own.",
+      "then": "Lead the cups more as it goes faster.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "K44": {
+      "name": "Pouring through a belt",
+      "when": "Slush that misses the upper cups falls to a belt below that runs the other way.",
+      "then": "Aim between the upper cups for the lower ones.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "K45": {
+      "name": "Heat and speed",
+      "when": "Slush melts fast while the belt speeds up.",
+      "then": "Let the faster belt carry the slush to the lid before it melts.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "K46": {
+      "name": "A gauntlet",
+      "when": "Each spout along a long line has its own push or beam.",
+      "then": "Solve each spout on its own.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "K47": {
+      "name": "Two belts speeding up",
+      "when": "Both belts of a mirror line speed up.",
+      "then": "Watch where each belt's cups will be.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
+    },
+    "K48": {
+      "name": "Everything at once",
+      "when": "A long line, melting slush and a belt that speeds up.",
+      "then": "Speed the belt up early, and solve each spout as it comes.",
+      "review": "new (Sam, 2026-10-08: wild shifts, a mission on each row from the desert to the lighthouse)"
     }
   },
   "kc_edge": {
@@ -1181,7 +1327,14 @@
     "K40_K41": "Two narrow openings, on two lines.",
     "K34_K36": "From a tall cup to one with almost no floor.",
     "K38_K35": "From a narrow waist to a wide, shallow bowl.",
-    "K35_K39": "From a wide mouth to a small one on a round body."
+    "K35_K39": "From a wide mouth to a small one on a round body.",
+    "K03_K42": "From two spouts to slush that melts.",
+    "K42_K43": "From melting slush to a belt that speeds up.",
+    "K43_K44": "From one belt to two that run opposite ways.",
+    "K44_K45": "Melting and a faster belt, together.",
+    "K45_K46": "From one push to a line of them.",
+    "K46_K47": "Two belts again, both speeding up.",
+    "K47_K48": "The whole gauntlet, melting and speeding up."
   },
   "judge": {
     "excellent": "EXCELLENT",
@@ -1233,6 +1386,9 @@
     },
     "cup_shapes": {
       "name": "Cup shapes"
+    },
+    "wild_shifts": {
+      "name": "Wild shifts"
     }
   },
   "music": {

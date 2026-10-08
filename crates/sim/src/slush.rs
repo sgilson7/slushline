@@ -36,8 +36,10 @@ impl Unit {
     /// of itself in the air, and the solver hid the rest (SECOND-ORDER-M1
     /// row 4, M2 row 3).
     pub fn grow(&mut self, t: &Tuning) {
-        if self.age < t.swell_ticks {
-            self.age += 1;
+        // The age keeps counting past the swell, for slush that melts
+        // (2026-10-08); the swell reads it only while it grows.
+        self.age = self.age.saturating_add(1);
+        if self.age <= t.swell_ticks {
             let span = balance::R_FULL - balance::R_BIRTH;
             let (a, n) = (self.age as i64, t.swell_ticks.max(1) as i64);
             self.r = balance::R_BIRTH + span.scale(a * a, n * n);

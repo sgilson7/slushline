@@ -149,12 +149,107 @@ fn h5_every_unit_is_in_one_place() {
         let ls = w.lines[0].as_ref().unwrap();
         let in_cups: u32 = w.in_cup_counts(0).iter().flatten().sum();
         let loose = w.units.len() as u32 - in_cups;
-        assert_eq!(loose + in_cups + ls.judged + ls.wasted, ls.emitted, "tick {}", w.tick);
+        assert_eq!(loose + in_cups + ls.judged + ls.wasted + ls.melted, ls.emitted, "tick {}", w.tick);
         saw_lid |= w.events.iter().any(|e| matches!(e, Event::Judged { .. }));
         saw_spill |= w.events.iter().any(|e| matches!(e, Event::Waste { .. }));
     }
     assert!(saw_lid && saw_spill, "the run must include a judged cup ({saw_lid}) and a spill ({saw_spill})");
     assert!(w.done());
+}
+
+/// H5 with slush that melts (2026-10-08): melted is a place a unit can be,
+/// so the identity counts it, through a run in which some slush melts away
+/// before its cup reaches the lid.
+#[test]
+fn h5_every_unit_is_in_one_place_when_slush_melts() {
+    let mut l = line(&["cola"], "regular", "steady", vec![order(&[("cola", 1)]), order(&[("cola", 1)])]);
+    l.melt = Some(240);
+    let mut w = World::new(setup_of(3, sim::balance::DEFAULT_TUNING, l));
+    let mut saw_melt = false;
+    for t in 0..2_400u32 {
+        // While each cup passes under the spout (about ticks 730 and 1060).
+        let hold = (715..745).contains(&t) || (1045..1075).contains(&t);
+        w.step([Input(if hold { Input::SPOUT[0] } else { 0 }), Input::NONE]);
+        let ls = w.lines[0].as_ref().unwrap();
+        let in_cups: u32 = w.in_cup_counts(0).iter().flatten().sum();
+        let loose = w.units.len() as u32 - in_cups;
+        assert_eq!(loose + in_cups + ls.judged + ls.wasted + ls.melted, ls.emitted, "tick {}", w.tick);
+        saw_melt |= w.events.iter().any(|e| matches!(e, Event::Melted { .. }));
+    }
+    assert!(saw_melt, "no slush melted");
+    assert!(w.lines[0].as_ref().unwrap().melted > 0);
+    assert!(w.done());
+}
+
+/// Melting slush (Sam, 2026-10-08): a unit shrinks over its last
+/// `MELT_SHRINK` ticks and is gone at its line's melt age, counted as
+/// melted, not as waste.
+#[test]
+fn slush_that_melts_shrinks_then_is_gone_at_its_age() {
+    let mut l = line(&["cola"], "regular", "steady", vec![order(&[("cola", 1)])]);
+    l.belt.speed = Fx(0);
+    l.first_x = l.spouts[0].x;
+    l.lid_x = Fx::int(10_000);
+    l.melt = Some(300);
+    let mut w = World::new(setup_of(1, sim::balance::DEFAULT_TUNING, l));
+    let floor = w.floor(0);
+    let x = w.line(0).spouts[0].x;
+    drop_unit(&mut w, V2::new(x, floor + Fx::int(10)), 0);
+    for _ in 0..(300 - sim::balance::MELT_SHRINK / 2) {
+        w.step([Input::NONE; 2]);
+    }
+    assert_eq!(w.units.len(), 1, "gone too soon");
+    assert!(w.units[0].r < sim::balance::R_FULL, "not shrinking with {} ticks left", sim::balance::MELT_SHRINK / 2);
+    while w.tick < 300 {
+        w.step([Input::NONE; 2]);
+    }
+    let ls = w.lines[0].as_ref().unwrap();
+    assert_eq!((w.units.len(), ls.melted, ls.wasted), (0, 1, 0), "melted at its age, not wasted");
+}
+
+/// The mirror line (Sam, 2026-10-08): slush that misses the open upper
+/// line's cups falls between them into the lower line's, and the lower
+/// line's cups run the other way, judged at a lid near the start.
+#[test]
+fn slush_falls_through_an_open_line_and_the_lower_belt_runs_back() {
+    let mut up = line(&["cola"], "regular", "steady", vec![order(&[("cola", 1)])]);
+    up.open = true;
+    up.belt_y += Fx::int(130);
+    up.spouts[0].y += Fx::int(130);
+    let mut low = line(&[], "regular", "steady", vec![order(&[("cola", 1)]), order(&[("cola", 1)])]);
+    low.belt.speed = -low.belt.speed;
+    low.first_x = low.end_x - low.first_x;
+    low.lid_x = low.end_x - low.lid_x;
+    let mut s = setup_of(1, sim::balance::DEFAULT_TUNING, up);
+    s.lines[1] = Some(low);
+    let mut w = World::new(s);
+    let x0 = w.lines[1].as_ref().unwrap().cups[0].x;
+    // Drop a unit below the upper belt's top, well clear of the upper cup,
+    // a little ahead of a lower cup coming back toward it.
+    for _ in 0..20 {
+        w.step([Input::NONE; 2]);
+    }
+    let up_belt = w.line(0).belt_y;
+    let target = w.lines[1].as_ref().unwrap().cups[0].x;
+    drop_unit(&mut w, V2::new(target - Fx::int(30), up_belt + Fx::int(40)), 0);
+    let mut landed = false;
+    for _ in 0..400 {
+        w.step([Input::NONE; 2]);
+        if w.in_cup_counts(1).iter().flatten().sum::<u32>() == 1 {
+            landed = true;
+            break;
+        }
+    }
+    assert!(landed, "the unit did not fall through into a lower cup");
+    assert_eq!(w.units[0].line, 1, "it is the lower line's now");
+    assert_eq!(w.lines[0].as_ref().unwrap().wasted, 0, "it was not waste on the upper belt");
+    let x1 = w.lines[1].as_ref().unwrap().cups[0].x;
+    assert!(x1 < x0, "the lower cups moved toward -x: {x0:?} to {x1:?}");
+    while !w.done() && w.tick < 20_000 {
+        w.step([Input::NONE; 2]);
+    }
+    let lid = w.line(1).lid_x;
+    assert!(w.done() && lid < Fx::int(100), "the lower cups are judged at a lid near the start ({lid:?})");
 }
 
 /// H8 — a spout on a rail. Amplitude 30, period 120, starting at the center

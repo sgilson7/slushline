@@ -48,6 +48,11 @@ pub struct LineView {
     pub tray_bin: i32,
     /// Whether the line's cups ride on lifts.
     pub lifts: bool,
+    /// An open belt (the mirror line, 2026-10-08): slush falls between its
+    /// cups to the line below, so it has no tray of waste under it.
+    pub open: bool,
+    /// Units that melted away (2026-10-08).
+    pub melted: u32,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]
@@ -172,6 +177,8 @@ pub fn frame(w: &World) -> Frame {
             tray: ls.tray.clone(),
             tray_bin: crate::fx::Fx::int(balance::TRAY_BIN).0,
             lifts: line.bob.is_some(),
+            open: line.open,
+            melted: ls.melted,
         });
     }
     Frame { tick: w.tick, done: w.done(), lines, events: w.events.clone() }

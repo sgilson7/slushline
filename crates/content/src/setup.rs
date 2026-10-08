@@ -108,7 +108,10 @@ pub fn order(parts: &[(&str, u32)]) -> Order {
 pub fn line(spouts: &[&str], cup: &str, belt: &str, orders: Vec<Order>) -> Line {
     let d = line_def();
     let c = cups()[cup];
-    let xs = &d.spout_x[&spouts.len().to_string()];
+    // A line with no spouts of its own (the lower line of a mirror line,
+    // 2026-10-08) has no places to give.
+    let none = Vec::new();
+    let xs = if spouts.is_empty() { &none } else { &d.spout_x[&spouts.len().to_string()] };
     Line {
         belt: Belt { speed: Fx::ratio(d.belts[belt] as i64, sim::balance::TICKS_PER_SECOND as i64), schedule: Vec::new() },
         cup: CupSpec { inner_half: Fx::int(c.inner_half), inner_height: Fx::int(c.inner_height), profile: c.profile.map(Fx::int), capacity: c.capacity },
@@ -126,6 +129,8 @@ pub fn line(spouts: &[&str], cup: &str, belt: &str, orders: Vec<Order>) -> Line 
         fields: Vec::new(),
         rows: Vec::new(),
         bob: None,
+        melt: None,
+        open: false,
     }
 }
 

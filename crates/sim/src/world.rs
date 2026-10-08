@@ -96,6 +96,8 @@ pub struct LineState {
     pub emitted: u32,
     pub judged: u32,
     pub wasted: u32,
+    /// Units that melted away (2026-10-08): not waste, and not in a cup.
+    pub melted: u32,
     /// Every unit wasted, by where it fell: for each bin of
     /// `balance::TRAY_BIN` cm along the line, the flavors in the order they
     /// landed. What the tray under the belt shows.
@@ -118,6 +120,8 @@ pub enum Event {
     Waste { line: u8, x: Fx, y: Fx },
     /// The lid closed on a cup.
     Judged { line: u8, cup: u16, score: u32 },
+    /// A unit of slush melted away (2026-10-08).
+    Melted { line: u8, x: Fx, y: Fx },
 }
 
 /// The whole state of a run. `checksum()` hashes all of it.
@@ -148,7 +152,9 @@ impl World {
             valves: l.spouts.iter().map(|_| Valve { acc: Fx(0), poured: 0 }).collect(),
             cups: (0..l.orders.len())
                 .map(|k| {
-                    let x = l.first_x - l.spacing * k as i32;
+                    // Cups come in one after another against the belt's
+                    // direction, so the first is nearest the lid.
+                    let x = l.first_x - l.spacing * (k as i32 * l.dir());
                     let base = cup_base(l, k, 0);
                     Cup { x, prev_x: x, order: k as u16, judged: false, base, prev_base: base }
                 })
@@ -159,6 +165,7 @@ impl World {
             emitted: 0,
             judged: 0,
             wasted: 0,
+            melted: 0,
             tray: vec![Vec::new(); (l.end_x.trunc() / balance::TRAY_BIN + 1).max(1) as usize],
         }));
         World { rng: Rng::new(setup.seed), setup, tick: 0, units: Vec::new(), lines, events: Vec::new() }
@@ -215,6 +222,7 @@ impl World {
             }
         }
         self.waste();
+        self.melt();
         self.lid();
         self.tick += 1;
     }
@@ -588,6 +596,38 @@ impl World {
         (u.p.x - c.x).abs() < self.half_at(seat, c, u.p.y) && u.p.y < self.cup_rim(seat, c) && u.p.y > self.cup_floor(seat, c)
     }
 
+    // --- melting ----------------------------------------------------------
+
+    /// Slush on a line that melts (2026-10-08) shrinks over its last
+    /// `MELT_SHRINK` ticks and is gone at its line's `melt` age, counted as
+    /// melted: it is not waste, and it is no longer in its cup.
+    fn melt(&mut self) {
+        if self.setup.lines.iter().flatten().all(|l| l.melt.is_none()) {
+            return;
+        }
+        let units = std::mem::take(&mut self.units);
+        let mut keep = Vec::with_capacity(units.len());
+        for mut u in units {
+            let seat = u.line as usize;
+            let Some(life) = self.line(seat).melt else {
+                keep.push(u);
+                continue;
+            };
+            if u.age >= life {
+                self.events.push(Event::Melted { line: u.line, x: u.p.x, y: u.p.y });
+                self.lines[seat].as_mut().unwrap().melted += 1;
+                continue;
+            }
+            let left = life - u.age;
+            if left < balance::MELT_SHRINK {
+                let r = balance::R_FULL.scale(left as i64, balance::MELT_SHRINK as i64);
+                u.r = u.r.min(r.max(balance::R_MELTED));
+            }
+            keep.push(u);
+        }
+        self.units = keep;
+    }
+
     // --- waste and the lid ------------------------------------------------
 
     /// A unit on the belt outside a cup, on the floor, or past either end of
@@ -602,6 +642,14 @@ impl World {
             // A cup stands on the belt by its bottom, the narrow end.
             let in_cup_span = ls.cups.iter().any(|c| (u.p.x - c.x).abs() < line.cup.floor_half() + balance::WALL_HALF * 2);
             let on_belt = u.p.y - u.r <= line.belt_y && !in_cup_span;
+            // An open belt (the mirror line): slush that misses its cups
+            // falls on to the line below and is that line's from now on.
+            if on_belt && line.open && seat == 0 && self.lines[1].is_some() {
+                let mut u = u;
+                u.line = 1;
+                keep.push(u);
+                continue;
+            }
             let gone = u.p.y - u.r <= Fx(0) || u.p.x > line.end_x || u.p.x < -line.end_x;
             if on_belt || gone {
                 self.events.push(Event::Waste { line: u.line, x: u.p.x, y: u.p.y });
@@ -624,7 +672,9 @@ impl World {
             let n = self.lines[seat].as_ref().unwrap().cups.len();
             for ci in 0..n {
                 let c = self.lines[seat].as_ref().unwrap().cups[ci].clone();
-                if c.judged || c.x < line.lid_x {
+                // Judged on the tick its center reaches the lid, from
+                // whichever side its belt brings it.
+                if c.judged || (c.x - line.lid_x).signum() * line.dir() < 0 {
                     continue;
                 }
                 let mut counts = vec![0u32; self.setup.flavors as usize];

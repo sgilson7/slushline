@@ -36,4 +36,6 @@ pub use world::World;
 /// (Sam, 2026-10-06).
 /// 7: cups are flower pots, their walls leaning out (Sam, 2026-10-06).
 /// 8: cups have a profile of straight pieces, for shapes (Sam, 2026-10-08).
-pub const SIM_VERSION: u32 = 8;
+/// 9: slush that melts, open belts and belts that run back, for the
+/// gauntlet, the rush and the mirror line (Sam, 2026-10-08).
+pub const SIM_VERSION: u32 = 9;

@@ -655,6 +655,72 @@ def hourglass_frame(x, base, s):
             line((x - w + 0.04, base), (x - w + 0.04, top), style="draw=wood, line width=2pt"), line((x + w - 0.04, base), (x + w - 0.04, top), style="draw=wood, line width=2pt")]
 
 
+def thermometer(x, y, s=1.0):
+    return [rect(x - 0.1 * s, y + 0.2 * s, 0.2 * s, 1.5 * s, "cloud"), rect(x - 0.05 * s, y + 0.25 * s, 0.1 * s, 1.25 * s, "rose", THIN),
+            circ(x, y + 0.18 * s, 0.17 * s, "rose")] + [line((x + 0.1 * s, y + 0.5 * s + k * 0.25 * s), (x + 0.2 * s, y + 0.5 * s + k * 0.25 * s)) for k in range(5)]
+
+
+def sun(x, y, r=0.3):
+    o = []
+    for a in range(0, 360, 30):
+        ra = math.radians(a)
+        o.append(line((x + math.cos(ra) * r * 1.25, y + math.sin(ra) * r * 1.25), (x + math.cos(ra) * r * 1.65, y + math.sin(ra) * r * 1.65), style="draw=gold, line width=1.2pt"))
+    return o + [circ(x, y, r, "gold")]
+
+
+def puddle(x, y, w=0.6, fill="rose"):
+    return [ell(x, y, w / 2, 0.06, fill, THIN), circ(x + w * 0.35, y + 0.12, 0.04, fill, THIN)]
+
+
+def car(x, y, s=1.0, fill="teal", flip=False):
+    d = -1 if flip else 1
+    return [rect(x - 0.35 * s, y + 0.08 * s, 0.7 * s, 0.22 * s, fill), poly([(x - 0.2 * s * d, y + 0.3 * s), (x + 0.15 * s * d, y + 0.3 * s), (x + 0.08 * s * d, y + 0.45 * s), (x - 0.12 * s * d, y + 0.45 * s)], fill, THIN),
+            rect(x - 0.1 * s, y + 0.31 * s, 0.16 * s, 0.11 * s, "skylight", THIN), circ(x - 0.2 * s, y + 0.07 * s, 0.07 * s, "slate", THIN), circ(x + 0.2 * s, y + 0.07 * s, 0.07 * s, "slate", THIN)]
+
+
+def traffic_light(x, y, s=1.0):
+    return [line((x, y), (x, y + 1.3 * s), style="draw=ink, line width=1pt"), rect(x - 0.1 * s, y + 1.3 * s, 0.2 * s, 0.5 * s, "shadow"),
+            circ(x, y + 1.7 * s, 0.05 * s, "rose", THIN), circ(x, y + 1.55 * s, 0.05 * s, "gold", THIN), circ(x, y + 1.4 * s, 0.05 * s, "sage", THIN)]
+
+
+def umbrella(x, y, s=1.0, fill="rose"):
+    o = [line((x, y), (x + 0.1 * s, y + 1.1 * s), style="draw=ink, line width=0.9pt")]
+    o.append(f"\\filldraw[fill={fill}, {LINE}] {P(x - 0.55 * s, y + 0.95 * s)} .. controls {P(x - 0.3 * s, y + 1.35 * s)} and {P(x + 0.5 * s, y + 1.4 * s)} .. {P(x + 0.75 * s, y + 1.05 * s)} -- cycle;")
+    o.append(f"\\draw[{THIN}] {P(x + 0.1 * s, y + 1.25 * s)} -- {P(x - 0.2 * s, y + 0.98 * s)} {P(x + 0.1 * s, y + 1.25 * s)} -- {P(x + 0.35 * s, y + 1.02 * s)};")
+    return o
+
+
+def bunting(x0, x1, y, n=10):
+    o = [curve((x0, y), ((2 * x0 + x1) / 3, y - 0.15), ((x0 + 2 * x1) / 3, y - 0.15), (x1, y))]
+    for k in range(n):
+        t = (k + 0.5) / n
+        bx = x0 + (x1 - x0) * t
+        by = y - 0.15 * 4 * t * (1 - t) * 0.75
+        o.append(poly([(bx - 0.08, by), (bx + 0.08, by), (bx, by - 0.16)], ["rose", "gold", "teal", "peach"][k % 4], THIN))
+    return o
+
+
+def mini_stall(x, y, fill="rose"):
+    return [rect(x - 0.3, y, 0.6, 0.4, "wood", THIN), poly([(x - 0.36, y + 0.55), (x + 0.36, y + 0.55), (x + 0.3, y + 0.4), (x - 0.3, y + 0.4)], fill, THIN),
+            line((x - 0.3, y + 0.4), (x - 0.3, y)), line((x + 0.3, y + 0.4), (x + 0.3, y))]
+
+
+def switchback_road(x, y, w, h):
+    pts = [(x - w / 2, y), (x + w / 2, y + h * 0.25), (x - w / 2 + 0.2, y + h * 0.5), (x + w / 2 - 0.2, y + h * 0.75), (x - 0.1, y + h)]
+    return [line(*pts, style="draw=sand, line width=3pt"), line(*pts, style="draw=ink, line width=0.4pt, dash pattern=on 2pt off 2pt")]
+
+
+def arrow_board(x, y, w, t, left=False, fill="gold", posts=None):
+    o = []
+    if posts is not None:
+        o.append(line((x, posts), (x, y - 0.18), style="draw=ink, line width=1pt"))
+    tip = -1 if left else 1
+    o.append(poly([(x - w / 2 * tip, y - 0.18), (x + (w / 2 - 0.2) * tip, y - 0.18), (x + w / 2 * tip, y), (x + (w / 2 - 0.2) * tip, y + 0.18), (x - w / 2 * tip, y + 0.18)], fill))
+    if t:
+        o.append(text(x - 0.08 * tip, y, t, 8, w - 0.35))
+    return o
+
+
 # --- the scenes -------------------------------------------------------------
 # Each is (things behind the store, the store's options, things in front).
 # Coordinates are in the 4 by 3 cm frame; the island's top is near y = 0.62.
@@ -715,6 +781,15 @@ SCENES = {
     "s_glass_bowl": (lanterns(0.1, 3.9, 2.6), dict(skip=True), stall(1.6, G, 0.9) + giant_cup(3.3, G, "tall", 0.022, "teal") + giant_cup(3.75, G, "bowl", 0.011, "gold"), lambda t: banner(0.85, 2.35, 2.25, t, "teal")),
     "s_jar_hourglass": (storm_cloud(0.8, 2.6) + storm_cloud(3.3, 2.75) + rain(0.3, 1.3, 3.4, 1.1, 12), dict(awning="teal", x=1.5, s=0.9), bottle(2.85, G - 0.05, 1.0, "teal", -70) + bottle(3.35, G, 1.1, "sage", 15) + bottle(3.65, G - 0.05, 0.9, "rose", 80) + giant_cup(0.45, G, "jar", 0.018, "rose", lid=True),
                         lambda t: board(3.25, 1.45, 1.1, 0.32, t, "wood", rot=-5, color="cream")),
+    # Wild shifts (Sam, 2026-10-08): melting slush, a belt that speeds up,
+    # a belt that runs back under an open one, and the gauntlet.
+    "s_heatwave": (spire(0.35, G - 0.1, 0.6, 1.3) + sun(3.4, 2.55, 0.28) + thermometer(3.35, G, 1.0), dict(awning="peach", x=1.75), puddle(2.55, G - 0.08) + puddle(1.0, G - 0.12, 0.4, "teal"), lambda t: board(1.75, 2.45, 1.3, 0.34, t, "rose", color="cream") + [line((1.3, 2.28), (1.3, 2.02)), line((2.2, 2.28), (2.2, 2.02))]),
+    "s_rush_hour": (tower(0.35, G, 0.6, 2.0, "slate") + traffic_light(3.7, G, 0.95), dict(awning="gold", x=1.55), car(2.85, G - 0.08, 0.9, "teal") + car(3.55, G - 0.1, 0.8, "rose"), lambda t: [line((2.55, G), (2.55, 2.3), style="draw=ink, line width=1pt"), line((3.7, 2.15), (3.7, 2.3), style="draw=ink, line width=1pt"), line((2.45, 2.3), (3.85, 2.3), style="draw=ink, line width=1.2pt")] + hung_board(3.15, 2.3, 1.15, t, "sage")),
+    "s_switchback": (peak(2.6, G + 0.2, 2.8, 2.1) + switchback_road(2.85, G + 0.25, 1.2, 1.5) + pine(0.35, G), dict(awning="teal", x=1.45), arrow_board(3.35, G + 0.55, 0.75, "", left=True, fill="sage", posts=G), lambda t: arrow_board(3.35, G + 1.0, 1.2, t, fill="gold") + [line((3.35, G + 0.73), (3.35, G + 0.82), style="draw=ink, line width=1pt")]),
+    "s_sunburn": (palm(3.65, G, 1.0, -0.3) + sun(0.55, 2.6, 0.3), dict(awning="rose", x=1.65), umbrella(2.95, G, 1.0, "teal"), lambda t: board(0.7, 1.6, 1.15, 0.34, t, "sand", rot=-4, posts=G)),
+    "s_gauntlet": (mini_stall(3.1, G, "teal") + mini_stall(3.75, G - 0.02, "gold") + mini_stall(0.35, G, "peach"), dict(awning="rose", x=1.75, wall="gold"), [], lambda t: bunting(0.05, 3.95, 2.75) + banner(1.0, 2.6, 2.35, t, "teal")),
+    "s_night_shift": (lanterns(0.1, 3.9, 2.75) + moon(3.6, 2.85, 0.15), dict(skip=True), stall(2.0, G, 0.85) + stall(2.0, G + 1.1, 0.7)[:-4], lambda t: banner(0.3, 1.55, 1.35, t, "rose")),
+    "s_last_stretch": (storm_cloud(0.9, 2.6) + storm_cloud(3.3, 2.75) + rain(0.3, 1.3, 3.4, 1.1, 12) + lighthouse(3.45, G + 0.15, 0.85), dict(awning="teal", x=1.35, s=0.85), [rect(2.2, G - 0.05, 1.8, 0.08, "wood")] + [line((2.3 + k * 0.32, G - 0.05), (2.3 + k * 0.32, G - 0.32), style="draw=ink, line width=0.8pt") for k in range(6)], lambda t: board(1.35, 2.35, 1.25, 0.32, t, "wood", color="cream") + [line((0.95, 2.19), (0.95, 1.98)), line((1.75, 2.19), (1.75, 1.98))]),
     # The end of the world
     "m_storm": (storm_cloud(0.8, 2.6) + storm_cloud(3.3, 2.75) + rain(0.3, 1.2, 3.4, 1.2, 14) + bolt(1.6, 2.5), dict(awning="teal", x=1.35, s=0.85), lighthouse(3.2, G, 1.0), lambda t: board(3.2, 0.95, 1.0, 0.28, t, "wood", rot=-4, color="cream")),
 }
