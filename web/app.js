@@ -195,11 +195,16 @@ function path(pickId = null) {
   const next = ms.find((m) => m.open && !m.passed)?.id;
   const node = (m) => {
     const state = m.passed ? 'passed' : m.open ? 'open' : 'locked';
-    // On the map, each mission is its store: a scene and a name plaque.
-    const art = chart ? [] : [el('img', { src: `art/store/${m.id}.png`, alt: '', class: 'store', draggable: 'false' })];
-    const label = chart ? m.name : el('span', { class: 'plaque' }, m.name);
+    // On the map, each mission is its store, with the store's name painted
+    // in the art (Sam, 2026-10-07). The mission's name pops up in a slot
+    // kept free under the scene when it is picked, so it covers nothing.
+    const kids = chart ? [m.name] : [
+      el('img', { src: `art/store/${m.id}.png`, alt: t(`missions.list.${m.id}.store`), class: 'store', draggable: 'false' }),
+      el('span', { class: 'slot' }, el('span', { class: 'popname' }, m.name)),
+    ];
     const b = el('button', { type: 'button', id: `mission-${m.id}`, class: `node ${state}${m.id === next ? ' next' : ''}`, 'aria-pressed': 'false',
-      on: { click: () => pick(m.id), mouseenter: () => light(m.id), focus: () => light(m.id), mouseleave: () => light(null), blur: () => light(null) } }, ...art, label);
+      'aria-label': chart ? null : m.name,
+      on: { click: () => pick(m.id), mouseenter: () => light(m.id), focus: () => light(m.id), mouseleave: () => light(null), blur: () => light(null) } }, ...kids);
     buttons.set(m.id, b);
     return b;
   };

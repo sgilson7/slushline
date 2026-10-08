@@ -101,3 +101,21 @@ fn every_picture_of_the_tour_is_a_whole_png() {
     }
     assert!(bad.is_empty(), "\n{}\n", bad.join("\n"));
 }
+
+#[test]
+fn each_store_picture_carries_the_store_name_the_copy_file_has() {
+    // Sam, 2026-10-07: each store's name is written on its scene. The name
+    // is a string a player reads, so it lives in the copy file; the art
+    // script records the name it painted in each picture (names.json), and
+    // a name changed in the copy file without redrawing fails here.
+    let copy = content::copy::copy();
+    let drawn: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(root().join("web/art/store/names.json")).expect("web/art/store/names.json: run analysis/art/stores.py")).unwrap();
+    let mut stale = Vec::new();
+    for m in content::missions::missions() {
+        let want = copy["missions"]["list"][&m.id]["store"].as_str().unwrap_or_else(|| panic!("{} has no store name (missions.list.{}.store)", m.id, m.id));
+        if drawn[&m.id].as_str() != Some(want) {
+            stale.push(format!("{}: the copy file says {want:?}, the picture says {:?}", m.id, drawn[&m.id]));
+        }
+    }
+    assert!(stale.is_empty(), "\nredraw with analysis/art/stores.py:\n{}\n", stale.join("\n"));
+}

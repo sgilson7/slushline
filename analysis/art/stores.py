@@ -12,6 +12,14 @@ cup. No store carries a word, a logo or stripes in any real chain's colors
 (TONE.md rule 4). Colors come from data/palette.json `art`; the page greys
 a locked scene and lights an open one.
 
+Each store's name (copy `missions.list.<id>.store`; Sam, 2026-10-07: "the
+name of the store thats written either on the banner, facade, sign, a little
+stylized board like a surf board, a big golf club, a moving tube dude") is
+painted on a prop in its scene, in Lilita One (analysis/art/fonts, SIL Open
+Font License; LICENSES.md), exactly as the copy file has it. The names drawn
+are written to web/art/store/names.json, and tests/world.rs fails when a name
+in the copy file and the name in the picture differ.
+
     python3 analysis/art/stores.py           # writes web/art/store/<id>.png
     python3 analysis/art/stores.py s_jet     # just one
 """
@@ -21,6 +29,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PAL = json.loads((ROOT / "data" / "palette.json").read_text())["art"]
 OUT = ROOT / "web" / "art" / "store"
+FONTS = ROOT / "analysis" / "art" / "fonts"
+COPY = json.loads((ROOT / "data" / "copy.en.json").read_text())
 W, H = 4.0, 3.0   # cm
 PX = 320          # pixels across, drawn at twice the size shown
 LINE = "draw=ink, line width=0.7pt, line join=round, line cap=round"
@@ -71,7 +81,7 @@ def cup_sign(x, y, s):
             line((x + 0.04 * s, y + 0.5 * s), (x + 0.12 * s, y + 0.62 * s), style="draw=ink, line width=0.9pt, line cap=round")]
 
 
-def store(x, y, s=1.0, wall="cream", awning="teal", sign=True, floors=1):
+def store(x, y, s=1.0, wall="cream", awning="teal", sign=True, floors=1, name=None):
     """A corner store standing on (x, y), its front about 1.5 s wide."""
     w, h = 1.5 * s, 0.95 * s
     o = []
@@ -97,7 +107,9 @@ def store(x, y, s=1.0, wall="cream", awning="teal", sign=True, floors=1):
     for i in range(n):
         cx = x - w / 2 - 0.05 * s + (i + 0.5) * (w + 0.1 * s) / n
         o.append(f"\\filldraw[fill={awning}, {THIN}] {P(cx - (w + 0.1 * s) / n / 2, ay)} arc (180:360:{(w + 0.1 * s) / n / 2:.3f});")
-    if sign:
+    if name:
+        o += roof_board(x, top + 0.1 * s, w + 0.25 * s, name)
+    elif sign:
         o.append(line((x - 0.2 * s, top + 0.1 * s), (x - 0.2 * s, top + 0.2 * s), style="draw=ink, line width=0.7pt"))
         o.append(line((x + 0.2 * s, top + 0.1 * s), (x + 0.2 * s, top + 0.2 * s), style="draw=ink, line width=0.7pt"))
         o += cup_sign(x, top + 0.2 * s, s)
@@ -478,6 +490,94 @@ def moon(x, y, r=0.18):
     return [circ(x, y, r, "cloud")]
 
 
+# --- names: props that carry the store's name -------------------------------
+
+def tex(t):
+    return t.replace("\\", "").replace("&", "\\&").replace("%", "\\%").replace("#", "\\#").replace("$", "\\$").replace("_", "\\_")
+
+
+def text(x, y, t, size=9, maxw=1.6, color="ink", rot=0):
+    """The name, centered on (x, y), at `size` points, shrunk to `maxw` cm if it is wider."""
+    return (f"\\node[inner sep=0, text={color}, rotate={rot}] at {P(x, y)} "
+            f"{{\\resizebox{{\\ifdim\\width>{maxw:.2f}cm {maxw:.2f}cm\\else\\width\\fi}}{{!}}{{\\fontsize{{{size}}}{{{size}}}\\signfont {tex(t)}}}}};")
+
+
+def board(x, y, w, h, t, fill="cream", rot=0, size=9, color="ink", posts=None):
+    """A sign board centered on (x, y); `posts` is the ground height to stand it on two posts."""
+    o = []
+    if posts is not None:
+        for dx in (-w * 0.32, w * 0.32):
+            o.append(line((x + dx, posts), (x + dx, y - h / 2), style="draw=ink, line width=1pt"))
+    o.append(f"\\begin{{scope}}[shift={{{P(x, y)}}}, rotate={rot}, transform shape]")
+    o.append(rect(-w / 2, -h / 2, w, h, fill))
+    o.append(text(0, 0, t, size, w - 0.12, color))
+    o.append("\\end{scope}")
+    return o
+
+
+def roof_board(x, top, w, t, fill="cream"):
+    """The store's front: a long board on the roof with the chain's cup at one end."""
+    o = [line((x - w * 0.3, top), (x - w * 0.3, top + 0.12), style="draw=ink, line width=0.7pt"), line((x + w * 0.3, top), (x + w * 0.3, top + 0.12), style="draw=ink, line width=0.7pt"),
+         rect(x - w / 2, top + 0.12, w, 0.36, fill)]
+    o += cup_sign(x - w / 2 + 0.2, top + 0.15, 0.42)[1:]
+    o.append(text(x + 0.12, top + 0.3, t, 9, w - 0.5))
+    return o
+
+
+def banner(x0, x1, y, t, fill="rose", ground=None, color="cream"):
+    """A cloth banner between two poles, its ends notched."""
+    o = []
+    if ground is not None:
+        o += [line((x0, ground), (x0, y + 0.22), style="draw=ink, line width=1pt"), line((x1, ground), (x1, y + 0.22), style="draw=ink, line width=1pt")]
+    o.append(poly([(x0, y + 0.2), (x1, y + 0.2), (x1 - 0.08, y), (x1, y - 0.2), (x0, y - 0.2), (x0 + 0.08, y)], fill))
+    o.append(text((x0 + x1) / 2, y, t, 9, x1 - x0 - 0.3, color))
+    return o
+
+
+def flag(x, y, t, fill="teal"):
+    """A banner flying from a pole in the wind."""
+    o = [line((x, y - 1.3), (x, y + 0.25), style="draw=ink, line width=1pt")]
+    o.append(f"\\filldraw[fill={fill}, {LINE}] {P(x, y + 0.22)} .. controls {P(x + 0.5, y + 0.34)} and {P(x + 0.9, y + 0.1)} .. {P(x + 1.45, y + 0.24)} -- {P(x + 1.35, y + 0.0)} -- {P(x + 1.45, y - 0.22)} .. controls {P(x + 0.9, y - 0.36)} and {P(x + 0.5, y - 0.1)} .. {P(x, y - 0.2)} -- cycle;")
+    o.append(text(x + 0.7, y + 0.0, t, 9, 1.15, "cream", rot=2))
+    return o
+
+
+def surfboard(x, y, t, rot=70, fill="teal", stripe="gold"):
+    o = [f"\\begin{{scope}}[shift={{{P(x, y)}}}, rotate={rot}, transform shape]", ell(0, 0, 0.82, 0.17, fill),
+         line((-0.75, 0), (-0.6, 0), style=f"draw={stripe}, line width=1.4pt"), text(0.05, 0, t, 8, 1.2, "cream"), "\\end{scope}"]
+    return o
+
+
+def golf_club(x, y, t):
+    """A giant golf club stuck in the ground, the name up its shaft, and a ball on a tee."""
+    o = [f"\\begin{{scope}}[shift={{{P(x, y)}}}, rotate=-8, transform shape]",
+         rect(-0.11, 0.0, 0.22, 1.85, "stone"), rect(-0.13, 1.55, 0.26, 0.45, "shadow"),
+         poly([(-0.11, 0.0), (0.11, 0.0), (0.5, -0.12), (0.5, 0.12), (0.11, 0.16)], "slate"),
+         text(0, 0.8, t, 8, 1.4, "ink", rot=90), "\\end{scope}"]
+    o += [line((x + 0.55, y), (x + 0.55, y + 0.1), style="draw=ink, line width=1pt"), circ(x + 0.55, y + 0.17, 0.07, "snow", THIN)]
+    return o
+
+
+def tube_man(x, y, t, fill="rose"):
+    """An inflatable tube dude, dancing, the name down his body."""
+    o = [rect(x - 0.22, y, 0.44, 0.14, "slate"),
+         f"\\filldraw[fill={fill}, {LINE}] {P(x - 0.16, y + 0.14)} .. controls {P(x - 0.3, y + 0.7)} and {P(x - 0.05, y + 1.1)} .. {P(x - 0.2, y + 1.6)} -- {P(x + 0.14, y + 1.66)} .. controls {P(x + 0.28, y + 1.1)} and {P(x + 0.02, y + 0.7)} .. {P(x + 0.16, y + 0.14)} -- cycle;",
+         f"\\filldraw[fill={fill}, {THIN}] {P(x - 0.18, y + 1.3)} .. controls {P(x - 0.5, y + 1.5)} and {P(x - 0.55, y + 1.8)} .. {P(x - 0.75, y + 2.0)} -- {P(x - 0.65, y + 2.08)} .. controls {P(x - 0.45, y + 1.85)} and {P(x - 0.4, y + 1.6)} .. {P(x - 0.12, y + 1.45)} -- cycle;",
+         f"\\filldraw[fill={fill}, {THIN}] {P(x + 0.12, y + 1.38)} .. controls {P(x + 0.45, y + 1.4)} and {P(x + 0.55, y + 1.7)} .. {P(x + 0.8, y + 1.75)} -- {P(x + 0.78, y + 1.86)} .. controls {P(x + 0.5, y + 1.82)} and {P(x + 0.4, y + 1.55)} .. {P(x + 0.1, y + 1.52)} -- cycle;",
+         circ(x - 0.03, y + 1.72, 0.17, fill), circ(x - 0.09, y + 1.75, 0.03, "ink", THIN), circ(x + 0.04, y + 1.75, 0.03, "ink", THIN),
+         f"\\draw[{THIN}] {P(x - 0.09, y + 1.66)} arc (200:340:0.07);",
+         text(x - 0.02, y + 0.8, t, 7, 1.15, "cream", rot=85)]
+    for k in range(3):
+        o.append(curve((x + 0.35, y + 0.4 + k * 0.4), (x + 0.45, y + 0.45 + k * 0.4), (x + 0.45, y + 0.55 + k * 0.4), (x + 0.38, y + 0.6 + k * 0.4)))
+    return o
+
+
+def hung_board(x, top, w, t, fill="cream"):
+    """A board hanging on two chains from (x, top)."""
+    return [line((x - w * 0.3, top), (x - w * 0.3, top - 0.25)), line((x + w * 0.3, top), (x + w * 0.3, top - 0.25)),
+            rect(x - w / 2, top - 0.6, w, 0.35, fill), text(x, top - 0.43, t, 8.5, w - 0.12)]
+
+
 # --- the scenes -------------------------------------------------------------
 # Each is (things behind the store, the store's options, things in front).
 # Coordinates are in the 4 by 3 cm frame; the island's top is near y = 0.62.
@@ -486,47 +586,49 @@ G = 0.62  # the ground the store stands on
 
 SCENES = {
     # Your hometown
-    "m_first_pour": (sign(0.5, G, 1.0, "gold") + lamp(3.4, G, 0.9), dict(awning="teal"), []),
+    "m_first_pour": (sign(0.5, G, 1.0, "gold") + lamp(3.4, G, 0.9), dict(awning="teal"), [], "store"),
     # The boardwalk
-    "m_push": (turbine(3.5, G + 0.1, 0.8), dict(awning="sage", x=1.8), pier(0.15, 0.55, 0.9) + wind(0.25, 1.2, 0.8) + gull(0.9, 2.2)),
-    "m_tail": ([], dict(awning="peach"), pier(0.2, 0.55, 1.0) + gull(0.6, 1.6) + gull(3.3, 1.9) + gull(3.6, 1.5)),
-    "m_two_spouts": (big_wheel(3.3, G, 1.0), dict(awning="gold", x=1.6), []),
-    "s_zigzag": (cactus(0.4, G) + cactus(3.6, G, 0.8), dict(awning="teal", x=1.9), dust_devil(3.1, G, 1.0) + zigzag(0.15, 1.5, 1.0) + zigzag(2.8, 2.15, 0.9)),
-    # The desert highway
-    "m_half": (canopy(2.55, G, 1.2, 1.0), dict(awning="gold", x=1.4), pump(2.9, G) + pump(3.45, G) + [line((2.0, 0.25), (2.0, 2.3), style="draw=ink, line width=0.6pt, dash pattern=on 3pt off 2pt")]),
-    "m_third": (truck(2.6, G - 0.05, 1.0), dict(awning="rose", x=1.5), cactus(0.3, G)),
-    "m_charge": (pylon(0.55, G, 1.0) + pylon(3.45, G, 1.0) + wires(0.55, 3.45, G + 1.35, 0.25), dict(awning="gold"), []),
-    "s_field_maze": (tower(0.5, G, 0.8, 2.1, "peach") + tower(3.5, G, 0.8, 1.9, "slate"), dict(awning="peach"), wind(0.2, 1.9, 0.6) + wind(3.8, 1.5, 0.6, back=True)),
-    "s_heavy": (mine_entry(3.2, G, 1.0), dict(awning="olive", x=1.5), mine_cart(3.1, G - 0.15, 0.8)),
-    "s_jet": (rocket(3.4, G, 1.2), dict(awning="teal", x=1.6), []),
+    "m_push": (turbine(3.6, G + 0.1, 0.75), dict(awning="sage", x=2.1), pier(0.15, 0.55, 0.9) + wind(0.25, 0.95, 0.6), lambda t: flag(0.35, 2.2, t, "teal")),
+    "m_tail": ([], dict(awning="peach", x=2.2), pier(0.2, 0.55, 1.0) + gull(1.4, 2.6) + gull(3.4, 2.4), lambda t: surfboard(0.75, 1.35, t, 75, "teal")),
+    "m_two_spouts": (big_wheel(3.35, G, 0.95), dict(awning="gold", x=2.0), [], lambda t: golf_club(0.55, G - 0.05, t)),
+    "s_zigzag": (cactus(3.75, G, 0.8), dict(awning="teal", x=2.25), dust_devil(3.3, G, 0.9) + zigzag(2.6, 2.3, 0.8), lambda t: board(0.75, 1.55, 1.25, 0.42, t, "sand", rot=-6, posts=G)),
+    "m_half": (canopy(2.65, G, 1.15, 1.0), dict(awning="gold", x=1.45), pump(3.0, G) + pump(3.5, G) + [line((2.0, 0.25), (2.0, 2.0), style="draw=ink, line width=0.6pt, dash pattern=on 3pt off 2pt")], lambda t: board(3.22, 2.2, 1.35, 0.4, t, "rose", color="cream")),
+    "m_third": (truck(2.75, G - 0.05, 0.9), dict(awning="rose", x=1.85), cactus(3.75, G, 0.7), lambda t: tube_man(0.5, G - 0.05, t, "rose")),
+    "m_charge": (pylon(0.45, G, 0.95) + pylon(3.55, G, 0.95) + wires(0.45, 3.55, G + 1.27, 0.25), dict(awning="gold"), [], "store"),
+    "s_heavy": (mine_entry(3.2, G, 1.0), dict(awning="olive", x=1.45), mine_cart(3.1, G - 0.15, 0.8), lambda t: board(3.2, G + 1.05, 1.25, 0.36, t, "wood", color="cream")),
+    "s_jet": (rocket(3.4, G, 1.25), dict(awning="teal", x=1.6), [], lambda t: text(3.4, G + 0.73, t, 7, 0.78, "ink", rot=90)),
     # The big city
-    "m_two_one": (tower(0.55, G, 0.9, 2.0, "rose") + tower(3.45, G, 0.9, 1.7, "sage"), dict(awning="peach"), []),
-    "m_cherry_cola": (tower(3.45, G, 0.9, 1.9, "stone"), dict(awning="rose", x=1.6, wall="peach"), diner_sign(3.4, G, 0.9)),
-    "m_push_back": (tower(0.5, G, 0.8, 2.2, "slate") + tower(3.5, G, 0.8, 2.3, "stone"), dict(awning="gold"), wind(3.5, 1.2, 0.8, back=True)),
-    "s_flip_pair": (peak(2.0, G + 0.2, 3.6, 1.8) + pine(0.35, G), dict(awning="teal", x=1.5), vane(3.3, G, 1.0)),
-    "s_two_rows": (stands(0.2, G + 0.15, 3.6, 1.0) + floodlight(0.25, G, 1.0) + floodlight(3.75, G, 1.0), dict(awning="peach", s=0.85), []),
-    "s_sink": (ship(3.1, 0.55, 0.9) + crane(0.4, G, 1.0), dict(awning="teal", x=1.7), anchor(0.6, G, 0.9)),
-    "s_jet_pair": (firehouse(3.2, G, 1.0), dict(awning="gold", x=1.5), hydrant(0.35, G, 1.0, spray=True)),
+    "m_two_one": (tower(0.45, G, 0.8, 2.0, "rose") + tower(3.55, G, 0.8, 1.7, "sage"), dict(awning="peach"), [], "store"),
+    "m_cherry_cola": (tower(3.5, G, 0.8, 1.9, "stone"), dict(awning="rose", x=1.55, wall="peach"), [], lambda t: board(3.25, 1.95, 1.3, 0.42, t, "rose", color="cream", posts=G)),
+    "m_push_back": (tower(0.5, G, 0.8, 2.2, "slate") + tower(3.5, G, 0.8, 2.3, "stone"), dict(awning="gold"), wind(3.45, 1.2, 0.7, back=True), lambda t: board(3.5, 2.45, 0.42, 1.25, t, "gold", rot=0) if False else [rect(3.28, 1.35, 0.44, 1.35, "gold"), text(3.5, 2.02, t, 8, 1.2, "ink", rot=90)]),
+    "s_field_maze": (tower(0.45, G, 0.75, 2.1, "peach") + tower(3.55, G, 0.75, 1.9, "slate"), dict(awning="peach"), wind(0.2, 2.3, 0.5) + wind(3.85, 2.0, 0.5, back=True),
+                     lambda t: [line((2.0, G + 1.4), (2.0, 2.85), style="draw=ink, line width=1pt")] + board(2.0, 2.62, 1.3, 0.32, t, "sage", rot=-4, color="cream")),
+    "s_two_rows": (stands(0.2, G + 0.15, 3.6, 1.0) + floodlight(0.25, G, 1.0) + floodlight(3.75, G, 1.0), dict(awning="peach", s=0.85), [], lambda t: banner(0.7, 3.3, 2.6, t, "teal")),
+    "s_sink": (ship(3.15, 0.55, 0.85) + crane(0.3, G, 1.2), dict(awning="teal", x=2.15), anchor(3.75, G + 0.05, 0.6), lambda t: [line((1.1, 2.54), (1.1, 2.34))] + hung_board(1.1, 2.34, 1.15, t, "gold")),
+    "s_jet_pair": (firehouse(3.25, G, 0.95), dict(awning="gold", x=1.55), hydrant(0.35, G, 1.0, spray=True), lambda t: banner(2.4, 4.0, 2.3, t, "rose")),
     # The mountains
-    "m_three": (peak(2.0, G + 0.3, 3.4, 2.1) + pine(0.4, G) + pine(3.6, G), dict(awning="rose"), skis(3.05, G, 0.9)),
-    "m_more_cola": (pine(3.6, G) + pine(3.3, G + 0.05, 0.8), dict(awning="peach", x=1.4, wall="wood"), ice(3.2, 0.5, 0.65, 0.18) + skater(3.15, 0.45, 0.8)),
-    "m_attract": (peak(2.0, G, 3.8, 1.5) + star(0.4, 2.6) + star(3.5, 2.75) + star(2.8, 2.55, 0.04), dict(awning="teal", x=1.5, sign=False), dome(3.1, G, 1.0)),
-    "m_rail": (cable_car(0.2, 2.7, 3.9, 1.8, 0.62) + peak(3.4, G, 1.6, 1.4), dict(awning="gold", x=1.5), []),
-    "m_two_lines": (pine(0.35, G) + pine(3.65, G), dict(awning="rose", floors=2, s=0.78), []),
-    "s_bobbing": (lift_pole(3.4, G, 1.9) + [line((0.0, 2.55), (3.4, 2.5), (4.0, 2.6), style="draw=ink, line width=0.7pt")] + chair(1.0, 2.53) + chair(2.6, 2.5), dict(awning="peach", x=1.7), pine(3.75, G, 0.8)),
-    "s_layers": (strata(2.7, G, 1.3, 1.6), dict(awning="olive", x=1.4), []),
-    "s_jet_rows": (pine(0.4, G) + pine(3.6, G + 0.05, 0.9), dict(awning="teal", x=1.7), snow_cannon(2.7, G, 0.9)),
+    "m_three": (peak(2.0, G + 0.3, 3.4, 2.1) + pine(0.35, G) + pine(3.7, G), dict(awning="rose", x=1.8), skis(3.05, G, 0.9), lambda t: board(3.2, 1.9, 1.15, 0.36, t, "teal", rot=4, color="cream", posts=G)),
+    "m_more_cola": (pine(3.65, G) + pine(3.35, G + 0.05, 0.8), dict(awning="peach", x=1.4, wall="wood"), ice(3.2, 0.5, 0.65, 0.18) + skater(3.15, 0.45, 0.8), lambda t: board(1.4, 2.2, 1.3, 0.38, t, "cloud", posts=None) + [line((0.85, 1.7), (0.85, 2.01)), line((1.95, 1.7), (1.95, 2.01))]),
+    "m_attract": (peak(2.0, G, 3.8, 1.5) + star(0.4, 2.7) + star(3.5, 2.8) + star(2.8, 2.6, 0.04), dict(awning="teal", x=1.5, sign=False), dome(3.1, G, 1.0), lambda t: board(1.5, 1.95, 1.3, 0.38, t, "night", color="gold") + [line((1.0, 1.58), (1.0, 1.76)), line((2.0, 1.58), (2.0, 1.76))]),
+    "m_rail": (peak(3.4, G, 1.6, 1.4), dict(awning="gold", x=1.5), [line((0.0, 2.85), (4.0, 2.05), style="draw=ink, line width=0.7pt"), line((2.6, 2.33), (2.6, 2.1)), rect(2.0, 1.45, 1.2, 0.65, "rose"), rect(2.1, 1.8, 1.0, 0.2, "skylight", THIN)], lambda t: text(2.6, 1.62, t, 8, 1.05, "cream")),
+    "m_two_lines": (pine(0.35, G) + pine(3.65, G), dict(awning="rose", floors=2, s=0.78), [], "store"),
+    "s_bobbing": (lift_pole(3.4, G, 1.9) + [line((0.0, 2.55), (3.4, 2.5), (4.0, 2.6), style="draw=ink, line width=0.7pt")], dict(awning="peach", x=1.75), pine(3.75, G, 0.8),
+                  lambda t: [line((1.3, 2.53), (1.3, 2.2))] + [rect(0.7, 1.82, 1.2, 0.38, "peach")] + [text(1.3, 2.01, t, 8, 1.1, "ink")] + [line((0.75, 1.82), (0.75, 1.68), (1.85, 1.68), (1.85, 1.82), style="draw=ink, line width=0.9pt")]),
+    "s_layers": (strata(2.75, G, 1.2, 1.6), dict(awning="olive", x=1.45), [], lambda t: board(3.35, G + 1.85, 1.35, 0.36, t, "cream")),
+    "s_jet_rows": (pine(0.35, G) + pine(3.65, G + 0.05, 0.9), dict(awning="teal", x=1.75), [], lambda t: [line((2.9, G), (2.9, G + 0.5), style="draw=ink, line width=1pt"),
+                   f"\\begin{{scope}}[shift={{{P(2.9, G + 0.6)}}}, rotate=30, transform shape]", rect(-0.1, -0.16, 1.15, 0.32, "cloud"), text(0.47, 0, t, 7, 1.0), "\\end{scope}"] + [circ(3.95, 1.55 + k * 0.1, 0.04, "snow", THIN) for k in range(3)]),
+    "s_flip_pair": (peak(2.0, G + 0.2, 3.6, 1.8) + pine(0.35, G), dict(awning="teal", x=1.5), vane(3.3, G, 1.0), lambda t: board(3.3, G + 0.6, 1.0, 0.32, t, "cream", posts=None)),
     # The islands
-    "m_lemon_cherry_cola": (palm(0.4, G, 1.0, 0.25), dict(skip=True), water(0.15, 0.45, 3.7, 0.18) + hut(2.2, G, 1.0)),
-    "m_alternating": (palm(0.5, G, 1.1, 0.5) + palm(3.4, G, 1.0, -0.4), dict(awning="sage"), wind(0.1, 1.6, 0.6) + wind(3.9, 1.9, 0.6, back=True)),
-    "s_rows_bob": (water(0.1, 0.35, 3.8, 0.35), dict(awning="teal", y=0.82, s=0.85), boat(2.0, 0.55, 1.0) + [curve((0.2, 0.4), (0.6, 0.6), (1.0, 0.25), (1.4, 0.4), style="draw=tealdark, line width=0.6pt")]),
+    "m_lemon_cherry_cola": (palm(0.4, G, 1.0, 0.25), dict(skip=True), water(0.15, 0.45, 3.7, 0.18) + hut(2.2, G, 1.0), lambda t: board(2.2, 2.12, 1.3, 0.34, t, "sand")),
+    "m_alternating": (palm(3.4, G, 1.0, -0.4), dict(awning="sage", x=2.1), wind(3.85, 2.0, 0.6, back=True), lambda t: surfboard(0.6, 1.4, t, 72, "rose", "teal")),
+    "s_rows_bob": (water(0.1, 0.35, 3.8, 0.35), dict(awning="teal", y=0.92, s=0.85), [poly([(0.9, 0.95), (3.1, 0.95), (2.9, 0.62), (1.05, 0.62)], "wood")], lambda t: text(2.0, 0.78, t, 8, 1.7, "cream")),
     # The old town
-    "m_field_blend": (clock_tower(3.3, G, 1.0), dict(awning="rose", x=1.5, wall="gold"), []),
-    "m_two_lines_blend": ([], dict(awning="sage", y=G + 0.55, s=0.8), bridge(0.6, 0.45, 2.8)),
+    "m_field_blend": (clock_tower(3.3, G, 1.0), dict(awning="rose", x=1.5, wall="gold"), [], lambda t: [line((2.6, 2.05), (3.05, 2.05))] + [poly([(2.62, 2.05), (3.05, 2.05), (3.05, 1.2), (2.83, 1.32), (2.62, 1.2)], "teal")] + [text(2.835, 1.67, t, 7, 0.8, "cream", rot=90)]),
+    "m_two_lines_blend": ([], dict(awning="sage", y=G + 0.55, s=0.8), bridge(0.6, 0.45, 2.8), lambda t: text(2.0, 0.83, t, 7.5, 1.5, "ink")),
     # The night market
-    "m_two_speeds": (lanterns(0.1, 3.9, 2.55) + moon(3.5, 2.75), dict(skip=True), stall(2.0, G, 1.0)),
+    "m_two_speeds": (lanterns(0.1, 3.9, 2.55) + moon(3.5, 2.75), dict(skip=True), stall(2.0, G, 1.0), lambda t: banner(1.2, 2.8, 2.3, t, "rose")),
     # The end of the world
-    "m_storm": (storm_cloud(0.8, 2.6) + storm_cloud(3.3, 2.75) + rain(0.3, 1.2, 3.4, 1.2, 14) + bolt(1.6, 2.5), dict(awning="teal", x=1.4, s=0.85), lighthouse(3.2, G, 1.0)),
+    "m_storm": (storm_cloud(0.8, 2.6) + storm_cloud(3.3, 2.75) + rain(0.3, 1.2, 3.4, 1.2, 14) + bolt(1.6, 2.5), dict(awning="teal", x=1.35, s=0.85), lighthouse(3.2, G, 1.0), lambda t: board(1.35, 0.95, 1.2, 0.3, t, "wood", rot=-5, color="cream") if False else board(3.2, 0.95, 1.0, 0.28, t, "wood", rot=-4, color="cream")),
 }
 
 
@@ -536,21 +638,35 @@ def levels():
     return json.loads(out)
 
 
+def store_name(i):
+    return COPY["missions"]["list"][i]["store"]
+
+
 def scene(i, level):
-    behind, opts, front = SCENES[i]
+    behind, opts, front, namer = SCENES[i]
     ground = GROUND[min(level, len(GROUND) - 1)]
     o = [f"\\filldraw[fill=shadow, draw=none, opacity=0.35] {P(2.06, 0.52)} ellipse (1.88 and 0.42);",
          f"\\filldraw[fill={ground}, {LINE}] {P(2.0, 0.62)} ellipse (1.85 and 0.42);"]
     o += behind
     opts = dict(opts)
+    if namer == "store":
+        opts["name"] = store_name(i)
     if not opts.pop("skip", False):
         x, y, s = opts.pop("x", 2.0), opts.pop("y", G - 0.05), opts.pop("s", 1.0)
         o += store(x, y, s, **opts)
-    return o + front
+    o += front
+    if namer != "store":
+        named = namer(store_name(i))
+        # A prop that is a single line of TikZ comes back as a string; adding
+        # a string to a list adds its characters, and TikZ drops them quietly.
+        o += [named] if isinstance(named, str) else named
+    return o
 
 
 def render(i, level):
     tex = f"""\\documentclass[tikz,border=0pt]{{standalone}}
+\\usepackage{{fontspec}}
+\\newfontfamily\\signfont{{LilitaOne-Regular.ttf}}[Path={FONTS}/]
 \\usepackage{{tikz}}
 {colors()}
 \\begin{{document}}
@@ -563,9 +679,9 @@ def render(i, level):
     OUT.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as d:
         Path(d, "f.tex").write_text(tex)
-        rr = subprocess.run(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "f.tex"], cwd=d, capture_output=True, text=True)
+        rr = subprocess.run(["xelatex", "-interaction=nonstopmode", "-halt-on-error", "f.tex"], cwd=d, capture_output=True, text=True)
         if rr.returncode:
-            sys.exit(f"pdflatex failed for {i}:\n" + "\n".join(l for l in rr.stdout.splitlines() if l.startswith("!") or l.startswith("l.")))
+            sys.exit(f"xelatex failed for {i}:\n" + "\n".join(l for l in rr.stdout.splitlines() if l.startswith("!") or l.startswith("l.")))
         subprocess.run(["pdftocairo", "-png", "-transp", "-singlefile", "-scale-to-x", str(PX), "-scale-to-y", "-1", "f.pdf", str(OUT / i)], cwd=d, check=True)
 
 
@@ -574,6 +690,11 @@ if __name__ == "__main__":
     missing = sorted(set(lv) - set(SCENES))
     if missing:
         sys.exit(f"no scene for {missing}")
+    manifest = OUT / "names.json"
+    drawn = json.loads(manifest.read_text()) if manifest.exists() else {}
     for i in (sys.argv[1:] or sorted(SCENES)):
         render(i, lv[i])
+        drawn[i] = store_name(i)
         print("drew", i)
+    # Which name each picture carries, for tests/world.rs.
+    manifest.write_text(json.dumps(dict(sorted(drawn.items())), indent=1, ensure_ascii=False) + "\n")

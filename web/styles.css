@@ -233,3 +233,31 @@ section.how p { max-width: 720px; margin: 0; }
   filter: grayscale(1) opacity(0.75) drop-shadow(0 0 1.5px var(--cup)) drop-shadow(0 0 4px var(--cup));
 }
 @media (max-width: 600px) { #tree.rows .node { width: 124px; } #tree.rows .node .store { width: 118px; height: 88px; } }
+
+/* Each store's name is in its art; the mission's name pops up when its
+   scene is picked (Sam, 2026-10-07), in a slot kept under every scene so
+   that nothing moves and nothing is covered when it appears. */
+#tree.rows .node { position: relative; }
+#tree.rows .node .slot { display: flex; justify-content: center; align-items: flex-start; height: 2.9em; width: 100%; margin-top: 2px; }
+#tree.rows .node .popname {
+  visibility: hidden; opacity: 0; max-width: 172px; padding: 3px 9px;
+  font-size: 0.84rem; font-weight: 700; line-height: 1.25;
+  color: var(--paper); background: var(--line); border: 2px solid var(--art-gold); border-radius: 2px;
+  box-shadow: 3px 3px 0 var(--art-peach-dark);
+  transform: skew(-6deg) scale(0.6); transition: transform 160ms cubic-bezier(.2, 1.6, .4, 1), opacity 120ms ease;
+}
+#tree.rows .node.picked .popname { visibility: visible; opacity: 1; transform: skew(-6deg) scale(1); }
+#tree.rows .node.picked .store { transform: translateY(-6px); }
+/* Passed: a stamp on the scene. Next: a slow gold pulse. */
+#tree.rows .node.passed::after {
+  content: "\2713"; position: absolute; top: 4px; right: 10px; width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px;
+  color: var(--paper); background: var(--line); border: 2px solid var(--art-gold);
+}
+#tree.rows .node.next .store { animation: next-pulse 1.8s ease-in-out infinite; }
+@keyframes next-pulse {
+  0%, 100% { filter: drop-shadow(0 0 1.5px var(--cup)) drop-shadow(0 0 1.5px var(--cup)) drop-shadow(0 0 6px var(--art-gold)); }
+  50% { filter: drop-shadow(0 0 1.5px var(--cup)) drop-shadow(0 0 1.5px var(--cup)) drop-shadow(0 0 14px var(--art-gold)); }
+}
+@media (prefers-reduced-motion: reduce) { #tree.rows .node.next .store { animation: none; } #tree.rows .node .popname { transition: none; } }
+#tree.rows .node:focus-visible .store { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 10px; }

@@ -61,6 +61,6 @@ The pour sound and the store are built and deployed (DECISIONS.md, 2026-10-06; n
 - **The store** (`web/backdrop.js`; `WASH`, `SMALL`; colors `backdrop.*` in `palette.json`). On two-line missions it is stretched tall (M7 row 6).
 - **WebKit crashed once on CI** after the first push of this round and passed on a re-run (M7 row 9). If it happens again, suspect the pour voices first.
 - **The soundtrack, the flair sounds and the voice** (M9 rows 7 and 8).
-- **Story mode's tour:** the framing, the place lines and the art (M10 row 6). Art is redrawn with `python3 analysis/art/regions.py` and `python3 analysis/art/stores.py`; a new mission needs a scene in `SCENES` and a `place` line, or `tests/world.rs` fails.
+- **Story mode's tour:** the framing, the place lines and the art (M10 row 6). Art is redrawn with `python3 analysis/art/regions.py` (pdflatex) and `python3 analysis/art/stores.py` (XeLaTeX, for the store names in Lilita One); a new mission needs a scene in `SCENES`, a `place` line and a `store` name, or `tests/world.rs` fails, and so does a store renamed in the copy file without redrawing.
 - **The flower-pot cups** (M8 row 7): whether they read as slush cups, and whether Layers, now on a small cup, is too hard.
 - His other open items are the "the human's" rows in `SECOND-ORDER-M2` to `M9`.
