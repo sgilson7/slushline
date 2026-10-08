@@ -1679,7 +1679,7 @@
       {
        "count": 6,
        "parts": {
-        "lemon": 1,
+        "lemon": 2,
         "cola": 1
        }
       }
@@ -1688,6 +1688,358 @@
       "jet",
       "two_rows"
      ]
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_tall",
+   "chapter": "cup_shapes",
+   "teaches": [
+    "K34"
+   ],
+   "builds_on": [
+    "K01_K34"
+   ],
+   "requires": [
+    {
+     "pass": "m_first_pour"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "slow",
+     "cup": "tall",
+     "spouts": [
+      "cola"
+     ],
+     "orders": [
+      {
+       "count": 4,
+       "parts": {
+        "cola": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_cone",
+   "chapter": "cup_shapes",
+   "teaches": [
+    "K36"
+   ],
+   "builds_on": [
+    "K34_K36"
+   ],
+   "requires": [
+    {
+     "pass": "s_tall"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "quick",
+     "cup": "cone",
+     "spouts": [
+      "cherry",
+      "lemon",
+      "cola"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cherry": 1,
+        "lemon": 1,
+        "cola": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_jar",
+   "chapter": "cup_shapes",
+   "teaches": [
+    "K37"
+   ],
+   "builds_on": [
+    "K36_K37"
+   ],
+   "requires": [
+    {
+     "pass": "s_cone"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "jar",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 1,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_hourglass",
+   "chapter": "cup_shapes",
+   "teaches": [
+    "K38"
+   ],
+   "builds_on": [
+    "K37_K38"
+   ],
+   "requires": [
+    {
+     "pass": "s_jar"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "quick",
+     "cup": "hourglass",
+     "spouts": [
+      "cola",
+      "cherry"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 2,
+        "cherry": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_bowl",
+   "chapter": "cup_shapes",
+   "teaches": [
+    "K35"
+   ],
+   "builds_on": [
+    "K38_K35"
+   ],
+   "requires": [
+    {
+     "pass": "s_hourglass"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "steady",
+     "cup": "bowl",
+     "spouts": [
+      "cola",
+      "lemon",
+      "cherry"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 2,
+        "lemon": 1,
+        "cherry": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_fishbowl",
+   "chapter": "cup_shapes",
+   "teaches": [
+    "K39"
+   ],
+   "builds_on": [
+    "K35_K39"
+   ],
+   "requires": [
+    {
+     "pass": "s_bowl"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "quick",
+     "cup": "fishbowl",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 5,
+       "parts": {
+        "cola": 3,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_glass_bowl",
+   "chapter": "cup_shapes",
+   "teaches": [
+    "K40"
+   ],
+   "builds_on": [
+    "K39_K40"
+   ],
+   "requires": [
+    {
+     "pass": "s_fishbowl"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "quick",
+     "cup": "tall",
+     "spouts": [
+      "cola",
+      "lemon"
+     ],
+     "orders": [
+      {
+       "count": 3,
+       "parts": {
+        "cola": 2,
+        "lemon": 1
+       }
+      }
+     ],
+     "conditions": []
+    },
+    {
+     "belt": "quick",
+     "cup": "bowl",
+     "spouts": [
+      "cherry",
+      "lemon",
+      "cola"
+     ],
+     "orders": [
+      {
+       "count": 3,
+       "parts": {
+        "cherry": 1,
+        "lemon": 1,
+        "cola": 1
+       }
+      }
+     ],
+     "conditions": []
+    }
+   ],
+   "pass": {
+    "average": 60,
+    "waste_pct": 30
+   }
+  },
+  {
+   "id": "s_jar_hourglass",
+   "chapter": "cup_shapes",
+   "teaches": [
+    "K41"
+   ],
+   "builds_on": [
+    "K40_K41"
+   ],
+   "requires": [
+    {
+     "pass": "s_glass_bowl"
+    }
+   ],
+   "lines": [
+    {
+     "belt": "quick",
+     "cup": "jar",
+     "spouts": [
+      "cola",
+      "cherry"
+     ],
+     "orders": [
+      {
+       "count": 3,
+       "parts": {
+        "cola": 2,
+        "cherry": 1
+       }
+      }
+     ],
+     "conditions": []
+    },
+    {
+     "belt": "quick",
+     "cup": "hourglass",
+     "spouts": [
+      "lemon",
+      "cherry"
+     ],
+     "orders": [
+      {
+       "count": 3,
+       "parts": {
+        "lemon": 1,
+        "cherry": 2
+       }
+      }
+     ],
+     "conditions": []
     }
    ],
    "pass": {

@@ -102,6 +102,57 @@ fn main() {
             println!("{:.3} ms/tick", t0.elapsed().as_secs_f64() * 1000.0 / 1500.0);
 
         }
+        // The ladder's yardstick on just the missions named, for tuning
+        // their data without the whole ladder.
+        Some("yard") => {
+            let ms = content::missions::missions();
+            let handles: Vec<_> = args[2..]
+                .iter()
+                .map(|id| {
+                    let m = ms.iter().find(|m| &m.id == id).unwrap_or_else(|| panic!("no mission {id}")).clone();
+                    std::thread::spawn(move || (m.id.clone(), yardstick(&m, 200)))
+                })
+                .collect();
+            for h in handles {
+                let (id, (mean, se, passes)) = h.join().unwrap();
+                println!("{id:20} {mean:6.2} ± {se:.2}  passed {passes}/200");
+            }
+        }
+        // How many units fill a cup to its rim: the cup's capacity
+        // (data/cups.json), measured by pouring into a standing cup in short
+        // bursts, letting each settle, until the slush at rest reaches the
+        // rim (cup shapes, 2026-10-08).
+        Some("capacity") => {
+            let kind = args.get(2).map(String::as_str).unwrap_or("regular");
+            let mut l = content::setup::line(&["cola"], kind, "steady", vec![content::setup::order(&[("cola", 1)])]);
+            l.belt.speed = Fx(0);
+            l.first_x = l.spouts[0].x;
+            l.lid_x = Fx::int(10_000);
+            let mut w = World::new(content::setup::setup_of(1, sim::balance::DEFAULT_TUNING, l));
+            let rim = w.rim(0);
+            let mut bursts = 0;
+            loop {
+                for _ in 0..3 {
+                    w.step([Input(Input::SPOUT[0]), Input::NONE]);
+                }
+                for _ in 0..240 {
+                    w.step([Input::NONE; 2]);
+                }
+                bursts += 1;
+                let c = w.lines[0].as_ref().unwrap().cups[0].clone();
+                let top = w.units.iter().filter(|u| w.inside(u, &c)).map(|u| u.p.y + u.r).fold(Fx(0), Fx::max);
+                if top >= rim || bursts > 400 {
+                    break;
+                }
+            }
+            for _ in 0..600 {
+                w.step([Input::NONE; 2]);
+            }
+            let c = w.lines[0].as_ref().unwrap().cups[0].clone();
+            let inside = w.units.iter().filter(|u| w.inside(u, &c)).count();
+            let spilled = w.lines[0].as_ref().unwrap().wasted;
+            println!("{kind}: {inside} units fill it to the rim ({bursts} bursts, {spilled} spilled)");
+        }
         // Each mission's depth in the tree, as core decides it: the art
         // (analysis/art/stores.py) reads this rather than working it out.
         Some("levels") => {
@@ -124,6 +175,9 @@ fn loaded(n: usize, inner_half: i32, tuning: u8) -> World {
     l.belt.speed = Fx(0);
     l.first_x = Fx::int(250);
     l.cup.inner_half = Fx::int(inner_half);
+    // A straight-sided cup of that width (cups have a profile since
+    // SIM_VERSION 8).
+    l.cup.profile = [Fx::int(inner_half); 5];
     l.cup.inner_height = Fx::int(120);
     l.lid_x = Fx::int(10_000);
     l.end_x = Fx::int(10_000);
@@ -189,6 +243,9 @@ fn recon_m1() {
         l.belt.speed = Fx(0);
         l.first_x = l.spouts[0].x;
         l.cup.inner_half = Fx::int(120);
+        // A straight-sided cup of that width (cups have a profile since
+        // SIM_VERSION 8).
+        l.cup.profile = [Fx::int(120); 5];
         l.lid_x = Fx::int(10_000);
         // 99 is the control: tuning 1 with no slope rule and no thickness,
         // which is what water would do here.
@@ -305,6 +362,32 @@ fn recon_m2() {
 
 /// Play the yardstick on every mission, `runs` times each with its own
 /// seed, and write `analysis/ladder.md` (PLANNING-BRIEF M4.0).
+/// The yardstick pilot on one mission, `runs` seeded runs: the mean of the
+/// averages, its standard error, and how many runs passed. The ladder's
+/// measure, and `lab yard`'s.
+fn yardstick(m: &content::missions::Mission, runs: u64) -> (f64, f64, u32) {
+    let mut avgs = Vec::new();
+    let mut passes = 0;
+    for seed in 0..runs {
+        let mut w = World::new(m.setup(seed, sim::balance::DEFAULT_TUNING));
+        let mut p = [
+            pilot::Pilot::new(pilot::Kind::Yardstick { seed: seed + 1, error: pilot::YARDSTICK_ERROR }),
+            pilot::Pilot::new(pilot::Kind::Yardstick { seed: seed + 1001, error: pilot::YARDSTICK_ERROR }),
+        ];
+        while !w.done() && w.tick < 30_000 {
+            let i = [p[0].input(&w, 0), p[1].input(&w, 1)];
+            w.step(i);
+        }
+        let o = content::missions::outcome(m, &w);
+        avgs.push(o.average as f64);
+        passes += o.passed as u32;
+    }
+    let n = avgs.len() as f64;
+    let mean = avgs.iter().sum::<f64>() / n;
+    let var = avgs.iter().map(|a| (a - mean).powi(2)).sum::<f64>() / (n - 1.0).max(1.0);
+    (mean, (var / n).sqrt(), passes)
+}
+
 fn ladder(runs: u64) {
     let ms = content::missions::missions();
     let handles: Vec<_> = ms
@@ -312,26 +395,8 @@ fn ladder(runs: u64) {
         .cloned()
         .map(|m| {
             std::thread::spawn(move || {
-                let mut avgs = Vec::new();
-                let mut passes = 0;
-                for seed in 0..runs {
-                    let mut w = World::new(m.setup(seed, sim::balance::DEFAULT_TUNING));
-                    let mut p = [
-                        pilot::Pilot::new(pilot::Kind::Yardstick { seed: seed + 1, error: pilot::YARDSTICK_ERROR }),
-                        pilot::Pilot::new(pilot::Kind::Yardstick { seed: seed + 1001, error: pilot::YARDSTICK_ERROR }),
-                    ];
-                    while !w.done() && w.tick < 30_000 {
-                        let i = [p[0].input(&w, 0), p[1].input(&w, 1)];
-                        w.step(i);
-                    }
-                    let o = content::missions::outcome(&m, &w);
-                    avgs.push(o.average as f64);
-                    passes += o.passed as u32;
-                }
-                let n = avgs.len() as f64;
-                let mean = avgs.iter().sum::<f64>() / n;
-                let var = avgs.iter().map(|a| (a - mean).powi(2)).sum::<f64>() / (n - 1.0).max(1.0);
-                (m.id.clone(), mean, (var / n).sqrt(), passes)
+                let (mean, se, passes) = yardstick(&m, runs);
+                (m.id.clone(), mean, se, passes)
             })
         })
         .collect();

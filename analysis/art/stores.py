@@ -31,6 +31,7 @@ PAL = json.loads((ROOT / "data" / "palette.json").read_text())["art"]
 OUT = ROOT / "web" / "art" / "store"
 FONTS = ROOT / "analysis" / "art" / "fonts"
 COPY = json.loads((ROOT / "data" / "copy.en.json").read_text())
+CUPS = json.loads((ROOT / "data" / "cups.json").read_text())
 W, H = 4.0, 3.0   # cm
 PX = 320          # pixels across, drawn at twice the size shown
 LINE = "draw=ink, line width=0.7pt, line join=round, line cap=round"
@@ -578,6 +579,82 @@ def hung_board(x, top, w, t, fill="cream"):
             rect(x - w / 2, top - 0.6, w, 0.35, fill), text(x, top - 0.43, t, 8.5, w - 0.12)]
 
 
+def giant_cup(x, base, kind, s, slush="rose", band=None, label=None, lid=False):
+    """A giant cup of a shape the game has, drawn from data/cups.json's
+    profile, so the art keeps the physics' shape: `s` cm of drawing for each
+    cm of cup. Slush fills its lower part; `band` wraps it with a label."""
+    c = CUPS[kind]
+    prof, h = c["profile"], c["inner_height"]
+    pts = [(x + prof[k] * s, base + h * s * k / 4) for k in range(5)]
+    left = [(x - px + x, py) for px, py in pts]
+    outline = pts + left[::-1]
+    o = [poly(outline, "cloud", "draw=ink, line width=1pt, line join=round")]
+    # The slush: the same profile, up to three fifths of the height.
+    fill_h = h * 0.6
+    sl = []
+    for k in range(5):
+        hh = h * k / 4
+        if hh <= fill_h:
+            sl.append((x + prof[k] * s, base + hh * s))
+    # Where the slush's top cuts the wall.
+    kk = min(3, int(fill_h * 4 / h))
+    t = (fill_h - h * kk / 4) / (h / 4)
+    sl.append((x + (prof[kk] + (prof[kk + 1] - prof[kk]) * t) * s, base + fill_h * s))
+    o.append(poly(sl + [(2 * x - px, py) for px, py in sl[::-1]], slush, THIN))
+    if lid:
+        mw = prof[4] * s
+        o += [rect(x - mw - 0.04, base + h * s, 2 * mw + 0.08, 0.12, "gold"), line((x - mw - 0.04, base + h * s + 0.06), (x + mw + 0.04, base + h * s + 0.06))]
+    if band is not None:
+        hh = h * band
+        k = min(3, int(band * 4))
+        tt = (hh - h * k / 4) / (h / 4)
+        bw = (prof[k] + (prof[k + 1] - prof[k]) * tt) * s
+        o.append(rect(x - bw, base + hh * s - 0.17, 2 * bw, 0.34, "cream"))
+        if label:
+            o.append(text(x, base + hh * s, label, 7.5, 2 * bw - 0.1))
+    return o
+
+
+def traffic_cone(x, y, s=1.0):
+    return [poly([(x - 0.16 * s, y + 0.04 * s), (x + 0.16 * s, y + 0.04 * s), (x + 0.04 * s, y + 0.55 * s), (x - 0.04 * s, y + 0.55 * s)], "peachdark", THIN),
+            poly([(x - 0.11 * s, y + 0.2 * s), (x + 0.11 * s, y + 0.2 * s), (x + 0.08 * s, y + 0.32 * s), (x - 0.08 * s, y + 0.32 * s)], "cream", THIN),
+            rect(x - 0.22 * s, y, 0.44 * s, 0.06 * s, "peachdark", THIN)]
+
+
+def barrier(x, y, w, t):
+    o = [line((x - w / 2 + 0.1, y), (x - w / 2 + 0.1, y + 0.5), style="draw=ink, line width=1pt"), line((x + w / 2 - 0.1, y), (x + w / 2 - 0.1, y + 0.5), style="draw=ink, line width=1pt"),
+         rect(x - w / 2, y + 0.45, w, 0.36, "cream")]
+    o.append(text(x, y + 0.63, t, 8.5, w - 0.14))
+    for k in range(int(w / 0.3)):
+        o.append(poly([(x - w / 2 + k * 0.3, y + 0.45), (x - w / 2 + k * 0.3 + 0.12, y + 0.45), (x - w / 2 + k * 0.3 + 0.2, y + 0.53), (x - w / 2 + k * 0.3 + 0.08, y + 0.53)], "peachdark", "draw=none"))
+    return o
+
+
+def dish(x, y, s=1.0):
+    """A radio telescope: a bowl on a stand, tipped to the sky."""
+    return [line((x - 0.25 * s, y), (x, y + 0.7 * s), (x + 0.25 * s, y), style="draw=ink, line width=1pt"),
+            f"\\begin{{scope}}[shift={{{P(x, y + 0.85 * s)}}}, rotate=25, transform shape]",
+            f"\\filldraw[fill=cloud, {LINE}] {P(-0.7 * s, 0.1 * s)} .. controls {P(-0.5 * s, -0.45 * s)} and {P(0.5 * s, -0.45 * s)} .. {P(0.7 * s, 0.1 * s)} -- cycle;",
+            line((0, -0.25 * s), (0, 0.45 * s)), circ(0, 0.48 * s, 0.05 * s, "gold", THIN), "\\end{scope}"]
+
+
+def fish(x, y, s=1.0, fill="gold"):
+    return [ell(x, y, 0.12 * s, 0.07 * s, fill, THIN), poly([(x + 0.1 * s, y), (x + 0.2 * s, y + 0.07 * s), (x + 0.2 * s, y - 0.07 * s)], fill, THIN), circ(x - 0.06 * s, y + 0.015 * s, 0.012 * s, "ink", THIN)]
+
+
+def bottle(x, y, s=1.0, fill="teal", rot=0):
+    return [f"\\begin{{scope}}[shift={{{P(x, y)}}}, rotate={rot}, transform shape]", rect(-0.08 * s, 0, 0.16 * s, 0.32 * s, fill, THIN), rect(-0.035 * s, 0.32 * s, 0.07 * s, 0.12 * s, fill, THIN),
+            rect(-0.05 * s, 0.1 * s, 0.1 * s, 0.1 * s, "cream", THIN), "\\end{scope}"]
+
+
+def hourglass_frame(x, base, s):
+    c = CUPS["hourglass"]
+    top = base + c["inner_height"] * s
+    w = max(c["profile"]) * s + 0.12
+    return [rect(x - w, base - 0.1, 2 * w, 0.1, "wood"), rect(x - w, top, 2 * w, 0.1, "wood"),
+            line((x - w + 0.04, base), (x - w + 0.04, top), style="draw=wood, line width=2pt"), line((x + w - 0.04, base), (x + w - 0.04, top), style="draw=wood, line width=2pt")]
+
+
 # --- the scenes -------------------------------------------------------------
 # Each is (things behind the store, the store's options, things in front).
 # Coordinates are in the 4 by 3 cm frame; the island's top is near y = 0.62.
@@ -600,7 +677,7 @@ SCENES = {
     # The big city
     "m_two_one": (tower(0.45, G, 0.8, 2.0, "rose") + tower(3.55, G, 0.8, 1.7, "sage"), dict(awning="peach"), [], "store"),
     "m_cherry_cola": (tower(3.5, G, 0.8, 1.9, "stone"), dict(awning="rose", x=1.55, wall="peach"), [], lambda t: board(3.25, 1.95, 1.3, 0.42, t, "rose", color="cream", posts=G)),
-    "m_push_back": (tower(0.5, G, 0.8, 2.2, "slate") + tower(3.5, G, 0.8, 2.3, "stone"), dict(awning="gold"), wind(3.45, 1.2, 0.7, back=True), lambda t: board(3.5, 2.45, 0.42, 1.25, t, "gold", rot=0) if False else [rect(3.28, 1.35, 0.44, 1.35, "gold"), text(3.5, 2.02, t, 8, 1.2, "ink", rot=90)]),
+    "m_push_back": (tower(0.5, G, 0.8, 2.2, "slate") + tower(3.5, G, 0.8, 2.3, "stone"), dict(awning="gold"), wind(3.45, 1.2, 0.7, back=True), lambda t: [rect(3.28, 1.35, 0.44, 1.35, "gold"), text(3.5, 2.02, t, 8, 1.2, "ink", rot=90)]),
     "s_field_maze": (tower(0.45, G, 0.75, 2.1, "peach") + tower(3.55, G, 0.75, 1.9, "slate"), dict(awning="peach"), wind(0.2, 2.3, 0.5) + wind(3.85, 2.0, 0.5, back=True),
                      lambda t: [line((2.0, G + 1.4), (2.0, 2.85), style="draw=ink, line width=1pt")] + board(2.0, 2.62, 1.3, 0.32, t, "sage", rot=-4, color="cream")),
     "s_two_rows": (stands(0.2, G + 0.15, 3.6, 1.0) + floodlight(0.25, G, 1.0) + floodlight(3.75, G, 1.0), dict(awning="peach", s=0.85), [], lambda t: banner(0.7, 3.3, 2.6, t, "teal")),
@@ -627,8 +704,19 @@ SCENES = {
     "m_two_lines_blend": ([], dict(awning="sage", y=G + 0.55, s=0.8), bridge(0.6, 0.45, 2.8), lambda t: text(2.0, 0.83, t, 7.5, 1.5, "ink")),
     # The night market
     "m_two_speeds": (lanterns(0.1, 3.9, 2.55) + moon(3.5, 2.75), dict(skip=True), stall(2.0, G, 1.0), lambda t: banner(1.2, 2.8, 2.3, t, "rose")),
+    # Cup shapes (Sam, 2026-10-08): a mission on each row of the tour, each
+    # scene with a giant cup of its shape, drawn from data/cups.json.
+    "s_tall": (giant_cup(3.3, G, "tall", 0.035, "teal") + gull(3.7, 2.8), dict(awning="teal", x=1.75), pier(0.1, 0.55, 0.8), lambda t: banner(0.55, 2.95, 2.6, t, "rose", ground=None) + [line((0.55, 2.4), (0.55, 2.82), style="draw=ink, line width=0.9pt"), line((2.95, 2.4), (2.95, 2.82), style="draw=ink, line width=0.9pt")]),
+    "s_bowl": (palm(3.6, G, 1.0, -0.3) + water(0.1, 0.42, 3.8, 0.16), dict(awning="gold", x=1.6), giant_cup(3.05, G, "bowl", 0.022, "cream"), lambda t: board(0.65, 1.7, 1.15, 0.34, t, "sand", rot=-4, posts=G)),
+    "s_cone": (spire(0.35, G - 0.1, 0.6, 1.4) + giant_cup(3.3, G + 0.05, "cone", 0.021, "rose") + cactus(3.85, G, 0.6), dict(awning="peach", x=1.75), traffic_cone(0.75, G) + traffic_cone(1.05, G - 0.05, 0.8) + traffic_cone(2.62, G - 0.05, 0.75), lambda t: barrier(0.95, G + 0.95, 1.25, t)),
+    "s_jar": (tower(0.4, G, 0.7, 2.0, "sage") + tower(2.2, G + 0.9, 0.9, 1.4, "rose"), dict(awning="rose", x=1.55, wall="wood"), giant_cup(3.2, G, "jar", 0.03, "rose", band=0.4, lid=True), lambda t: giant_cup(3.2, G, "jar", 0.03, "rose", band=0.42, lid=True, label=t)[-2:]),
+    "s_hourglass": (peak(2.0, G + 0.3, 3.6, 1.9) + pine(0.35, G) + hourglass_frame(3.2, G + 0.1, 0.03) + giant_cup(3.2, G + 0.1, "hourglass", 0.03, "sand"), dict(awning="sage", x=1.75), [], lambda t: board(1.75, 2.35, 1.3, 0.34, t, "sand") + [line((1.3, 2.18), (1.3, 1.98)), line((2.2, 2.18), (2.2, 1.98))]),
+    "s_fishbowl": ([], dict(awning="teal", x=1.6, wall="gold"), giant_cup(3.2, G, "fishbowl", 0.022, "teal") + fish(3.15, G + 0.45, 1.0) + fish(3.35, G + 0.65, 0.8, "rose"), "store"),
+    "s_glass_bowl": (lanterns(0.1, 3.9, 2.6), dict(skip=True), stall(1.6, G, 0.9) + giant_cup(3.3, G, "tall", 0.022, "teal") + giant_cup(3.75, G, "bowl", 0.011, "gold"), lambda t: banner(0.85, 2.35, 2.25, t, "teal")),
+    "s_jar_hourglass": (storm_cloud(0.8, 2.6) + storm_cloud(3.3, 2.75) + rain(0.3, 1.3, 3.4, 1.1, 12), dict(awning="teal", x=1.5, s=0.9), bottle(2.85, G - 0.05, 1.0, "teal", -70) + bottle(3.35, G, 1.1, "sage", 15) + bottle(3.65, G - 0.05, 0.9, "rose", 80) + giant_cup(0.45, G, "jar", 0.018, "rose", lid=True),
+                        lambda t: board(3.25, 1.45, 1.1, 0.32, t, "wood", rot=-5, color="cream")),
     # The end of the world
-    "m_storm": (storm_cloud(0.8, 2.6) + storm_cloud(3.3, 2.75) + rain(0.3, 1.2, 3.4, 1.2, 14) + bolt(1.6, 2.5), dict(awning="teal", x=1.35, s=0.85), lighthouse(3.2, G, 1.0), lambda t: board(1.35, 0.95, 1.2, 0.3, t, "wood", rot=-5, color="cream") if False else board(3.2, 0.95, 1.0, 0.28, t, "wood", rot=-4, color="cream")),
+    "m_storm": (storm_cloud(0.8, 2.6) + storm_cloud(3.3, 2.75) + rain(0.3, 1.2, 3.4, 1.2, 14) + bolt(1.6, 2.5), dict(awning="teal", x=1.35, s=0.85), lighthouse(3.2, G, 1.0), lambda t: board(3.2, 0.95, 1.0, 0.28, t, "wood", rot=-4, color="cream")),
 }
 
 

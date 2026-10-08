@@ -24,9 +24,9 @@ pub struct LineView {
     pub floor: i32,
     pub rim: i32,
     pub inner_half: i32,
-    /// The flower pot's lean: each side is this much narrower at the floor
-    /// than `inner_half`, and this much wider at the rim.
-    pub flare: i32,
+    /// The cup's shape: half its inside width at the floor, a quarter, half
+    /// and three quarters of the way up, and the rim.
+    pub profile: [i32; 5],
     pub wall_half: i32,
     pub lid_x: i32,
     pub end_x: i32,
@@ -106,7 +106,7 @@ pub fn frame(w: &World) -> Frame {
             floor: w.floor(seat).0,
             rim: w.rim(seat).0,
             inner_half: line.cup.inner_half.0,
-            flare: line.cup.flare.0,
+            profile: line.cup.profile.map(|f| f.0),
             wall_half: balance::WALL_HALF.0,
             lid_x: line.lid_x.0,
             end_x: line.end_x.0,

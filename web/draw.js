@@ -356,7 +356,7 @@ export class Stage {
     const rimY = this.sy(L.rim);
     const u = this.scale;
     g.fillStyle = p.machine;
-    const rimHalf = this.len(L.inner_half + L.flare);
+    const rimHalf = this.len(Math.max(...L.profile));
     g.fillRect(lidX - rimHalf - 3 * u, rimY - 14 * u, rimHalf * 2 + 6 * u, 5 * u);
     g.fillStyle = p.lid;
     g.fillRect(lidX - 1.2 * u, rimY - 9 * u, 2.4 * u, 5 * u);
@@ -403,10 +403,12 @@ export class Stage {
     for (const c of L.cups) {
       const cx = this.sx(c.x);
       if (cx < -80 || cx > this.c.width + 80) continue;
-      // A flower pot (Sam, 2026-10-06), as core shaped it: narrow at the
-      // floor, wide at the rim, each wall a straight capsule between.
-      const low = this.len(L.inner_half - L.flare);
-      const half = this.len(L.inner_half + L.flare);
+      // The cup's shape, as core sent it (a flower pot, 2026-10-06; and the
+      // shaped cups, 2026-10-08): half its inside width at five heights,
+      // with straight walls between.
+      const prof = L.profile.map((v) => this.len(v));
+      const low = prof[0];
+      const half = prof[4];
       const wall = this.len(L.wall_half) * 2;
       const floorY = this.sy(c.floor);
       const cupRim = this.sy(c.rim);
@@ -418,12 +420,11 @@ export class Stage {
         g.fillRect(cx - 1.6 * u, baseY, 3.2 * u, Math.max(0, beltY - baseY));
         g.fillRect(cx - 5 * u, beltY - 1.2 * u, 10 * u, 1.2 * u);
       }
+      const yAt = (k) => floorY + (cupRim - floorY) * (k / 4);
       g.fillStyle = p.cup;
       g.beginPath();
-      g.moveTo(cx - low, floorY);
-      g.lineTo(cx + low, floorY);
-      g.lineTo(cx + half, cupRim);
-      g.lineTo(cx - half, cupRim);
+      for (let k = 0; k <= 4; k += 1) g.lineTo(cx + prof[k], yAt(k));
+      for (let k = 4; k >= 0; k -= 1) g.lineTo(cx - prof[k], yAt(k));
       g.closePath();
       g.fill();
       g.strokeStyle = p.line;
@@ -431,10 +432,10 @@ export class Stage {
       g.lineCap = 'round';
       g.lineJoin = 'round';
       g.beginPath();
-      g.moveTo(cx - half - wall / 2, cupRim);
+      for (let k = 4; k >= 1; k -= 1) g.lineTo(cx - prof[k] - wall / 2, yAt(k));
       g.lineTo(cx - low - wall / 2, floorY + wall / 2);
       g.lineTo(cx + low + wall / 2, floorY + wall / 2);
-      g.lineTo(cx + half + wall / 2, cupRim);
+      for (let k = 1; k <= 4; k += 1) g.lineTo(cx + prof[k] + wall / 2, yAt(k));
       g.stroke();
       if (c.judged) {
         g.fillStyle = p.lid;

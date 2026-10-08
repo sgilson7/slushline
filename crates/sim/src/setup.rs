@@ -168,11 +168,45 @@ pub struct CupSpec {
     /// Half the inside width, and the inside height, in cm.
     pub inner_half: Fx,
     pub inner_height: Fx,
-    /// How much wider each side is at the rim than halfway up, and narrower
-    /// at the floor: the flower pot's lean.
-    pub flare: Fx,
+    /// The cup's shape (Sam, 2026-10-06 and 2026-10-08): half its inside
+    /// width at the floor, a quarter of the way up, halfway, three quarters
+    /// and the rim, with straight walls between. A flower pot widens evenly;
+    /// a jar narrows to its neck; an hourglass pinches at its middle.
+    pub profile: [Fx; 5],
     /// Units the order's shares divide (D9); measured in M1.0.
     pub capacity: u32,
+}
+
+impl CupSpec {
+    /// The quarter of the cup's height that `h` (above the floor, clamped
+    /// to the cup) lies in, and how far into it.
+    fn piece(&self, h: Fx) -> (usize, Fx, Fx) {
+        let h = h.clamp(Fx(0), self.inner_height);
+        let seg = self.inner_height / 4;
+        let k = ((h.raw() as i64 * 4) / self.inner_height.raw().max(1) as i64).clamp(0, 3) as usize;
+        (k, h - seg * k as i32, seg)
+    }
+    /// Half the inside width `h` above the floor.
+    pub fn half(&self, h: Fx) -> Fx {
+        let (k, into, seg) = self.piece(h);
+        self.profile[k] + (self.profile[k + 1] - self.profile[k]) * into / seg
+    }
+    /// How far the wall leans out for each centimeter up, `h` above the
+    /// floor: positive where the cup widens, negative where it narrows.
+    pub fn lean(&self, h: Fx) -> Fx {
+        let (k, _, seg) = self.piece(h);
+        (self.profile[k + 1] - self.profile[k]) / seg
+    }
+    /// Half the width at the floor, at the rim, and at the widest.
+    pub fn floor_half(&self) -> Fx {
+        self.profile[0]
+    }
+    pub fn mouth(&self) -> Fx {
+        self.profile[4]
+    }
+    pub fn widest(&self) -> Fx {
+        self.profile.iter().copied().fold(Fx(0), Fx::max)
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]

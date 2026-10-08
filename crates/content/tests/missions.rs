@@ -550,8 +550,13 @@ fn the_chart_s_lines_are_the_hasse_diagram_and_open_the_same_missions() {
     let (mut all, mut kept) = (0, 0);
     for m in &ms {
         let h = content::missions::hasse(&ms, m);
-        all += m.requires.len();
-        kept += h.len();
+        // Only a mission with more than one requirement can have one that is
+        // implied through another; side paths have one each (2026-10-08:
+        // counting them too measured the side paths, not the rule).
+        if m.requires.len() > 1 {
+            all += m.requires.len();
+            kept += h.len();
+        }
         assert!(h.iter().all(|a| m.requires.iter().any(|r| r.mission() == a)), "{}: a chart line to a mission it does not require", m.id);
         // Everything it requires is still reached through the kept lines.
         let mut reach: Vec<String> = h.clone();
@@ -569,7 +574,8 @@ fn the_chart_s_lines_are_the_hasse_diagram_and_open_the_same_missions() {
             assert!(reach.iter().any(|x| x == r.mission()), "{}: {} is no longer reached in the chart", m.id, r.mission());
         }
     }
-    // Measured: the chart keeps 39 of the tree's 75 lines.
+    // Measured over missions with several requirements: the chart keeps 36
+    // of their 72 lines.
     assert!(kept * 10 <= all * 6, "the chart keeps {kept} of {all} lines, which is not fewer by much");
     // A case by hand: Half and half requires Two spouts and The tail, and
     // neither leads to the other, so both lines stay; Two to one requires

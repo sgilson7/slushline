@@ -15,6 +15,9 @@ fn wide(tuning: u8) -> World {
     l.belt.speed = Fx(0);
     l.first_x = l.spouts[0].x;
     l.cup.inner_half = Fx::int(120);
+    // A straight-sided cup of that width (cups have a profile since
+    // SIM_VERSION 8).
+    l.cup.profile = [Fx::int(120); 5];
     l.lid_x = Fx::int(10_000);
     World::new(setup_of(1, tuning, l))
 }
@@ -220,7 +223,7 @@ fn a_full_cup_is_narrow_at_its_floor_and_wide_at_its_rim() {
         w.step([Input::NONE; 2]);
     }
     let cup = w.line(0).cup;
-    let floor_half = cup.inner_half - cup.flare;
+    let floor_half = cup.floor_half();
     let ls = w.lines[0].as_ref().unwrap();
     let c = ls.cups.iter().find(|c| w.units.iter().any(|u| w.inside(u, c))).expect("a cup holds slush");
     let floor = w.cup_floor(0, c);
@@ -237,4 +240,45 @@ fn a_full_cup_is_narrow_at_its_floor_and_wide_at_its_rim() {
     assert!(low_half < floor_half + Fx::int(3));
     assert!(low <= low_half + Fx::ratio(1, 4), "slush near the floor reaches {:.1} cm from the middle, past the cup's {:.1} there", low.0 as f64 / 4096.0, low_half.0 as f64 / 4096.0);
     assert!(high >= floor_half + Fx::int(4), "slush near the rim reaches only {:.1} cm from the middle; the floor is {:.1}", high.0 as f64 / 4096.0, floor_half.0 as f64 / 4096.0);
+}
+
+#[test]
+fn no_unit_rests_inside_the_wall_of_any_cup_shape() {
+    // Sam, 2026-10-08: cups of fun shapes, whose walls bend and lean in (a
+    // jar's shoulders, an hourglass's waist, a fishbowl's mouth). Filled in
+    // short pours and left to rest, every unit in a cup of each shape sits
+    // inside its walls: none has its center in a wall.
+    let cups = content::setup::cups();
+    assert!(cups.len() >= 8, "only {} cup shapes", cups.len());
+    for kind in cups.keys() {
+        let mut l = line(&["cola"], kind, "steady", vec![order(&[("cola", 1)])]);
+        l.belt.speed = Fx(0);
+        l.first_x = l.spouts[0].x;
+        l.lid_x = Fx::int(10_000);
+        let mut w = World::new(setup_of(1, sim::balance::DEFAULT_TUNING, l));
+        for _ in 0..6 {
+            for _ in 0..3 {
+                w.step([Input(Input::SPOUT[0]), Input::NONE]);
+            }
+            for _ in 0..200 {
+                w.step([Input::NONE; 2]);
+            }
+        }
+        let c = w.lines[0].as_ref().unwrap().cups[0].clone();
+        let (floor, rim) = (w.cup_floor(0, &c), w.cup_rim(0, &c));
+        let wall = sim::balance::WALL_HALF * 2;
+        let mut stuck = Vec::new();
+        for u in &w.units {
+            if u.p.y > floor && u.p.y < rim {
+                let d = (u.p.x - c.x).abs();
+                let half = w.half_at(0, &c, u.p.y);
+                if d > half + Fx::ratio(1, 4) && d < half + wall - Fx::ratio(1, 4) {
+                    stuck.push(format!("({:.1}, {:.1})", (u.p.x - c.x).0 as f64 / 4096.0, (u.p.y - floor).0 as f64 / 4096.0));
+                }
+            }
+        }
+        let inside = w.units.iter().filter(|u| w.inside(u, &c)).count();
+        assert!(inside > 20, "{kind}: only {inside} units in the cup");
+        assert!(stuck.is_empty(), "{kind}: units in the wall at {stuck:?}");
+    }
 }

@@ -763,9 +763,13 @@ async function main() {
       // Whether each unit sits in a cup, from the cups core sent: the gate
       // samples the slush in cups, not slush passing behind a nozzle.
       const L = run.frame.lines;
-      // The cups are flower pots: narrower than inner_half by the flare at
-      // the floor, wider by it at the rim, straight between.
-      const halfAt = (Ls, c, y) => Ls.inner_half - Ls.flare + (2 * Ls.flare * (y - c.floor)) / (c.rim - c.floor);
+      // A cup's inside half-width at a height, from the profile core sent:
+      // five widths, straight walls between.
+      const halfAt = (Ls, c, y) => {
+        const f = Math.max(0, Math.min(1, (y - c.floor) / (c.rim - c.floor))) * 4;
+        const k = Math.min(3, Math.floor(f));
+        return Ls.profile[k] + (Ls.profile[k + 1] - Ls.profile[k]) * (f - k);
+      };
       const inCup = (seat, x, y) => L[seat]?.cups.some((c) => !c.judged && Math.abs(x - c.x) < halfAt(L[seat], c, y) && y > c.floor && y < c.rim);
       for (let k = 0; k < u.length; k += 5) out.push({ f: u[k + 4] & 255, x: stage.sx(u[k + 1]), y: stage.sy(u[k + 2]), r: stage.len(u[k + 3]), cup: !!inCup(u[k + 4] >> 8, u[k + 1], u[k + 2]) });
       return out;

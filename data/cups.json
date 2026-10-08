@@ -1,5 +1,11 @@
 {
-  "_about": "Cup sizes (D9). Inside half-width and height in whole cm; capacity is the units an order's shares divide, and is measured in M1.0 as the units that fill the cup to its rim. Capacities are multiples of 12 so that every share in data/missions.json is whole (every_share_is_a_whole_number_of_units). `flare` makes a cup a flower pot (Sam, 2026-10-06): each side leans out by that many cm from halfway up to the rim, and in as much to the floor, so the cup holds what it held with straight sides.",
-  "regular": { "inner_half": 21, "inner_height": 36, "flare": 6, "capacity": 120 },
-  "small": { "inner_half": 15, "inner_height": 27, "flare": 4, "capacity": 60 }
+  "_about": "Cup sizes (D9). Inside half-width and height in whole cm; capacity is the units an order's shares divide, and is measured in M1.0 as the units that fill the cup to its rim. Capacities are multiples of 12 so that every share in data/missions.json is whole (every_share_is_a_whole_number_of_units). `profile` is the cup's shape (Sam, 2026-10-06 and 2026-10-08): half the inside width at the floor, a quarter, half and three quarters of the way up, and the rim, with straight walls between. The regular and small cups are the flower pots of 2026-10-06; `inner_half` is the width halfway up, where the gauge and the pilot measure from. The shaped cups' capacities were measured with `lab capacity <cup>` against the regular cup (which measures 103 there, against its 120), scaled and rounded to a multiple of 12 (SECOND-ORDER-M11).",
+  "regular": { "inner_half": 21, "inner_height": 36, "profile": [15, 18, 21, 24, 27], "capacity": 120 },
+  "small": { "inner_half": 15, "inner_height": 27, "profile": [11, 13, 15, 17, 19], "capacity": 60 },
+  "tall": { "inner_half": 11, "inner_height": 60, "profile": [9, 10, 11, 12, 13], "capacity": 120 },
+  "bowl": { "inner_half": 29, "inner_height": 22, "profile": [14, 24, 29, 32, 33], "capacity": 60 },
+  "cone": { "inner_half": 17, "inner_height": 36, "profile": [3, 10, 17, 24, 31], "capacity": 84 },
+  "jar": { "inner_half": 22, "inner_height": 40, "profile": [20, 22, 22, 18, 11], "capacity": 132 },
+  "hourglass": { "inner_half": 7, "inner_height": 44, "profile": [20, 13, 7, 13, 20], "capacity": 96 },
+  "fishbowl": { "inner_half": 30, "inner_height": 40, "profile": [14, 26, 30, 26, 14], "capacity": 144 }
 }

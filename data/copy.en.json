@@ -556,6 +556,62 @@
         "review": "new; place: new (Sam, 2026-10-07: each mission a store in a different place); store: new (Sam, 2026-10-07: each mission's store name, written on its scene)",
         "place": "A store beside the snow cannons.",
         "store": "Snowmaker"
+      },
+      "s_tall": {
+        "name": "A tall cup",
+        "try": "Hold the handle a little longer, because a tall cup stacks its slush in a narrow column.",
+        "place": "A store on the boardwalk known for its tall cups.",
+        "store": "Tall Order",
+        "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+      },
+      "s_bowl": {
+        "name": "A wide bowl",
+        "try": "Pour into the middle of the bowl, because slush that lands near the rim slides down the gentle walls.",
+        "place": "A beach store on the islands that serves its slush in coconut bowls.",
+        "store": "Coconut Bowl",
+        "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+      },
+      "s_cone": {
+        "name": "Cones",
+        "try": "Let go a little early, because a cone has almost no floor and fills fast at the bottom.",
+        "place": "A store at the roadworks on the desert highway, among the traffic cones.",
+        "store": "Cone Zone",
+        "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+      },
+      "s_jar": {
+        "name": "Jars with narrow necks",
+        "try": "Aim for the middle of the neck, because slush that lands on a jar's shoulders slides off and is wasted.",
+        "place": "A corner deli downtown, its shelves lined with jam jars.",
+        "store": "Jam Jar",
+        "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+      },
+      "s_hourglass": {
+        "name": "Hourglasses",
+        "try": "Aim for the middle, because the slush has to pass the narrow waist to reach the bottom half.",
+        "place": "A store at a mountain hut, beside a giant hourglass that times the climb.",
+        "store": "Sand Timer",
+        "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+      },
+      "s_fishbowl": {
+        "name": "Fishbowls",
+        "try": "Aim at the small mouth and keep pouring, because a fishbowl holds more than its opening suggests.",
+        "place": "A pet shop corner in the old town, with a fishbowl in the window.",
+        "store": "Goldfish Corner",
+        "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+      },
+      "s_glass_bowl": {
+        "name": "Tall cups above, bowls below",
+        "try": "Lead the tall cups less than the bowls, because a tall cup's rim is closer to the spout.",
+        "place": "A glassblower's stall in the night market.",
+        "store": "Glassworks",
+        "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+      },
+      "s_jar_hourglass": {
+        "name": "Jars above, hourglasses below",
+        "try": "Watch both openings, because each cup takes its slush through a narrow neck or waist.",
+        "place": "A bottle shop below the lighthouse, where the storm washes bottles ashore.",
+        "store": "Bottle Shop",
+        "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
       }
     },
     "req": {
@@ -1020,6 +1076,54 @@
       "when": "A jet pours on cups at two heights.",
       "then": "Use the jet on any cup; lead the falling spout by each cup's height.",
       "review": "new"
+    },
+    "K34": {
+      "name": "A tall cup",
+      "when": "The cup is tall and narrow.",
+      "then": "Pour longer, because the slush stacks up in a narrow column.",
+      "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+    },
+    "K35": {
+      "name": "A wide bowl",
+      "when": "The cup is wide and shallow.",
+      "then": "Pour into the middle, because the walls lean far out.",
+      "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+    },
+    "K36": {
+      "name": "A cone",
+      "when": "The cup narrows to a point at its floor.",
+      "then": "Let go a little early, because the bottom fills fast.",
+      "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+    },
+    "K37": {
+      "name": "A narrow neck",
+      "when": "The cup narrows at the top.",
+      "then": "Aim at the neck, because slush on the shoulders slides off.",
+      "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+    },
+    "K38": {
+      "name": "A waist",
+      "when": "The cup pinches in the middle.",
+      "then": "Aim at the middle, because the slush has to pass the waist.",
+      "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+    },
+    "K39": {
+      "name": "A small mouth on a big cup",
+      "when": "The cup is round, with a small mouth.",
+      "then": "Aim at the mouth and keep pouring, because the cup holds more than it looks.",
+      "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+    },
+    "K40": {
+      "name": "Two shapes at once",
+      "when": "Each line carries a different cup.",
+      "then": "Lead each line for its own cup.",
+      "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
+    },
+    "K41": {
+      "name": "Two narrow openings at once",
+      "when": "Both lines carry cups with narrow openings.",
+      "then": "Watch where each opening is.",
+      "review": "new (Sam, 2026-10-08: cups with fun shapes, a mission on each row of the tour)"
     }
   },
   "kc_edge": {
@@ -1069,7 +1173,15 @@
     "K31_K32": "A jet and a falling spout on one line.",
     "K32_K33": "The jet over cups at two heights.",
     "K28_K30": "The heavy flavor goes underneath by itself.",
-    "K30_K29": "Now the layers are yours to pour in order."
+    "K30_K29": "Now the layers are yours to pour in order.",
+    "K01_K34": "Pouring, into a taller cup.",
+    "K36_K37": "From a wide mouth to a narrow one.",
+    "K37_K38": "From a narrow neck to a narrow waist.",
+    "K39_K40": "Two shapes, on two lines.",
+    "K40_K41": "Two narrow openings, on two lines.",
+    "K34_K36": "From a tall cup to one with almost no floor.",
+    "K38_K35": "From a narrow waist to a wide, shallow bowl.",
+    "K35_K39": "From a wide mouth to a small one on a round body."
   },
   "judge": {
     "excellent": "EXCELLENT",
@@ -1118,6 +1230,9 @@
     },
     "jets": {
       "name": "Jets"
+    },
+    "cup_shapes": {
+      "name": "Cup shapes"
     }
   },
   "music": {

@@ -18,7 +18,7 @@ use sim::{Input, World};
 
 /// Bumped when a pilot plays differently, so `analysis/ladder.md` is known to
 /// be stale.
-pub const VERSION: u32 = 2;
+pub const VERSION: u32 = 3;
 
 /// The yardstick's error on each let-go, in units either way.
 pub const YARDSTICK_ERROR: u32 = 10;
@@ -89,7 +89,10 @@ impl Pilot {
             // fields, and the cup that will be there then.
             let (x, fall) = landing(w, seat, i);
             let lead = speed * fall as i32;
-            let room = line.cup.inner_half - Fx::int(8);
+            // Aim inside the narrower of the middle and the mouth, so a jar's
+            // shoulders are not poured on (cup shapes, 2026-10-08).
+            let aim = line.cup.inner_half.min(line.cup.mouth());
+            let room = (aim - Fx::int(8)).max(aim / 2);
             let target = ls.cups.iter().find(|c| !c.judged && (c.x + lead - x).abs() <= room);
             let Some(cup) = target else {
                 if self.pours[i].cup.is_some() && !self.pours[i].done {

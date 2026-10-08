@@ -132,6 +132,38 @@
     {
       "id": "K33",
       "group": "jets"
+    },
+    {
+      "id": "K34",
+      "group": "cup_shapes"
+    },
+    {
+      "id": "K35",
+      "group": "cup_shapes"
+    },
+    {
+      "id": "K36",
+      "group": "cup_shapes"
+    },
+    {
+      "id": "K37",
+      "group": "cup_shapes"
+    },
+    {
+      "id": "K38",
+      "group": "cup_shapes"
+    },
+    {
+      "id": "K39",
+      "group": "cup_shapes"
+    },
+    {
+      "id": "K40",
+      "group": "cup_shapes"
+    },
+    {
+      "id": "K41",
+      "group": "cup_shapes"
     }
   ],
   "edges": [
@@ -180,7 +212,15 @@
     "K28_K30",
     "K30_K29",
     "K31_K32",
-    "K32_K33"
+    "K32_K33",
+    "K01_K34",
+    "K36_K37",
+    "K37_K38",
+    "K39_K40",
+    "K40_K41",
+    "K34_K36",
+    "K38_K35",
+    "K35_K39"
   ],
   "held": []
 }

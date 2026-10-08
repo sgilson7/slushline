@@ -56,6 +56,9 @@ fn h2_the_cup_moves_while_the_slush_falls() {
         let mut l = line(&["cola"], "regular", "steady", vec![order(&[("cola", 1)])]);
         l.belt.speed = Fx::int(3);
         l.cup.inner_half = Fx::int(20);
+        // A straight-sided cup of that width (cups have a profile since
+        // SIM_VERSION 8).
+        l.cup.profile = [Fx::int(20); 5];
         let x0 = l.spouts[0].x;
         l.first_x = x0 + Fx::int(start_offset);
         let mut s = setup_of(1, sim::balance::DEFAULT_TUNING, l);

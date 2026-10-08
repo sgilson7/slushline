@@ -35,4 +35,5 @@ pub use world::World;
 /// 6: rows of cups, cups that bob, heavy slush, layered orders and the jet
 /// (Sam, 2026-10-06).
 /// 7: cups are flower pots, their walls leaning out (Sam, 2026-10-06).
-pub const SIM_VERSION: u32 = 7;
+/// 8: cups have a profile of straight pieces, for shapes (Sam, 2026-10-08).
+pub const SIM_VERSION: u32 = 8;
