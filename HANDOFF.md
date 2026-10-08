@@ -1,6 +1,6 @@
 # Handoff
 
-Written for a reader with none of the last session's context. This one is for v0.7.0 (2026-10-08, build `4c2665bb`, live gate walked in three engines): a pour sound and a blurred store behind the line (`SECOND-ORDER-M7`), then flower-pot cups (SIM_VERSION 7), the fix for a lag the store caused, and drawing between ticks (`SECOND-ORDER-M8`); then the soundtrack from SoundCloud, flair words on three cups in ten, and a missed cup in Sam's own recorded voice (`SECOND-ORDER-M9`); then story mode, a world tour of corner stores drawn in Vagrancy's TikZ style (`SECOND-ORDER-M10`); then cups of fun shapes and a chapter of them (`SECOND-ORDER-M11`). Nothing Sam has asked for is unstarted; section 7 lists what waits on him.
+Written for a reader with none of the last session's context. This one is for v0.8.0 (2026-10-08, build `ae1a30c3`, live gate walked in three engines): a pour sound and a blurred store behind the line (`SECOND-ORDER-M7`), then flower-pot cups (SIM_VERSION 7), the fix for a lag the store caused, and drawing between ticks (`SECOND-ORDER-M8`); then the soundtrack from SoundCloud, flair words on three cups in ten, and a missed cup in Sam's own recorded voice (`SECOND-ORDER-M9`); then story mode, a world tour of corner stores drawn in Vagrancy's TikZ style (`SECOND-ORDER-M10`); then cups of fun shapes and a chapter of them (`SECOND-ORDER-M11`). Nothing Sam has asked for is unstarted; section 7 lists what waits on him.
 
 ## 1. What this is
 
