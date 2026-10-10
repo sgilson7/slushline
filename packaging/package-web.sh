@@ -99,7 +99,32 @@ def fill(m):
 p = f"{web}/index.html"
 page = re.sub(r"<!--.*?-->\s*", "", open(p).read(), flags=re.S)
 page = re.sub(r"\{\{([a-z_.]+)\}\}", fill, page)
+# Colors in the page's head (the theme color) come from the palette too.
+def color(m):
+    v = pal.get(m.group(1))
+    if not (isinstance(v, str) and v.startswith("#")):
+        sys.exit(f"{m.group(1)} is not a color in data/palette.json")
+    return v
+page = re.sub(r"\{\{palette:([a-z_]+)\}\}", color, page)
 open(p, "w").write(page)
+# The web app manifest (2026-10-10): added to an iPad's home screen, the
+# game opens filling the screen, in landscape. Its name and colors come from
+# their one home each.
+manifest = {
+    "name": copy["game"]["name"],
+    "short_name": copy["game"]["name"],
+    "start_url": "./",
+    "scope": "./",
+    "display": "fullscreen",
+    "orientation": "landscape",
+    "background_color": pal["paper"],
+    "theme_color": pal["paper"],
+    "icons": [
+        {"src": "art/icon-192.png", "sizes": "192x192", "type": "image/png"},
+        {"src": "art/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    ],
+}
+open(f"{web}/manifest.webmanifest", "w").write(json.dumps(manifest, indent=2) + "\n")
 flat = {}
 def walk(v, path):
     if isinstance(v, dict):

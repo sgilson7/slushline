@@ -111,8 +111,8 @@ def expected_build():
     return (WEB / "build.txt").read_text().split()
 
 
-def open_page(browser, query=""):
-    ctx = browser.new_context(accept_downloads=True)
+def open_page(browser, query="", device=None):
+    ctx = browser.new_context(accept_downloads=True, **(device or {}))
     page = ctx.new_page()
     problems, offsite = [], []
     # A refused soundtrack request is reported by the browser as a load
@@ -671,11 +671,198 @@ def a_file_that_is_not_a_replay_is_refused_with_a_sentence(page, name):
     return []
 
 
+# --- the iPad (Sam, 2026-10-10) ----------------------------------------------
+#
+# A second pass, in WebKit as an iPad: touch, a mobile browser and its screen.
+# Menus are tapped; a finger held on a nozzle is pointer events, which is
+# what a held touch becomes in the browser, and a tap is Playwright's own
+# touchscreen. Run only when "ipad" is named (make test-ui names it).
+
+IPAD = "iPad Pro 11 landscape"
+IPAD_CHECKS = []
+
+
+def ipad_check(fn):
+    IPAD_CHECKS.append(fn)
+    return fn
+
+
+def finger(page, kind, x, y, target=None, pid=7):
+    """A touch pointer event at (x, y), on `target` or what is under it."""
+    page.evaluate("""([kind, x, y, sel, pid]) => {
+        const el = sel ? document.querySelector(sel) : document.elementFromPoint(x, y);
+        el.dispatchEvent(new PointerEvent(kind, { bubbles: true, cancelable: true, clientX: x, clientY: y,
+            pointerId: pid, pointerType: 'touch', isPrimary: true }));
+    }""", [kind, x, y, target, pid])
+
+
+def opening(page, seat=0, i=0):
+    return page.evaluate(f"window.slushline.frame().lines[{seat}].spouts[{i}].opening")
+
+
+def start_by_tap(page, mission):
+    page.tap("#menu-missions")
+    page.tap(f"#mission-{mission}")
+    page.tap("#open-mission")
+    page.tap("#start-mission")
+    page.wait_for_function("window.slushline.tick() > 2")
+
+
+@ipad_check
+def a_finger_held_on_a_nozzle_pours_and_the_menus_answer_taps(page, name):
+    # Every mission open, so the card is a long one (three spouts) that has
+    # to be scrolled to reach its button.
+    page.evaluate(f"localStorage.setItem('slushline.save', {json.dumps(json.dumps(ALL_PASSED))})")
+    page.reload(wait_until="load")
+    page.wait_for_function("document.body.dataset.ready === '1'")
+    problems = lines_not_in_copy(page, "the menu on an iPad")
+    page.tap("#menu-missions")
+    page.tap("#mission-m_three")
+    page.tap("#open-mission")
+    problems += lines_not_in_copy(page, "the card on an iPad")
+    # A long card is scrolled to reach its button; the run must still open
+    # with its line in view.
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    page.tap("#start-mission")
+    page.wait_for_function("window.slushline.tick() > 2")
+    mode = page.evaluate("window.slushline.touchMode()")
+    # The whole line is on the screen, from its spouts to its gauges, so
+    # every nozzle can be reached without scrolling.
+    fit = page.evaluate("(() => { const r = document.getElementById('stage').getBoundingClientRect(); return [r.top, r.bottom, innerHeight]; })()")
+    if fit[0] < 0 or fit[1] > fit[2]:
+        problems.append(f"the line runs from {fit[0]:.0f} to {fit[1]:.0f} on a screen {fit[2]} tall")
+    pt = page.evaluate("window.slushline.spoutPoint(0, 0)")
+    finger(page, "pointerdown", pt["x"], pt["y"])
+    page.wait_for_timeout(400)
+    held = opening(page)
+    finger(page, "pointerup", pt["x"], pt["y"])
+    try:
+        page.wait_for_function("window.slushline.frame().lines[0].spouts[0].opening === 0", timeout=5000)
+        shut = True
+    except Exception:
+        shut = False
+    if mode != "hold" or held <= 0 or not shut:
+        problems.append(f"in {mode} mode a held finger opened the nozzle to {held}, and lifting it {'closed' if shut else 'did not close'} it")
+    # The belt's throttle as buttons held down.
+    shown = page.is_visible("#belt-faster")
+    box = page.locator("#belt-faster").bounding_box()
+    finger(page, "pointerdown", box["x"] + box["width"] / 2, box["y"] + box["height"] / 2, "#belt-faster", pid=9)
+    page.wait_for_timeout(600)
+    finger(page, "pointerup", box["x"] + box["width"] / 2, box["y"] + box["height"] / 2, "#belt-faster", pid=9)
+    page.wait_for_timeout(100)
+    pct = page.evaluate("window.slushline.frame().lines[0].belt_pct")
+    if not shown or pct <= 100:
+        problems.append(f"the belt buttons were {'shown' if shown else 'hidden'}, and holding the faster one left the belt at {pct} %")
+    problems += lines_not_in_copy(page, "a run on an iPad")
+    page.tap("#leave-run")
+    page.tap("#back-to-menu")
+    if problems:
+        return [f"{name}: {p}" for p in problems]
+    print(f"ok: {name}: menus answer taps; a finger held on a nozzle opened it to {held} and lifting closed it; the belt buttons took the belt to {pct} %")
+    return []
+
+
+@ipad_check
+def a_tap_on_a_nozzle_opens_it_until_the_next_tap(page, name):
+    page.tap("#menu-settings")
+    page.tap("#touch-tap")
+    page.tap("#back-to-menu")
+    start_by_tap(page, "m_first_pour")
+    mode = page.evaluate("window.slushline.touchMode()")
+    pt = page.evaluate("window.slushline.spoutPoint(0, 0)")
+    page.touchscreen.tap(pt["x"], pt["y"])
+    page.wait_for_timeout(500)
+    first = opening(page)
+    page.wait_for_timeout(500)
+    still = opening(page)
+    page.touchscreen.tap(pt["x"], pt["y"])
+    try:
+        page.wait_for_function("window.slushline.frame().lines[0].spouts[0].opening === 0", timeout=5000)
+        shut = True
+    except Exception:
+        shut = False
+    problems = []
+    if mode != "tap" or first <= 0 or still <= 0 or not shut:
+        problems.append(f"in {mode} mode a tap opened the nozzle to {first}, then {still} a moment later, and the next tap {'closed' if shut else 'did not close'} it")
+    page.tap("#leave-run")
+    page.tap("#back-to-menu")
+    page.tap("#menu-settings")
+    page.tap("#touch-hold")
+    page.tap("#back-to-menu")
+    if problems:
+        return [f"{name}: {p}" for p in problems]
+    print(f"ok: {name}: a tap latched the nozzle open ({first}, then {still}) and the next tap closed it")
+    return []
+
+
+@ipad_check
+def the_page_fills_the_screen_and_can_be_added_to_the_home_screen(page, name):
+    problems = []
+    # Where the browser can fill the screen (iPadOS Safari), a button does;
+    # where it cannot (Playwright's mobile WebKit, as a phone's Safari), the
+    # menu says how to through the home screen.
+    api = page.evaluate("!!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)")
+    if api:
+        if not page.is_visible("#menu-fullscreen"):
+            problems.append("the browser can fill the screen and there is no fullscreen button")
+        elif page.inner_text("#menu-fullscreen") != COPY["screen"]["fullscreen"]["enter"]:
+            problems.append(f"the fullscreen button reads {page.inner_text('#menu-fullscreen')!r}")
+        else:
+            page.tap("#menu-fullscreen")
+            page.wait_for_timeout(300)
+    else:
+        if page.locator("#menu-fullscreen").count():
+            problems.append("a fullscreen button the browser cannot use")
+        elif not page.is_visible("#menu-fullscreen-home") or page.inner_text("#menu-fullscreen-home") != COPY["screen"]["fullscreen"]["home"]:
+            problems.append("no line says how to play fullscreen from the home screen")
+    got = page.evaluate("""async () => {
+        const m = await fetch('manifest.webmanifest').then((r) => r.json());
+        const icons = await Promise.all(m.icons.map((i) => fetch(i.src).then((r) => r.ok)));
+        const apple = document.querySelector('link[rel=apple-touch-icon]');
+        const appleOk = apple ? (await fetch(apple.getAttribute('href'))).ok : false;
+        return { name: m.name, display: m.display, icons, appleOk,
+                 zoom: getComputedStyle(document.documentElement).touchAction,
+                 stage: getComputedStyle(document.getElementById('stage')).touchAction };
+    }""")
+    if got["name"] != COPY["game"]["name"] or got["display"] != "fullscreen" or not all(got["icons"]) or not got["appleOk"]:
+        problems.append(f"the manifest reads {got}")
+    if got["zoom"] != "manipulation" or got["stage"] != "none":
+        problems.append(f"touch-action is {got['zoom']!r} on the page and {got['stage']!r} on the line")
+    if problems:
+        return [f"{name}: {p}" for p in problems]
+    how = "a fullscreen button" if api else "the home screen's way to fullscreen"
+    print(f"ok: {name}: {how}; the manifest names {got['name']!r} with its icons; no double-tap zoom, and the line keeps its touches")
+    return []
+
+
+def run_ipad(pw, failures):
+    browser = pw.webkit.launch()
+    ctx, page, problems, offsite = open_page(browser, device=pw.devices[IPAD])
+    name = "ipad"
+    for fn in IPAD_CHECKS:
+        try:
+            failures += fn(page, name)
+        except Exception:
+            failures.append(f"{name}: {fn.__name__} raised\n{traceback.format_exc()}")
+    if problems:
+        failures.append(f"{name}: console errors: {problems}")
+    else:
+        print(f"ok: {name}: no console error")
+    if offsite:
+        failures.append(f"{name}: requests left the origin: {offsite}")
+    else:
+        print(f"ok: {name}: no request left the origin")
+    ctx.close()
+    browser.close()
+
+
 def run(engine_names):
     httpd = None if LIVE else serve()
     failures = []
     with sync_playwright() as pw:
-        for name in engine_names:
+        if "ipad" in engine_names:
+            run_ipad(pw, failures)
+        for name in [e for e in engine_names if e != "ipad"]:
             browser = getattr(pw, name).launch()
             ctx, page, problems, offsite = open_page(browser)
             for fn in CHECKS:
@@ -702,4 +889,4 @@ def run(engine_names):
 
 
 if __name__ == "__main__":
-    run(sys.argv[1:] or ["chromium", "firefox", "webkit"])
+    run(sys.argv[1:] or ["chromium", "firefox", "webkit", "ipad"])

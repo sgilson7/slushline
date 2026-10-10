@@ -136,3 +136,20 @@ fn the_map_shows_a_mission_once_a_mission_it_requires_is_passed() {
         assert!(!(save.open(m) || save.passed.contains(&m.id)) || save.known(m), "{}", m.id);
     }
 }
+
+#[test]
+fn a_save_from_before_touch_loads_holding_and_keeps_a_tap_choice() {
+    // Sam, 2026-10-10: on the iPad a nozzle opens while held, or one tap
+    // opens and the next closes. A save written before touch has no
+    // choice and loads as holding; a save that chose tapping keeps it.
+    let mut v: serde_json::Value = serde_json::from_str(&Save::default().to_json()).unwrap();
+    v["options"].as_object_mut().unwrap().remove("touch_mode");
+    let old = Save::load(v.to_string().as_bytes()).expect("a save from before touch loads");
+    assert_eq!(old.options.touch_mode, content::save::TouchMode::Hold);
+    let mut tap = Save::default();
+    tap.options.touch_mode = content::save::TouchMode::Tap;
+    let back = Save::load(tap.to_json().as_bytes()).unwrap();
+    assert_eq!(back.options.touch_mode, content::save::TouchMode::Tap);
+    let written: serde_json::Value = serde_json::from_str(&tap.to_json()).unwrap();
+    assert_eq!(written["options"]["touch_mode"], "tap", "the file names the choice");
+}

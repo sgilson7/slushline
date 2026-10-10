@@ -2,8 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{{game.name}}</title>
+<!-- The game on the iPad (2026-10-10): added to the home screen it opens
+     with no browser around it. The manifest and the theme color are written
+     by package-web.sh from data/copy.en.json and data/palette.json. -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="{{game.name}}">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="{{palette:paper}}">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="art/icon-180.png">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>

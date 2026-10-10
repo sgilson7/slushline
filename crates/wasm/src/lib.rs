@@ -148,6 +148,17 @@ pub fn save_set_volume(save_json: &str, volume: u32) -> String {
     s.to_json()
 }
 
+/// How a finger on a nozzle works: "hold" or "tap". Anything else leaves the
+/// save as it was.
+#[wasm_bindgen]
+pub fn save_set_touch_mode(save_json: &str, mode: &str) -> String {
+    let mut s = content::save::Save::load(save_json.as_bytes()).unwrap_or_default();
+    if let Ok(m) = serde_json::from_value(serde_json::Value::String(mode.to_string())) {
+        s.options.touch_mode = m;
+    }
+    s.to_json()
+}
+
 #[wasm_bindgen]
 pub fn save_set_short_codes(save_json: &str, on: bool) -> String {
     let mut s = content::save::Save::load(save_json.as_bytes()).unwrap_or_default();

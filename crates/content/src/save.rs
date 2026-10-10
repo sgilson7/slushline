@@ -40,6 +40,20 @@ pub struct Options {
     /// the default.
     #[serde(default = "default_volume")]
     pub sound_volume: u32,
+    /// How a finger on a nozzle works (Sam, 2026-10-10, for the iPad): held
+    /// open while the finger stays down, or opened by one tap and closed by
+    /// the next. A save from before touch has none, and gets `Hold`.
+    #[serde(default)]
+    pub touch_mode: TouchMode,
+}
+
+/// See `Options::touch_mode`.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum TouchMode {
+    #[default]
+    Hold,
+    Tap,
 }
 
 fn default_volume() -> u32 {
@@ -48,7 +62,7 @@ fn default_volume() -> u32 {
 
 impl Default for Options {
     fn default() -> Options {
-        Options { short_codes: false, sound_volume: default_volume() }
+        Options { short_codes: false, sound_volume: default_volume(), touch_mode: TouchMode::Hold }
     }
 }
 

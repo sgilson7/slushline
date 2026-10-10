@@ -60,7 +60,7 @@ jobs:
           python3 -m venv .venv-test
           ./.venv-test/bin/pip -q install playwright
           ./.venv-test/bin/playwright install --with-deps chromium firefox webkit
-          ./.venv-test/bin/python testing/drive.py chromium firefox webkit
+          ./.venv-test/bin/python testing/drive.py chromium firefox webkit ipad
 
       - uses: actions/upload-pages-artifact@v3
         with:

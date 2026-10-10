@@ -261,3 +261,43 @@ section.how p { max-width: 720px; margin: 0; }
 }
 @media (prefers-reduced-motion: reduce) { #tree.rows .node.next .store { animation: none; } #tree.rows .node .popname { transition: none; } }
 #tree.rows .node:focus-visible .store { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 10px; }
+
+/* --- touch screens (Sam, 2026-10-10: the game on the iPad) ----------------
+   A baseline any of these tools can take: no double-tap zoom or tap flash,
+   no selection or callout over the game, the canvas keeps every touch for
+   itself, and targets are at least a fingertip on a coarse pointer. */
+html { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+#stage-wrap, .belt-buttons, #hud, #tree .node { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+#stage { touch-action: none; }
+.belt-buttons { display: none; gap: 14px; margin: 10px 0; }
+.belt-button { flex: 1; min-height: 64px; font-size: 1.1em; }
+@media (pointer: coarse) {
+  .belt-buttons { display: flex; }
+  button, .switch { min-height: 44px; }
+  .switch { display: flex; align-items: center; gap: 8px; }
+  input[type="radio"], input[type="checkbox"] { width: 24px; height: 24px; }
+  /* Key names and the Enter key mean nothing without a keyboard. */
+  #hud-belt-keys, .hint, .hud-keys, #hud .spouts strong { display: none; }
+}
+/* Started from the home screen: keep clear of the notch and the corners. */
+body[data-standalone="1"] #app {
+  padding: env(safe-area-inset-top) max(16px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(16px, env(safe-area-inset-left));
+}
+/* Fullscreen: the line fits the screen's height, with room for its
+   controls. */
+body[data-fullscreen="1"], body[data-standalone="1"] { overflow-x: hidden; }
+body[data-fullscreen="1"] #masthead, body[data-fullscreen="1"] #foot { display: none; }
+body[data-fullscreen="1"] #stage { width: auto; max-width: 100%; max-height: calc(100dvh - 12rem); margin: 0 auto; display: block; }
+body[data-fullscreen="1"] #stage-wrap { width: fit-content; max-width: 100%; margin: 0 auto; }
+
+/* A run on a touch screen (2026-10-10): the whole line in view, spouts to
+   gauges, with the live score above it and the belt buttons below, in the
+   browser's own frame as well as fullscreen. On an iPad in landscape the
+   page around it would otherwise push the spouts off the top. */
+@media (pointer: coarse) {
+  body[data-running="1"] #masthead, body[data-running="1"] #foot, body[data-running="1"] #music { display: none; }
+  body[data-running="1"] #app { padding-top: 6px; }
+  body[data-running="1"] #stage-wrap { width: fit-content; max-width: 100%; margin: 0 auto; }
+  body[data-running="1"] #stage { width: auto; max-width: 100%; max-height: calc(100dvh - 11rem); }
+  body[data-running="1"] .belt-button { min-height: 56px; }
+}

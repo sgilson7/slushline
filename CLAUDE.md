@@ -42,7 +42,7 @@ Break one of these and the failure is silent and expensive.
 - `make test` — the whole suite, native, no window and no network.
 - `make check` — a fast type-check.
 - `make web` / `make serve` — the browser build into `dist/web/`, and a local static server.
-- `make test-ui` — walk the gate in Chromium, Firefox and WebKit. Fails on a console error or a request that leaves the origin, except to SoundCloud's widget host for the soundtrack, which the gate refuses (Sam, 2026-10-06; DECISIONS.md).
+- `make test-ui` — walk the gate in Chromium, Firefox and WebKit, and as an iPad (WebKit with touch). Fails on a console error or a request that leaves the origin, except to SoundCloud's widget host for the soundtrack, which the gate refuses (Sam, 2026-10-06; DECISIONS.md).
 - `make ladder` — play the yardstick pilot on every mission and write `analysis/ladder.md`.
 - `packaging/count-tests.sh` — how many tests there are.
-- Live gate: `ORIGIN=https://sgilson7.github.io/slushline .venv-test/bin/python testing/drive.py chromium firefox webkit`.
+- Live gate: `ORIGIN=https://sgilson7.github.io/slushline .venv-test/bin/python testing/drive.py chromium firefox webkit ipad`.

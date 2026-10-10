@@ -963,6 +963,17 @@
       "volume": {
         "label": "Sound effects volume"
       }
+    },
+    "touch": {
+      "title": "Touch",
+      "desc": "Choose how a finger on a spout pours, on a touch screen.",
+      "hold": {
+        "label": "Hold a spout to pour, and lift your finger to stop"
+      },
+      "tap": {
+        "label": "Touch a spout once to start pouring, and once more to stop"
+      },
+      "review": "new (Sam, 2026-10-10: Slushline on the iPad: a fullscreen button, nozzles tapped or held)"
     }
   },
   "replay": {
@@ -1433,5 +1444,13 @@
       }
     },
     "review": "new (Sam, 2026-10-07: \"the chart of the missions ends up taking you on a world tour of slushee world\"). The premise, and a region for each row of the mission tree."
+  },
+  "screen": {
+    "fullscreen": {
+      "enter": "Play fullscreen",
+      "leave": "Leave fullscreen",
+      "home": "To play fullscreen, choose Share, then Add to Home Screen."
+    },
+    "review": "new (Sam, 2026-10-10: Slushline on the iPad: a fullscreen button, nozzles tapped or held)"
   }
 }

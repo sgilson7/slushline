@@ -22,7 +22,7 @@ serve: web
 
 ## test-ui: walk the gate in Chromium, Firefox and WebKit
 test-ui: web
-	@$(PY) $(ROOT)/testing/drive.py chromium firefox webkit
+	@$(PY) $(ROOT)/testing/drive.py chromium firefox webkit ipad
 
 ## test-ui-setup: one-time install of Playwright and its three engines
 test-ui-setup:

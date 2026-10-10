@@ -9,6 +9,11 @@ import * as sound from './sound.js';
 import * as grooveArt from './groove.js';
 import { blendFrame, blendUnits } from './blend.js';
 import * as music from './music.js';
+import { makeTouch } from './touch.js';
+import * as fullscreen from './fullscreen.js';
+
+// Fingers and the mouse on the nozzles and the belt buttons (touch.js).
+const touch = makeTouch();
 
 const BUILD = '__BUILD__';
 const STORE = 'slushline.save';
@@ -65,6 +70,7 @@ function keep(json) {
   try { localStorage.setItem(STORE, json); } catch { /* storage refused */ }
   stage.showCodes = options().short_codes;
   sound.setVolume(options().sound_volume / 100);
+  touch.setMode(options().touch_mode);
 }
 
 function restore() {
@@ -138,12 +144,29 @@ function menu() {
   screen(
     el('nav', { class: 'menu' },
       story,
+      fullscreenButton('menu-fullscreen'),
       item('replay', () => loadReplay()),
       item('how', () => how(), false),
       item('settings', () => settings(), false),
     ),
     el('p', { id: 'notice', role: 'alert', hidden: true }),
   );
+}
+
+// The fullscreen button (Sam, 2026-10-10, for the iPad): shown only where
+// the browser can fill the screen and the page is not already started from
+// the home screen.
+function fullscreenButton(id) {
+  if (!fullscreen.available()) {
+    // A touch screen whose browser cannot fill the screen (a phone, an
+    // older iPad): the home screen can, through the manifest.
+    if (!fullscreen.standalone() && window.matchMedia?.('(pointer: coarse)').matches) {
+      return el('p', { id: `${id}-home`, class: 'hint-home' }, t('screen.fullscreen.home'));
+    }
+    return null;
+  }
+  const b = button(t(fullscreen.active() ? 'screen.fullscreen.leave' : 'screen.fullscreen.enter'), () => fullscreen.toggle(), { id, class: 'quiet fullscreen-button' });
+  return el('div', { class: 'item' }, b);
 }
 
 function notice(sentence) {
@@ -403,7 +426,20 @@ function begin(r) {
   const controls = r.game.is_replay()
     ? [el('p', { id: 'replay-note' }, t('replay.playing')), button(t('replay.stop.label'), () => menu(), { id: 'replay-stop' })]
     : [button(t('results.to_missions.label'), () => path(), { id: 'leave-run', class: 'quiet' })];
-  s.replaceChildren(el('div', { class: 'controls' }, ...controls));
+  // On a touch screen, the belt's throttle as two buttons held down, in place
+  // of the arrow keys (2026-10-10).
+  const belt = r.game.is_replay() ? null : el('div', { class: 'controls belt-buttons', id: 'belt-buttons' },
+    el('button', { type: 'button', id: 'belt-slower', class: 'belt-button' }, t('settings.keys.actions.belt_slower')),
+    el('button', { type: 'button', id: 'belt-faster', class: 'belt-button' }, t('settings.keys.actions.belt_faster')));
+  s.replaceChildren(...[belt, el('div', { class: 'controls' }, ...controls, fullscreenButton('run-fullscreen'))].filter(Boolean));
+  if (belt) {
+    touch.holdButton($('belt-slower'), 'belt_slower');
+    touch.holdButton($('belt-faster'), 'belt_faster');
+  }
+  // A run fills the screen on a touch screen (styles.css), with the line in
+  // view from the top of its spouts to its gauges.
+  document.body.dataset.running = '1';
+  window.scrollTo(0, 0);
   hudStatic();
   draw();
   run.raf = requestAnimationFrame(loop);
@@ -412,6 +448,8 @@ function begin(r) {
 function stopRun() {
   if (run?.raf) cancelAnimationFrame(run.raf);
   run = null;
+  delete document.body.dataset.running;
+  touch.clear();
   sound.pourStop();
   const j = $('judge');
   if (j) j.hidden = true;
@@ -436,8 +474,10 @@ function loop(now) {
       if (run.game.done()) break;
       // Seat 0 is the only line, or the upper one; seat 1 the lower one,
       // from its own spout keys, with the same belt keys.
-      const upper = keys.bits(bindings(), ACTION_BITS);
-      const lower = run.lines > 1 ? keys.bits(bindings(), LOWER_BITS) | (upper & BELT_BITS) : 0;
+      // Keys and fingers together: each device gives actions, and the
+      // actions give core's bits (keys.js, touch.js).
+      const upper = keys.bits(bindings(), ACTION_BITS) | touch.bits(ACTION_BITS);
+      const lower = run.lines > 1 ? keys.bits(bindings(), LOWER_BITS) | touch.bits(LOWER_BITS) | (upper & BELT_BITS) : 0;
       run.game.step(upper, lower);
     }
   }
@@ -636,6 +676,12 @@ function settings(message = null) {
   ));
   const vol = el('input', { type: 'range', id: 'sound-volume', min: '0', max: '100', step: '5', value: String(options().sound_volume) });
   vol.addEventListener('change', () => { keep(core.save_set_volume(save, Number(vol.value))); sound.wake(); sound.judged('great'); });
+  // How a finger on a nozzle pours (Sam, 2026-10-10).
+  const touchChoice = (mode) => {
+    const r = el('input', { type: 'radio', name: 'touch-mode', id: `touch-${mode}`, value: mode, checked: options().touch_mode === mode });
+    r.addEventListener('change', () => { if (r.checked) keep(core.save_set_touch_mode(save, mode)); });
+    return el('label', { for: `touch-${mode}`, class: 'switch' }, r, ' ', t(`settings.touch.${mode}.label`));
+  };
   const short = el('input', { type: 'checkbox', id: 'short-codes', checked: options().short_codes });
   short.addEventListener('change', () => keep(core.save_set_short_codes(save, short.checked)));
   screen(
@@ -645,6 +691,11 @@ function settings(message = null) {
       el('label', { for: 'short-codes', class: 'switch' }, short, ' ', t('settings.look.short.label')),
       el('p', {}, t('settings.look.short.desc')),
       el('label', { for: 'sound-volume', class: 'switch' }, t('settings.sound.volume.label'), ' ', vol)),
+    el('section', {},
+      el('h3', {}, t('settings.touch.title')),
+      el('p', {}, t('settings.touch.desc')),
+      touchChoice('hold'),
+      touchChoice('tap')),
     el('section', {},
       el('h3', {}, t('settings.keys.title')),
       el('p', {}, t('settings.keys.desc')),
@@ -730,17 +781,33 @@ async function main() {
   stage = new Stage($('stage'), NUM, PAL, FLAVORS);
   stage.onResize = (w, h) => { const gc = $('groove'); gc.width = w; gc.height = h; };
   stage.codes = FLAVORS.map((f) => t(`flavors.${f.id}.short`));
+  // A finger on a nozzle pulls its handle (touch, 2026-10-10): the action is
+  // the spout's own key's, so it does what that key does and nothing else.
+  const spoutAction = (seat, i) => (seat === 0 ? `spout_${i + 1}` : `lower_${i + 1}`);
+  touch.area($('stage'), (x, y) => {
+    if (!run || run.game.is_replay()) return null;
+    const hit = stage.spoutAt(x, y);
+    return hit && spoutAction(hit.seat, hit.index);
+  });
+  stage.latched = (seat, i) => touch.isLatched(spoutAction(seat, i));
+  fullscreen.onChange(() => {
+    document.body.dataset.fullscreen = fullscreen.active() ? '1' : '';
+    for (const b of document.querySelectorAll('.fullscreen-button')) b.textContent = t(fullscreen.active() ? 'screen.fullscreen.leave' : 'screen.fullscreen.enter');
+  });
+  if (fullscreen.standalone()) document.body.dataset.standalone = '1';
   restore();
   music.setup(t);
   stage.showCodes = options().short_codes;
   sound.setVolume(options().sound_volume / 100);
+  touch.setMode(options().touch_mode);
   keys.listen((code) => run && Object.values(bindings()).includes(code));
   // Any key a player presses lets the browser start sound, so the first
   // lid is not lost to a context still waking up.
   window.addEventListener('keydown', () => sound.wake(), { passive: true });
+  window.addEventListener('pointerdown', () => sound.wake(), { passive: true });
   // A hidden tab stops drawing frames, so its pours would hiss on unheard
   // by the frames that would close them.
-  document.addEventListener('visibilitychange', () => { if (document.hidden) sound.pourStop(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) { sound.pourStop(); touch.clear(); } });
   // Hooks for the gate (testing/drive.py). They read core; they decide nothing.
   window.slushline = {
     scriptChecksum: (ticks) => core.script_checksum(ticks),
@@ -787,6 +854,9 @@ async function main() {
     groove: () => playGroove(),
     grooveShowing: () => !$('groove').hidden,
     pourVoices: () => sound.pourVoices(),
+    // Where a spout is on the page, and the touch mode in use (touch.js).
+    spoutPoint: (seat, i) => stage.spoutPoint(seat, i),
+    touchMode: () => touch.mode(),
     // Perform a judgement's word and sound, as a lid closing would.
     performJudgement: (word) => judge(word),
     voiceClips: () => sound.clipState(),

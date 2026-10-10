@@ -10,6 +10,8 @@ const VIEW_LEFT = -10;
 // The centimeters shown across: the usual line, or a longer one (the
 // gauntlet, 2026-10-08), whose end core sends.
 const VIEW_WIDTH = 480;
+// A fingertip, in CSS pixels: the smallest touch target (Apple's guideline).
+const FINGER = 44;
 // The lowest centimeter shown: a little below the belt, which is at 50.
 const VIEW_BOTTOM = -5;
 
@@ -60,6 +62,45 @@ export class Stage {
       if (this.onResize) this.onResize(this.c.width, h);
     }
   }
+  // The spout under a point on the page (touch, 2026-10-10): its seat and
+  // index, or null. The target is the machine, its nozzle and its handle as
+  // drawn, padded so a finger's is never narrower or shorter than the size
+  // of a fingertip (FINGER CSS pixels).
+  spoutAt(clientX, clientY) {
+    if (!this.frame) return null;
+    const r = this.c.getBoundingClientRect();
+    if (!r.width) return null;
+    const k = this.c.width / r.width;
+    const x = (clientX - r.left) * k;
+    const y = (clientY - r.top) * k;
+    const u = this.scale;
+    const half = Math.max(11 * u, (FINGER / 2) * k);
+    let best = null;
+    for (const L of this.frame.lines) {
+      L.spouts.forEach((s, i) => {
+        const sx = this.sx(s.x);
+        const top = Math.min(this.sy(s.tip[1]), this.sy(s.y) - 17 * u) - half / 2;
+        const bottom = Math.max(this.sy(s.y) + 16 * u, top + 2 * half);
+        if (Math.abs(x - sx) <= half && y >= top && y <= bottom) {
+          const d = Math.abs(x - sx);
+          if (!best || d < best.d) best = { seat: L.seat, index: i, d };
+        }
+      });
+    }
+    return best && { seat: best.seat, index: best.index };
+  }
+
+  // Where spout `index` of `seat` is on the page, in CSS pixels: the middle
+  // of its machine (for the gate's touches).
+  spoutPoint(seat, index) {
+    const L = this.frame?.lines.find((l) => l.seat === seat);
+    const s = L?.spouts[index];
+    if (!s) return null;
+    const r = this.c.getBoundingClientRect();
+    const k = r.width / this.c.width;
+    return { x: r.left + this.sx(s.x) * k, y: r.top + (this.sy(s.y) - 8 * this.scale) * k };
+  }
+
   sx(raw) { return (raw / this.one - VIEW_LEFT) * this.scale; }
   sy(raw) { return this.c.height - (raw / this.one - VIEW_BOTTOM) * this.scale; }
   len(raw) { return (raw / this.one) * this.scale; }
@@ -139,6 +180,7 @@ export class Stage {
   // One frame: the line, its spouts, cups and slush.
   draw(frame, units, keyNames, lowerKeyNames = [], fitTo = frame) {
     this.fit(fitTo);
+    this.frame = frame;
     this.tick = frame.tick;
     const g = this.g;
     const p = this.pal;
@@ -378,6 +420,13 @@ export class Stage {
     L.spouts.forEach((s, i) => {
       const x = this.sx(s.x);
       const y = this.sy(s.y);
+      // A spout a tap has latched open (touch, 2026-10-10): a ring round
+      // its machine, so the player can see which are left pouring.
+      if (this.latched?.(L.seat, i)) {
+        g.strokeStyle = p.focus;
+        g.lineWidth = 2.4 * u;
+        g.strokeRect(x - 11 * u, y - 17 * u, 22 * u, 17 * u);
+      }
       g.fillStyle = p.machine;
       g.fillRect(x - 9 * u, y - 15 * u, 18 * u, 13 * u);
       g.strokeStyle = p.line;
