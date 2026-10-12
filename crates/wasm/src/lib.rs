@@ -159,6 +159,14 @@ pub fn save_set_touch_mode(save_json: &str, mode: &str) -> String {
     s.to_json()
 }
 
+/// The save with each mission passed, for testing; keys and options kept.
+#[wasm_bindgen]
+pub fn save_complete(save_json: &str) -> String {
+    let mut s = content::save::Save::load(save_json.as_bytes()).unwrap_or_default();
+    s.complete(&content::missions::missions());
+    s.to_json()
+}
+
 #[wasm_bindgen]
 pub fn save_set_short_codes(save_json: &str, on: bool) -> String {
     let mut s = content::save::Save::load(save_json.as_bytes()).unwrap_or_default();

@@ -153,3 +153,27 @@ fn a_save_from_before_touch_loads_holding_and_keeps_a_tap_choice() {
     let written: serde_json::Value = serde_json::from_str(&tap.to_json()).unwrap();
     assert_eq!(written["options"]["touch_mode"], "tap", "the file names the choice");
 }
+
+#[test]
+fn the_finished_test_save_passes_and_opens_each_mission_and_keeps_the_settings() {
+    // Sam, 2026-10-11: "a button to load a test save with the entire game
+    // complete". Each requirement is met, so the map shows the whole tree;
+    // the player's keys and options survive.
+    let ms = missions();
+    let mut s = Save::default();
+    s.rebind("spout_1", "KeyQ").unwrap();
+    s.options.short_codes = true;
+    s.record(&ms[0].id, 100, true, 0);
+    s.complete(&ms);
+    for m in &ms {
+        assert!(s.passed.contains(&m.id), "{} is not passed", m.id);
+        assert!(s.open(m), "{} is not open", m.id);
+        for r in &m.requires {
+            assert!(s.met(r), "{}'s requirement on {} is not met", m.id, r.mission());
+        }
+    }
+    assert_eq!(s.best[&ms[0].id], 100, "a better best was lowered");
+    assert_eq!(s.keys["spout_1"], "KeyQ");
+    assert!(s.options.short_codes);
+    assert_eq!(Save::load(s.to_json().as_bytes()).as_ref(), Ok(&s), "the finished save does not load back");
+}

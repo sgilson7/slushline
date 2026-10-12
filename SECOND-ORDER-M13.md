@@ -14,5 +14,6 @@ The notebook for Slushline on the iPad (Sam, 2026-10-10; DECISIONS.md quotes the
 | 8 | worklist | open | **The SoundCloud panel is hidden during a run on a touch screen**, so the line fits; it is on the menu, where Safari's one press on the player starts it. |
 | 9 | worklist | the human's | **Sam plays on a real iPad:** the fullscreen button (iPadOS 16.4 or later), Add to Home Screen and the icon, several fingers on several spouts, hold and tap modes, the belt buttons, and the menus by touch. |
 | 10 | worklist | the human's | **Sam decides on the Builder template proposal** (MOBILE.md, D10 to D13). |
+| 11 | finding | done | **A finished game for testing** (Sam, 2026-10-11). `Save::complete` in core, behind "Load a finished game" in Settings. Broken once each: `the_finished_test_save_passes_and_opens_each_mission_and_keeps_the_settings` failed when the Mark requirements were ignored (a requirement on an average went unmet) and when the record did not pass ("m_tail is not passed"); the gate's `the_finished_test_save_opens_each_mission_and_keeps_the_keys` failed with the page not calling core ("the map shows 5 of 48 stores"). |
 
-New strings, marked `"review": "new"`: `screen.fullscreen.enter`, `.leave`, `.home`, and `settings.touch.title`, `.desc`, `.hold.label`, `.tap.label`.
+New strings, marked `"review": "new"`: `screen.fullscreen.enter`, `.leave`, `.home`, and `settings.touch.title`, `.desc`, `.hold.label`, `.tap.label`; `settings.save.test.label`, `.desc`, `.loaded`.

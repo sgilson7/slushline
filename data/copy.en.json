@@ -950,6 +950,12 @@
       },
       "loaded": "The save file was loaded.",
       "autosave": "The game also keeps a copy in this browser so that you can continue after a reload. Clearing the site's data removes it.",
+      "test": {
+        "label": "Load a finished game",
+        "desc": "For testing: this passes each mission, so the whole map is open. Your keys and settings stay as they are. Download your save file first to keep your progress.",
+        "loaded": "Each mission is now passed.",
+        "review": "new (Sam, 2026-10-11: a button to load a test save with the entire game complete)"
+      },
       "error": {
         "format": "This file is not a {game} save file, so nothing was loaded.",
         "newer": "This save file was written by a newer version of the game. It is save version {theirs}, and this build reads up to version {ours}. Nothing was loaded.",

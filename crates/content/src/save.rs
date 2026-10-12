@@ -167,6 +167,22 @@ impl Save {
         }
     }
 
+    /// A finished game, for testing (Sam, 2026-10-11: "a button to load a
+    /// test save with the entire game complete"): each mission passed, with
+    /// an average and a waste that meet its own mark and each requirement
+    /// that names it. Keys and options are kept, and a better best is kept.
+    pub fn complete(&mut self, missions: &[crate::missions::Mission]) {
+        use crate::missions::Requirement::Mark;
+        for m in missions {
+            let marks = missions.iter().flat_map(|o| &o.requires).filter_map(|r| match r {
+                Mark { mission, average } if *mission == m.id => Some(*average),
+                _ => None,
+            });
+            let average = marks.fold(m.pass.average, u32::max);
+            self.record(&m.id, average, true, 0);
+        }
+    }
+
     /// Whether one requirement of the tree is met.
     pub fn met(&self, r: &crate::missions::Requirement) -> bool {
         use crate::missions::Requirement::*;

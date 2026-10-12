@@ -344,6 +344,41 @@ def the_save_keeps_a_pass_and_round_trips_through_a_file(page, name):
 
 
 @check
+def the_finished_test_save_opens_each_mission_and_keeps_the_keys(page, name):
+    # Sam, 2026-10-11: "a button to load a test save with the entire game
+    # complete for testing purposes". The player's save comes back after.
+    before = page.evaluate("localStorage.getItem('slushline.save')")
+    page.click("#menu-settings")
+    page.click("#bind-spout_1")
+    page.keyboard.press("q")
+    page.wait_for_function("document.querySelector('#bind-spout_1').textContent === 'Q'")
+    page.click("#load-finished")
+    page.wait_for_selector("#save-note:not([hidden])")
+    note = page.inner_text("#save-note")
+    problems = [] if note == COPY["settings"]["save"]["test"]["loaded"] else [f"loading the finished game says {note!r}"]
+    key = page.inner_text("#bind-spout_1")
+    if key != "Q":
+        problems.append(f"the first spout's key came back as {key!r}, not Q")
+    problems += lines_not_in_copy(page, "settings")
+    page.click("#back-to-menu")
+    page.click("#menu-missions")
+    page.wait_for_selector("#tree .node")
+    stores = page.locator("#tree .node").count()
+    locked = page.locator("#tree .node.locked").count()
+    passed = len(json.loads(page.evaluate("localStorage.getItem('slushline.save')"))["passed"])
+    if stores != len(MISSION_IDS) or locked or passed != len(MISSION_IDS):
+        problems.append(f"the map shows {stores} of {len(MISSION_IDS)} stores, {locked} locked, and the save passes {passed}")
+    page.click("#back-to-menu")
+    page.evaluate(f"localStorage.setItem('slushline.save', {json.dumps(before)})")
+    page.reload(wait_until="load")
+    page.wait_for_function("document.body.dataset.ready === '1'")
+    if problems:
+        return [f"{name}: {p}" for p in problems]
+    print(f"ok: {name}: the finished game opens {stores} stores with none locked and keeps a rebound key")
+    return []
+
+
+@check
 def two_actions_cannot_share_a_key_in_settings(page, name):
     page.click("#menu-settings")
     page.click("#bind-spout_1")

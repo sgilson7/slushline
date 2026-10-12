@@ -66,4 +66,5 @@ The pour sound and the store are built and deployed (DECISIONS.md, 2026-10-06; n
 - **Cup shapes** (M11 row 9): a cup's shape is its `profile` in `data/cups.json`; a new shape needs its capacity measured with `cargo run -q --release -p lab -- capacity <cup>` (see M11 row 3), and `lab yard <missions>` tunes a mission against the ladder without running all of it.
 - **Story mode's tour:** the framing, the place lines and the art (M10 row 6). Art is redrawn with `python3 analysis/art/regions.py` (pdflatex) and `python3 analysis/art/stores.py` (XeLaTeX, for the store names in Lilita One); a new mission needs a scene in `SCENES`, a `place` line and a `store` name, or `tests/world.rs` fails, and so does a store renamed in the copy file without redrawing.
 - **The flower-pot cups** (M8 row 7): whether they read as slush cups, and whether Layers, now on a small cup, is too hard.
+- **The finished-game test save** (M13 row 11): Settings → Save file → Load a finished game, which calls core's `Save::complete`. Download your save first; it replaces the progress in the browser.
 - His other open items are the "the human's" rows in `SECOND-ORDER-M2` to `M9`.

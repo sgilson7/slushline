@@ -78,6 +78,7 @@ Why things are the way they are, one paragraph each. The full argument for D1 to
   - **Fullscreen:** a button where the Fullscreen API exists (iPadOS Safari). Elsewhere on a touch screen, a line saying to add the game to the home screen. A web app manifest (written from the copy file and the palette) opens it there fullscreen in landscape, with a TikZ icon (`analysis/art/icon.py`). No service worker.
   - **Checked as an iPad:** a fourth gate pass in WebKit as Playwright's iPad Pro 11, in `make test-ui`, CI and the live gate.
   - **The Builder template is not changed**; MOBILE.md proposes four reference defaults (D10 to D13) for Sam to adopt.
+- **A finished game for testing** (Sam, 2026-10-11: "add a button to load a test save with the entire game complete for testing purposes"). Settings → Save file has "Load a finished game". Core decides what finished means (`Save::complete`, `save_complete`): each mission passed, with an average and waste that meet its own mark and each requirement naming it, a better best kept, keys and options kept. It replaces the browser's progress without asking, so its line says to download the save first. Rejected: a confirm dialog (blocks the page and the gate); a save file shipped in `web/` (a second copy of the mission list that drifts when missions change); hiding it behind a query flag (Sam asked for a button).
 - **Questions 6 to 12** were taken at the brief's recommendation by the agent, for Sam to overrule (PLAN.md §8).
 
 ## The build

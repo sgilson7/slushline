@@ -712,7 +712,10 @@ function settings(message = null) {
         button(t('settings.save.download.label'), () => download(new TextEncoder().encode(save), 'slushline.save', 'application/json'), { id: 'download-save' }),
         button(t('settings.save.load.label'), () => loadSave(), { id: 'load-save', class: 'quiet' })),
       el('p', {}, t('settings.save.autosave')),
-      el('p', { id: 'save-note', role: 'status', hidden: true })),
+      el('p', { id: 'save-note', role: 'status', hidden: true }),
+      el('p', {}, t('settings.save.test.desc')),
+      el('div', { class: 'controls' },
+        button(t('settings.save.test.label'), () => loadFinished(), { id: 'load-finished', class: 'quiet' }))),
     el('div', { class: 'controls' }, back()),
   );
 }
@@ -742,6 +745,15 @@ window.addEventListener('keydown', (e) => {
     settings(t(why.key, { key: keys.keyName(e.code), action: actionLabel(why.other) }));
   }
 }, true);
+
+// A finished game, for testing; core decides what finished means.
+function loadFinished() {
+  keep(core.save_complete(save));
+  settings();
+  const n = $('save-note');
+  n.textContent = t('settings.save.test.loaded');
+  n.hidden = false;
+}
 
 async function loadSave() {
   const f = await pick('.save,.json,application/json');
