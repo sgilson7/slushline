@@ -2,19 +2,30 @@
 // integration, and have it play the following song from soundcloud as you
 // play"). SoundCloud's own widget streams "Feel the Heat" by
 // sunnybeatzproduction; nothing of it is copied here. After Gear Master's
-// player: it starts when a run starts (a click, which browsers require
-// before sound), repeats at its end, and keeps its level and whether it is
-// folded away in this browser. If SoundCloud cannot be reached, the panel
-// stays and the game plays on without it.
+// player: it repeats at its end, goes on between runs, and keeps its level
+// and whether it is folded away in this browser. If SoundCloud cannot be
+// reached, the panel stays and the game plays on without it.
+//
+// 2026-10-19, for schools: the widget's frame is made only when the player
+// presses "Play the soundtrack", so a page that is loaded and left asks
+// SoundCloud for nothing. SoundCloud's api.js is not loaded: it would run
+// SoundCloud's code on this site's origin, beside every other tool's saved
+// data there. The page talks to the frame by postMessage instead, the same
+// messages api.js sends (play, setVolume, seekTo, addEventListener), and
+// reads only messages from that frame and SoundCloud's origin.
+
+const SC_ORIGIN = 'https://w.soundcloud.com';
+const SRC = `${SC_ORIGIN}/player/?url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F78084887&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false`;
+const EVENTS = ['play', 'playProgress', 'pause', 'finish'];
 
 const LEVEL = 'slushline.music.level';
 const FOLDED = 'slushline.music.folded';
 
-let widget = null;
+let frame = null;     // the widget's frame, once the player asks for music
 let ready = false;
-let wanted = false;   // a run has asked for the music
+let wanted = false;   // the player has asked for the music
 let level = 25;
-let muted = false;
+let muted = true;     // until the player presses "Play the soundtrack"
 let words = null;
 let askedAt = -1e9;   // when the game last asked the widget to play
 let userPaused = false;
@@ -27,12 +38,18 @@ function remember(key, value) {
   try { localStorage.setItem(key, String(value)); } catch { /* storage off */ }
 }
 
+// One command to the widget, as api.js words it.
+function send(method, value) {
+  if (!frame || !frame.contentWindow) return;
+  frame.contentWindow.postMessage(JSON.stringify(value === undefined ? { method } : { method, value }), SC_ORIGIN);
+}
+
 function apply() {
   const $ = (id) => document.getElementById(id);
   $('music-volume').value = String(level);
   $('music-level').textContent = String(level);
   $('music-mute').textContent = muted ? words.unmute : words.mute;
-  if (ready) widget.setVolume(muted ? 0 : level);
+  if (ready) send('setVolume', muted ? 0 : level);
 }
 
 // `t` gives copy strings by key: the panel's words change as it is used.
@@ -55,33 +72,61 @@ export function setup(t) {
   fold.addEventListener('click', () => setFolded(!panel.classList.contains('folded')));
   $('music-volume').addEventListener('input', (e) => {
     level = Number.parseInt(e.target.value, 10) || 0;
-    muted = false;
+    // Turning the level is not asking for the music to begin.
+    if (frame) muted = false;
     remember(LEVEL, level);
     apply();
   });
-  $('music-mute').addEventListener('click', () => { muted = !muted; userPaused = false; apply(); if (!muted) play(); });
-  apply();
-  if (typeof window.SC === 'undefined') return;
-  try {
-    widget = window.SC.Widget($('music-player'));
-  } catch {
-    return;
-  }
-  const E = window.SC.Widget.Events;
-  widget.bind(E.READY, () => {
-    ready = true;
-    apply();
-    if (wanted && !muted) { askedAt = performance.now(); widget.play(); }
+  $('music-mute').addEventListener('click', () => {
+    if (!frame) { choose(); return; }
+    muted = !muted; userPaused = false; apply(); if (!muted) play();
   });
-  // A level set on READY is dropped before the sound loads (Gear Master's
-  // finding), so it is set again each time the track plays.
-  widget.bind(E.PLAY, () => { userPaused = false; apply(); });
-  widget.bind(E.PLAY_PROGRESS, () => { $('music-blocked').hidden = true; });
-  // A pause straight after the game asked to play is the browser's: Safari
-  // starts a player in another site's frame only from a press on that
-  // player (SECOND-ORDER-M9 row 3). The panel opens and says so. A pause
-  // later is the player's own choice, and a new run does not undo it.
-  widget.bind(E.PAUSE, () => {
+  apply();
+}
+
+// The player has pressed "Play the soundtrack": only now is SoundCloud asked
+// for anything.
+function choose() {
+  const $ = (id) => document.getElementById(id);
+  const panel = $('music');
+  frame = document.createElement('iframe');
+  frame.id = 'music-player';
+  frame.title = $('music').getAttribute('aria-label');
+  frame.allow = 'autoplay; encrypted-media';
+  frame.setAttribute('scrolling', 'no');
+  frame.setAttribute('frameborder', 'no');
+  frame.src = SRC;
+  $('music-blocked').before(frame);
+  muted = false;
+  wanted = true;
+  apply();
+  window.addEventListener('message', (e) => {
+    if (e.source !== frame.contentWindow || e.origin !== SC_ORIGIN) return;
+    let m;
+    try { m = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch { return; }
+    if (!m || typeof m.method !== 'string') return;
+    heard(m.method, panel);
+  });
+}
+
+function heard(method, panel) {
+  const $ = (id) => document.getElementById(id);
+  if (method === 'ready') {
+    ready = true;
+    for (const ev of EVENTS) send('addEventListener', ev);
+    apply();
+    if (wanted && !muted) { askedAt = performance.now(); send('play'); }
+  } else if (method === 'play') {
+    // A level set on READY is dropped before the sound loads (Gear Master's
+    // finding), so it is set again each time the track plays.
+    userPaused = false; apply();
+  } else if (method === 'playProgress') {
+    $('music-blocked').hidden = true;
+  } else if (method === 'pause') {
+    // A pause straight after the page asked to play is the browser's: Safari
+    // starts a player in another site's frame only from a press on that
+    // player (SECOND-ORDER-M9 row 3). The panel opens and says so. A pause
+    // later is the player's own choice, and a new run does not undo it.
     if (performance.now() - askedAt < 2000) {
       $('music-blocked').hidden = false;
       unfold();
@@ -89,22 +134,25 @@ export function setup(t) {
     } else {
       userPaused = true;
     }
-  });
-  // One track: at its end, back to the top.
-  widget.bind(E.FINISH, () => { widget.seekTo(0); widget.play(); });
-}
-
-// A run has started: the music plays from where it is, and goes on between
-// runs once begun.
-export function play() {
-  wanted = true;
-  if (ready && !muted && !userPaused) {
-    askedAt = performance.now();
-    widget.play();
+  } else if (method === 'finish') {
+    // One track: at its end, back to the top.
+    send('seekTo', 0); send('play');
   }
 }
 
-// For the gate: whether the widget loaded and a run asked for the music.
+// A run has started: once the player has asked for it, the music plays from
+// where it is, and goes on between runs.
+export function play() {
+  if (!frame) return;
+  wanted = true;
+  if (ready && !muted && !userPaused) {
+    askedAt = performance.now();
+    send('play');
+  }
+}
+
+// For the gate: whether the player asked for the music, and whether the
+// widget loaded.
 export function state() {
-  return { loaded: ready, wanted, level, muted, blocked: !document.getElementById('music-blocked').hidden };
+  return { chosen: frame !== null, loaded: ready, wanted, level, muted, blocked: !document.getElementById('music-blocked').hidden };
 }

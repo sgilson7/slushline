@@ -132,7 +132,7 @@ def open_page(browser, query="", device=None):
             if not (r.url.startswith(ORIGIN) or r.url.startswith(("blob:", "data:")) or soundtrack(r.url)) else None)
     page.route(lambda url: soundtrack(url), lambda route: route.abort())
     page.goto(ORIGIN + "/" + query, wait_until="load")
-    page.wait_for_function("document.body.dataset.ready === '1'", timeout=30000)
+    page.wait_for_function("() => document.body.dataset.ready === '1'", timeout=30000)
     return ctx, page, problems, offsite
 
 
@@ -215,7 +215,7 @@ def lines_not_in_copy(page, where):
 def a_mission_plays_to_a_result_and_round_trips_through_a_replay_file(page, name):
     page.evaluate("localStorage.clear()")
     page.reload(wait_until="load")
-    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.wait_for_function("() => document.body.dataset.ready === '1'")
     page.click("#menu-missions")
     problems = lines_not_in_copy(page, "the path")
     problems += lines_not_in_copy(page, "the tree")
@@ -223,7 +223,7 @@ def a_mission_plays_to_a_result_and_round_trips_through_a_replay_file(page, name
     page.click("#open-mission")
     problems += lines_not_in_copy(page, "the mission card")
     page.click("#start-mission")
-    page.wait_for_function("window.slushline.tick() > 5")
+    page.wait_for_function("() => window.slushline.tick() > 5")
     # A player's hands for a moment, then the timer pilot to the end.
     # Holding a spout key opens its valve, and the pour's sound follows the
     # opening core sent (Sam, 2026-10-06: "a gentle pshht sound"): a voice
@@ -233,7 +233,7 @@ def a_mission_plays_to_a_result_and_round_trips_through_a_replay_file(page, name
     pouring = page.evaluate("window.slushline.pourVoices()")
     page.keyboard.up("a")
     try:
-        page.wait_for_function("window.slushline.frame().lines[0].spouts[0].opening === 0", timeout=5000)
+        page.wait_for_function("() => window.slushline.frame().lines[0].spouts[0].opening === 0", timeout=5000)
         page.wait_for_timeout(100)
         after = page.evaluate("window.slushline.pourVoices()")
     except Exception:
@@ -283,13 +283,13 @@ def a_mission_plays_to_a_result_and_round_trips_through_a_replay_file(page, name
     path = dl.value.path()
     size = len(Path(path).read_bytes())
     page.reload(wait_until="load")
-    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.wait_for_function("() => document.body.dataset.ready === '1'")
     with page.expect_file_chooser() as fc:
         page.click("#menu-replay")
     fc.value.set_files(path)
-    page.wait_for_function("window.slushline.tick() > 2")
+    page.wait_for_function("() => window.slushline.tick() > 2")
     page.evaluate("window.slushline.skipReplay(100000)")
-    page.wait_for_function("window.slushline.replayDone() === true", timeout=60000)
+    page.wait_for_function("() => window.slushline.replayDone() === true", timeout=60000)
     got, want = page.evaluate("[window.slushline.checksum(), window.slushline.recordedChecksum()]")
     if got != want or not got:
         problems.append(f"the replay ended on {got}, and recorded {want}")
@@ -318,7 +318,7 @@ def the_save_keeps_a_pass_and_round_trips_through_a_file(page, name):
     saved = json.loads(Path(path).read_text())
     page.evaluate("localStorage.clear()")
     page.reload(wait_until="load")
-    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.wait_for_function("() => document.body.dataset.ready === '1'")
     page.click("#menu-missions")
     if page.locator("#mission-m_tail:not(.locked)").count():
         return [f"{name}: a cleared browser still opened the second mission"]
@@ -351,7 +351,7 @@ def the_finished_test_save_opens_each_mission_and_keeps_the_keys(page, name):
     page.click("#menu-settings")
     page.click("#bind-spout_1")
     page.keyboard.press("q")
-    page.wait_for_function("document.querySelector('#bind-spout_1').textContent === 'Q'")
+    page.wait_for_function("() => document.querySelector('#bind-spout_1').textContent === 'Q'")
     page.click("#load-finished")
     page.wait_for_selector("#save-note:not([hidden])")
     note = page.inner_text("#save-note")
@@ -371,7 +371,7 @@ def the_finished_test_save_opens_each_mission_and_keeps_the_keys(page, name):
     page.click("#back-to-menu")
     page.evaluate(f"localStorage.setItem('slushline.save', {json.dumps(before)})")
     page.reload(wait_until="load")
-    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.wait_for_function("() => document.body.dataset.ready === '1'")
     if problems:
         return [f"{name}: {p}" for p in problems]
     print(f"ok: {name}: the finished game opens {stores} stores with none locked and keeps a rebound key")
@@ -389,9 +389,9 @@ def two_actions_cannot_share_a_key_in_settings(page, name):
     problems = [] if note == want else [f"the conflict reads {note!r}, not {want!r}"]
     page.click("#bind-spout_1")
     page.keyboard.press("q")
-    page.wait_for_function("document.querySelector('#bind-spout_1').textContent === 'Q'")
+    page.wait_for_function("() => document.querySelector('#bind-spout_1').textContent === 'Q'")
     page.click("#reset-keys")
-    page.wait_for_function("document.querySelector('#bind-spout_1').textContent === 'A'")
+    page.wait_for_function("() => document.querySelector('#bind-spout_1').textContent === 'A'")
     problems += lines_not_in_copy(page, "settings")
     page.click("#back-to-menu")
     page.click("#menu-how")
@@ -420,15 +420,15 @@ def the_map_draws_one_route_into_each_store_and_the_lanes_their_hasse_lines(page
     # draw the Hasse diagram's lines, from the fold at the foot of the screen.
     page.evaluate(f"localStorage.setItem('slushline.save', {json.dumps(json.dumps(ALL_PASSED))}); localStorage.removeItem('slushline.view')")
     page.reload(wait_until="load")
-    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.wait_for_function("() => document.body.dataset.ready === '1'")
     page.click("#menu-missions")
-    page.wait_for_function("document.querySelector('#tree.rows') && Number(document.querySelector('#tree').dataset.lines) > 0")
+    page.wait_for_function("() => document.querySelector('#tree.rows') && Number(document.querySelector('#tree').dataset.lines) > 0")
     stores = page.locator("#tree .node").count()
     routes = int(page.get_attribute("#tree", "data-lines"))
     folded = not page.evaluate("document.getElementById('view-fold').open")
     page.click("#view-fold summary")
     page.click("#view-chart")
-    page.wait_for_function("document.querySelector('#tree.chart') && Number(document.querySelector('#tree').dataset.lines) > 0")
+    page.wait_for_function("() => document.querySelector('#tree.chart') && Number(document.querySelector('#tree').dataset.lines) > 0")
     chart = int(page.get_attribute("#tree", "data-lines"))
     lanes = page.locator("#tree .lane-name").count()
     problems = lines_not_in_copy(page, "the lanes")
@@ -451,13 +451,13 @@ def a_mission_with_two_lines_plays_with_the_lower_line_on_its_own_keys(page, nam
     # mission plays to one result over both lines.
     page.evaluate(f"localStorage.setItem('slushline.save', {json.dumps(json.dumps(ALL_PASSED))})")
     page.reload(wait_until="load")
-    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.wait_for_function("() => document.body.dataset.ready === '1'")
     page.click("#menu-missions")
     page.click("#mission-m_two_lines")
     page.click("#open-mission")
     problems = lines_not_in_copy(page, "a two-line card")
     page.click("#start-mission")
-    page.wait_for_function("window.slushline.tick() > 2")
+    page.wait_for_function("() => window.slushline.tick() > 2")
     page.keyboard.down("j")
     page.wait_for_timeout(400)
     lower, upper = page.evaluate("[window.slushline.frame().lines[1].spouts[0].opening, window.slushline.frame().lines[0].spouts[0].opening]")
@@ -498,12 +498,12 @@ def every_flavor_differs_in_gray_on_the_rendered_page(page, name):
     for mission, ticks in (("m_three", 1150), ("s_sink", 1400)):
         page.evaluate(f"localStorage.setItem('slushline.save', {json.dumps(json.dumps(ALL_PASSED))})")
         page.reload(wait_until="load")
-        page.wait_for_function("document.body.dataset.ready === '1'")
+        page.wait_for_function("() => document.body.dataset.ready === '1'")
         page.click("#menu-missions")
         page.click(f"#mission-{mission}")
         page.click("#open-mission")
         page.click("#start-mission")
-        page.wait_for_function("window.slushline.tick() > 2")
+        page.wait_for_function("() => window.slushline.tick() > 2")
         page.evaluate(f"window.slushline.autoplay({ticks})")
         page.wait_for_timeout(100)
         got = page.evaluate("""() => {
@@ -587,12 +587,34 @@ def the_page_draws_between_two_ticks_and_never_past_the_newest(page, name):
 @check
 def the_soundtrack_names_its_track_and_the_game_plays_without_it(page, name):
     # Sam, 2026-10-06: "have it play the following song from soundcloud as
-    # you play". The player's frame names the track; with SoundCloud refused
-    # (as the gate refuses it) the widget never loads, a run still starts and
-    # plays, and the panel's words are copy strings.
+    # you play". 2026-10-19, for schools: SoundCloud's frame is made only when
+    # the player presses the play button, so a loaded page and a run without
+    # music ask SoundCloud for nothing, and no SoundCloud script runs on the
+    # page. The frame then names the track; with SoundCloud refused (as the
+    # gate refuses it) the widget never loads, a run still starts and plays,
+    # and the panel's words are copy strings.
+    asked = []
+    listen = lambda r: asked.append(r.url) if soundtrack(r.url) else None
+    page.on("request", listen)
     page.reload(wait_until="load")
-    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.wait_for_function("() => document.body.dataset.ready === '1'")
     problems = []
+    if page.locator("#music-player").count() or page.locator('script[src*="soundcloud"]').count():
+        problems.append("the page made SoundCloud's frame or loaded its script before the player asked")
+    page.click("#menu-missions")
+    page.click("#mission-m_first_pour")
+    page.click("#open-mission")
+    page.click("#start-mission")
+    page.wait_for_function("() => window.slushline.tick() > 30")
+    state = page.evaluate("window.slushline.music()")
+    if state["chosen"] or state["loaded"]:
+        problems.append(f"with no music asked for the music reads {state}")
+    page.click("#leave-run")
+    page.click("#back-to-menu")
+    if asked:
+        problems.append(f"the page asked SoundCloud for {asked[:2]} before the player asked for music")
+    problems += lines_not_in_copy(page, "the soundtrack panel, before the music is asked for")
+    page.click("#music-mute")
     src = page.get_attribute("#music-player", "src") or ""
     if TRACK not in src or not soundtrack(src):
         problems.append(f"the player's frame is {src!r}")
@@ -600,22 +622,25 @@ def the_soundtrack_names_its_track_and_the_game_plays_without_it(page, name):
     page.click("#mission-m_first_pour")
     page.click("#open-mission")
     page.click("#start-mission")
-    page.wait_for_function("window.slushline.tick() > 30")
+    page.wait_for_function("() => window.slushline.tick() > 30")
     state = page.evaluate("window.slushline.music()")
-    if state["loaded"] or not state["wanted"]:
+    if not state["chosen"] or state["loaded"] or not state["wanted"]:
         problems.append(f"with SoundCloud refused the music reads {state}")
+    page.click("#leave-run")
+    page.click("#back-to-menu")
     page.click("#music-fold")
     if page.is_visible("#music-player"):
         problems.append("the fold button left the player showing")
     problems += lines_not_in_copy(page, "the soundtrack panel, folded")
     page.click("#music-fold")
-    page.click("#leave-run")
-    page.click("#back-to-menu")
+    page.remove_listener("request", listen)
+    # Later checks start from a page with no frame in it.
+    page.reload(wait_until="load")
+    page.wait_for_function("() => document.body.dataset.ready === '1'")
     if problems:
         return [f"{name}: {p}" for p in problems]
-    print(f"ok: {name}: the player names the track; with SoundCloud refused a run still plays, and the panel folds")
+    print(f"ok: {name}: SoundCloud is asked for nothing until the play button; then the frame names the track, with SoundCloud refused a run still plays, and the panel folds")
     return []
-
 
 @check
 def a_missed_cup_plays_sam_s_recording(page, name):
@@ -623,19 +648,19 @@ def a_missed_cup_plays_sam_s_recording(page, name):
     # flair (web/voice). A test cannot hear; it checks both files are served
     # and decode, and that MISS plays the first and DARN the second.
     page.reload(wait_until="load")
-    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.wait_for_function("() => document.body.dataset.ready === '1'")
     page.click("#menu-missions")
     page.click("#mission-m_first_pour")
     page.click("#open-mission")
     page.click("#start-mission")
-    page.wait_for_function("window.slushline.tick() > 2")
+    page.wait_for_function("() => window.slushline.tick() > 2")
     problems = []
     for f in ("voice/oh-no.wav", "voice/darn.wav"):
         head = page.evaluate(f"fetch('{f}').then(r => r.ok ? r.arrayBuffer() : null).then(b => b && String.fromCharCode(...new Uint8Array(b, 0, 4)))")
         if head != "RIFF":
             problems.append(f"{f} is not served as a WAV file ({head!r})")
     try:
-        page.wait_for_function("window.slushline.voiceClips().loaded.length === 2", timeout=10000)
+        page.wait_for_function("() => window.slushline.voiceClips().loaded.length === 2", timeout=10000)
     except Exception:
         problems.append(f"the clips did not decode: {page.evaluate('window.slushline.voiceClips()')}")
     played = []
@@ -661,13 +686,13 @@ def a_mirror_line_runs_its_lower_belt_back_under_one_set_of_spouts(page, name):
     # line that has spouts and no other.
     page.evaluate(f"localStorage.setItem('slushline.save', {json.dumps(json.dumps(ALL_PASSED))})")
     page.reload(wait_until="load")
-    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.wait_for_function("() => document.body.dataset.ready === '1'")
     page.click("#menu-missions")
     page.click("#mission-s_switchback")
     page.click("#open-mission")
     problems = lines_not_in_copy(page, "the mirror line's card")
     page.click("#start-mission")
-    page.wait_for_function("window.slushline.tick() > 2")
+    page.wait_for_function("() => window.slushline.tick() > 2")
     first = page.evaluate("window.slushline.frame().lines.map((L) => [L.open, L.spouts.length, L.cups[0].x])")
     page.wait_for_timeout(600)
     later = page.evaluate("window.slushline.frame().lines.map((L) => L.cups[0].x)")
@@ -740,7 +765,7 @@ def start_by_tap(page, mission):
     page.tap(f"#mission-{mission}")
     page.tap("#open-mission")
     page.tap("#start-mission")
-    page.wait_for_function("window.slushline.tick() > 2")
+    page.wait_for_function("() => window.slushline.tick() > 2")
 
 
 @ipad_check
@@ -749,7 +774,7 @@ def a_finger_held_on_a_nozzle_pours_and_the_menus_answer_taps(page, name):
     # to be scrolled to reach its button.
     page.evaluate(f"localStorage.setItem('slushline.save', {json.dumps(json.dumps(ALL_PASSED))})")
     page.reload(wait_until="load")
-    page.wait_for_function("document.body.dataset.ready === '1'")
+    page.wait_for_function("() => document.body.dataset.ready === '1'")
     problems = lines_not_in_copy(page, "the menu on an iPad")
     page.tap("#menu-missions")
     page.tap("#mission-m_three")
@@ -759,7 +784,7 @@ def a_finger_held_on_a_nozzle_pours_and_the_menus_answer_taps(page, name):
     # with its line in view.
     page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
     page.tap("#start-mission")
-    page.wait_for_function("window.slushline.tick() > 2")
+    page.wait_for_function("() => window.slushline.tick() > 2")
     mode = page.evaluate("window.slushline.touchMode()")
     # The whole line is on the screen, from its spouts to its gauges, so
     # every nozzle can be reached without scrolling.
@@ -772,7 +797,7 @@ def a_finger_held_on_a_nozzle_pours_and_the_menus_answer_taps(page, name):
     held = opening(page)
     finger(page, "pointerup", pt["x"], pt["y"])
     try:
-        page.wait_for_function("window.slushline.frame().lines[0].spouts[0].opening === 0", timeout=5000)
+        page.wait_for_function("() => window.slushline.frame().lines[0].spouts[0].opening === 0", timeout=5000)
         shut = True
     except Exception:
         shut = False
@@ -812,7 +837,7 @@ def a_tap_on_a_nozzle_opens_it_until_the_next_tap(page, name):
     still = opening(page)
     page.touchscreen.tap(pt["x"], pt["y"])
     try:
-        page.wait_for_function("window.slushline.frame().lines[0].spouts[0].opening === 0", timeout=5000)
+        page.wait_for_function("() => window.slushline.frame().lines[0].spouts[0].opening === 0", timeout=5000)
         shut = True
     except Exception:
         shut = False

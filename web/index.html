@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<!-- What the page may load, for a school's network (2026-10-19): Builder's
+     default policy, its own files and wasm compiled from them, and one frame,
+     SoundCloud's player, made only when the soundtrack is asked for. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src https://w.soundcloud.com">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>{{game.name}}</title>
 <!-- The game on the iPad (2026-10-10): added to the home screen it opens
@@ -35,14 +40,14 @@
   </div>
   <section id="screen" hidden></section>
   <!-- The soundtrack (Sam, 2026-10-06), after Gear Master's: SoundCloud's own
-       widget, streamed from SoundCloud. No audio file of it is in the repo. -->
+       widget, streamed from SoundCloud. No audio file of it is in the repo.
+       Its frame is made by web/music.js when the player presses the play
+       button (2026-10-19), so loading the page asks SoundCloud for nothing. -->
   <aside id="music" aria-label="{{music.title}}">
     <div class="music-head">
       <span>{{music.title}}</span>
       <button id="music-fold" type="button" class="quiet" aria-expanded="true">{{music.fold}}</button>
     </div>
-    <iframe id="music-player" title="{{music.title}}" allow="autoplay; encrypted-media" scrolling="no" frameborder="no"
-      src="https://w.soundcloud.com/player/?url=https%3A%2F%2Fapi.soundcloud.com%2Ftracks%2F78084887&amp;auto_play=false&amp;hide_related=true&amp;show_comments=false&amp;show_user=true&amp;show_reposts=false&amp;show_teaser=false&amp;visual=false"></iframe>
     <p id="music-blocked" hidden>{{music.blocked}}</p>
     <div class="music-row">
       <button id="music-mute" type="button" class="quiet">{{music.mute}}</button>
@@ -55,7 +60,6 @@
     <span id="build">{{game.build}}</span>
   </footer>
 </main>
-<script src="https://w.soundcloud.com/player/api.js"></script>
 <script type="module" src="app.js"></script>
 </body>
 </html>

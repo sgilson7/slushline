@@ -138,7 +138,7 @@ section.how p { max-width: 720px; margin: 0; }
 #music.folded #music-player { display: none; }
 #music-volume { flex: 1; accent-color: var(--focus); }
 #music-blocked { margin: 0; padding: 4px 10px; font-size: 12px; color: var(--line); }
-#music-level { min-width: 2.5em; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+#music-level { min-width: 2.5em; text-align: right; font-variant-numeric: tabular-nums; color: var(--line); }
 
 /* --- story mode (Sam, 2026-10-07) -----------------------------------------
    The button, after Vagrancy's arcade mode: skewed, a hard shadow, a bar
